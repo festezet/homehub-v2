@@ -1,0 +1,126 @@
+<!-- Markets Tab - Financial Markets with TradingView Widgets -->
+
+<!-- Ticker Tape (bande défilante) -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header">
+        <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+            📊 Ticker en Temps Réel
+        </h3>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        <div id="tradingview-ticker-tape"></div>
+    </div>
+</div>
+
+<!-- Main Charts Grid -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header">
+        <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+            📈 Graphiques Principaux
+        </h3>
+    </div>
+    <div class="card-body">
+        <div class="charts-grid">
+            <!-- 1. Bitcoin -->
+            <div class="chart-container">
+                <div class="tradingview-widget-container">
+                    <div id="tradingview-gold"></div>
+                </div>
+            </div>
+
+            <!-- 2. Or (XAU/USD) -->
+            <div class="chart-container">
+                <div class="tradingview-widget-container">
+                    <div id="tradingview-btc"></div>
+                </div>
+            </div>
+
+            <!-- 3. Argent (XAG/USD) -->
+            <div class="chart-container">
+                <div class="tradingview-widget-container">
+                    <div id="tradingview-eurusd"></div>
+                </div>
+            </div>
+
+            <!-- 4. Cuivre -->
+            <div class="chart-container">
+                <div class="tradingview-widget-container">
+                    <div id="tradingview-copper"></div>
+                </div>
+            </div>
+
+            <!-- 5. Platine (XPT/USD) -->
+            <div class="chart-container">
+                <div class="tradingview-widget-container">
+                    <div id="tradingview-silver"></div>
+                </div>
+            </div>
+
+            <!-- 6. EUR/USD -->
+            <div class="chart-container">
+                <div class="tradingview-widget-container">
+                    <div id="tradingview-nasdaq"></div>
+                </div>
+            </div>
+
+            <!-- 7. NASDAQ -->
+            <div class="chart-container">
+                <div class="tradingview-widget-container">
+                    <div id="tradingview-sp500"></div>
+                </div>
+            </div>
+
+            <!-- 8. S&P 500 -->
+            <div class="chart-container">
+                <div class="tradingview-widget-container">
+                    <div id="tradingview-platinum"></div>
+                </div>
+            </div>
+
+            <!-- 9. Google (GOOGL) -->
+            <div class="chart-container">
+                <div class="tradingview-widget-container">
+                    <div id="tradingview-google"></div>
+                </div>
+            </div>
+
+            <!-- 10. NVIDIA -->
+            <div class="chart-container">
+                <div class="tradingview-widget-container">
+                    <div id="tradingview-nvidia"></div>
+                </div>
+            </div>
+
+            <!-- 11. Pétrole Brut (WTI) -->
+            <div class="chart-container">
+                <div class="tradingview-widget-container">
+                    <div id="tradingview-oil"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<style>
+/* Markets Page Styles */
+.charts-grid {
+    display: grid;
+    grid-template-columns: 1fr;  /* Un seul graphique par ligne */
+    gap: 20px;
+}
+
+.chart-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    min-height: 750px;  /* +50% (500 -> 750) */
+}
+
+.tradingview-widget-container {
+    height: 100%;
+    width: 100%;
+}
+</style>

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Agenda - HomeHub{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/calendar.css') }}">
+{% endblock %}
+
+{% block content %}
+<div id="calendar-container" class="calendar-page">
+    <!-- Calendar content will be rendered by JavaScript -->
+    <div class="loading-state">
+        <p>Chargement de l'agenda...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script type="module">
+    import { calendarModule } from '/static/js/calendar.js';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Check for Google connection callback
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('google') === 'connected') {
+            // Clean URL
+            window.history.replaceState({}, '', window.location.pathname + '?tab=calendar');
+
+            // Show success message
+            if (window.showToast) {
+                window.showToast('Google Calendar connecte avec succes');
+            }
+        }
+
+        // Initialize calendar module
+        await calendarModule.init();
+    });
+</script>
+{% endblock %}

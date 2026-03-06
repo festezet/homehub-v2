@@ -1,0 +1,252 @@
+<!-- Projects List Tab - Infrastructure & Applications from old HomeHub -->
+<div class="projects-list-container">
+    <div class="section-header">
+        <h3>Liste Projets Infrastructure et Applications</h3>
+        <div class="header-actions">
+            <select id="projects-category-filter" class="filter-select">
+                <option value="all">Toutes categories</option>
+                <option value="infrastructure">Infrastructure</option>
+                <option value="docker">Docker</option>
+                <option value="apps">Applications Natives</option>
+                <option value="dev">Applications Developpees</option>
+            </select>
+            <button id="btn-refresh-projects" class="btn btn-primary">Rafraichir</button>
+        </div>
+    </div>
+
+    <div id="projects-loading" class="loading-indicator">
+        <span class="spinner"></span>
+        <span>Chargement des projets...</span>
+    </div>
+
+    <!-- Infrastructure Table -->
+    <div id="projects-table-container" class="table-container">
+        <table id="projects-table" class="projects-table">
+            <thead>
+                <tr>
+                    <th>Categorie</th>
+                    <th class="col-id">ID</th>
+                    <th>Application / Service</th>
+                    <th class="col-status">Status</th>
+                    <th>Description</th>
+                    <th class="col-actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="projects-tbody">
+                <!-- Content loaded dynamically -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Stats -->
+    <div id="projects-stats" class="stats-section">
+        <div class="stat-item">
+            <span class="stat-label">Statistiques :</span>
+            <span id="projects-stats-content">Chargement...</span>
+        </div>
+    </div>
+
+    <!-- Focus Section -->
+    <div id="projects-focus" class="focus-section">
+        <div class="focus-title">Focus Actuel :</div>
+        <div id="projects-focus-content">
+            <ul>
+                <li>Synchronisation automatique activee</li>
+                <li>Donnees chargees depuis la base SQLite projects.db</li>
+                <li>IDs uniques affiches pour chaque projet (PRJ-XXX)</li>
+                <li>Mise a jour temps reel au rechargement</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<style>
+.projects-list-container {
+    padding: 20px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.section-header h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--text-primary, #1a1a2e);
+}
+
+.table-container {
+    background: var(--bg-card, #ffffff);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border-color, #e0e0e0);
+}
+
+.projects-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.projects-table thead tr {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.projects-table th {
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+}
+
+.projects-table th.col-id {
+    width: 100px;
+    text-align: center;
+}
+
+.projects-table th.col-status {
+    width: 100px;
+    text-align: center;
+}
+
+.projects-table th.col-actions {
+    width: 120px;
+    text-align: center;
+}
+
+.projects-table td {
+    padding: 12px;
+    border-bottom: 1px solid var(--border-color, #e0e0e0);
+    vertical-align: top;
+}
+
+.projects-table tbody tr:hover {
+    background: var(--bg-secondary, #f5f5f5);
+}
+
+.projects-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.category-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.category-infra { background: #e8f5e9; color: #2e7d32; }
+.category-docker { background: #e3f2fd; color: #1565c0; }
+.category-apps { background: #fff3e0; color: #e65100; }
+.category-dev { background: #f3e5f5; color: #7b1fa2; }
+
+.id-badge {
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: var(--primary, #667eea);
+    font-weight: 600;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.status-ok { background: #c8e6c9; color: #2e7d32; }
+.status-running { background: #c8e6c9; color: #2e7d32; }
+.status-warning { background: #fff9c4; color: #f57f17; }
+.status-error { background: #ffcdd2; color: #c62828; }
+.status-stopped { background: #e0e0e0; color: #616161; }
+
+.stats-section {
+    margin-top: 20px;
+    padding: 15px;
+    background: #e3f2fd;
+    border-left: 4px solid #2196F3;
+    border-radius: 5px;
+}
+
+.stat-label {
+    font-weight: 600;
+}
+
+.focus-section {
+    margin-top: 15px;
+    padding: 15px;
+    background: #f1f8e9;
+    border-left: 4px solid #8bc34a;
+    border-radius: 5px;
+}
+
+.focus-title {
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.focus-section ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.focus-section li {
+    margin: 5px 0;
+    color: var(--text-secondary, #666);
+}
+
+.loading-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 40px;
+    color: var(--text-secondary, #666);
+}
+
+.spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--border-color, #e0e0e0);
+    border-top-color: var(--primary, #667eea);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.action-btn {
+    padding: 6px 10px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+}
+
+.action-btn-folder {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.action-btn-folder:hover {
+    background: #bbdefb;
+}
+
+.action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+</style>

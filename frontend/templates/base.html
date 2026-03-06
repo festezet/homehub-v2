@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}HomeHub - Centre de Commande{% endblock %}</title>
+
+    <!-- Modern CSS Theme -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern-style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/calendar.css') }}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-logo">🏠</span>
+            <h1>HomeHub</h1>
+        </div>
+
+        <ul class="nav-menu">
+            <!-- Main Section -->
+            <div class="nav-section">
+                <div class="nav-section-title">Principal</div>
+                <li class="nav-item" data-page="internet">
+                    <a href="#internet">
+                        <span class="icon">🌐</span>
+                        <span class="label">Internet</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="local">
+                    <a href="#local">
+                        <span class="icon">🖥️</span>
+                        <span class="label">Applications</span>
+                    </a>
+                </li>
+            </div>
+
+            <!-- Tools Section -->
+            <div class="nav-section">
+                <div class="nav-section-title">Outils</div>
+                <li class="nav-item" data-page="dashboard">
+                    <a href="#dashboard">
+                        <span class="icon">✅</span>
+                        <span class="label">TODOs</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="calendar">
+                    <a href="#calendar">
+                        <span class="icon">📅</span>
+                        <span class="label">Agenda</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="markets">
+                    <a href="#markets">
+                        <span class="icon">📈</span>
+                        <span class="label">Marches</span>
+                    </a>
+                </li>
+            </div>
+
+            <!-- Media Section -->
+            <div class="nav-section">
+                <div class="nav-section-title">Média</div>
+                <li class="nav-item" data-page="mediastack">
+                    <a href="#mediastack">
+                        <span class="icon">🎬</span>
+                        <span class="label">Media Stack</span>
+                    </a>
+                </li>
+            </div>
+
+            <!-- Apps Section -->
+            <div class="nav-section">
+                <div class="nav-section-title">Apps</div>
+                <li class="nav-item" data-page="local-apps">
+                    <a href="#local-apps">
+                        <span class="icon">📱</span>
+                        <span class="label">Applications Locales</span>
+                    </a>
+                </li>
+            </div>
+
+            <!-- System Section -->
+            <div class="nav-section">
+                <div class="nav-section-title">Systeme</div>
+                <li class="nav-item" data-page="system-monitor">
+                    <a href="#system-monitor">
+                        <span class="icon">📊</span>
+                        <span class="label">System Monitor</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="projects-list">
+                    <a href="#projects-list">
+                        <span class="icon">📋</span>
+                        <span class="label">Liste Projets</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="infrastructure">
+                    <a href="#infrastructure">
+                        <span class="icon">🛠</span>
+                        <span class="label">Infrastructure</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="prompting-disciplines">
+                    <a href="#prompting-disciplines">
+                        <span class="icon">🧠</span>
+                        <span class="label">Prompting Disciplines</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="activity">
+                    <a href="#activity">
+                        <span class="icon">📈</span>
+                        <span class="label">Activite</span>
+                    </a>
+                </li>
+            </div>
+        </ul>
+
+        <div class="sidebar-footer">
+            <div class="update-status">
+                <span class="status-dot"></span>
+                <span id="last-update">Connecté</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header class="top-bar">
+            <div class="page-title">
+                <h2 id="page-title-text">{% block page_title %}Activité{% endblock %}</h2>
+                <p class="page-subtitle" id="page-subtitle">{% block page_subtitle %}Historique des projets{% endblock %}</p>
+            </div>
+            <div class="top-actions">
+                <button id="btn-refresh" class="btn btn-icon" title="Rafraîchir">🔄</button>
+                <button id="btn-settings" class="btn btn-icon" title="Paramètres">⚙️</button>
+            </div>
+        </header>
+
+        <div class="content">
+            {% block content %}
+            <!-- Activity Tab -->
+            <div id="activity-page" class="page-content" style="display: none;">
+                {% include 'activity.html' %}
+            </div>
+
+            <!-- Internet Tab -->
+            <div id="internet-page" class="page-content" style="display: none;">
+                {% include 'internet.html' %}
+            </div>
+
+            <!-- Local Tab -->
+            <div id="local-page" class="page-content" style="display: none;">
+                {% include 'local.html' %}
+            </div>
+
+            <!-- Dashboard Tab (TODOs) -->
+            <div id="dashboard-page" class="page-content" style="display: none;">
+                {% include 'dashboard.html' %}
+            </div>
+
+            <!-- Markets Tab -->
+            <div id="markets-page" class="page-content" style="display: none;">
+                {% include 'markets.html' %}
+            </div>
+
+            <!-- Calendar Tab -->
+            <div id="calendar-page" class="page-content" style="display: none;">
+                <div id="calendar-container" class="calendar-page">
+                    <div class="loading-state">
+                        <p>Chargement de l'agenda...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Media Stack Tab -->
+            <div id="mediastack-page" class="page-content" style="display: none;">
+                {% include 'mediastack.html' %}
+            </div>
+
+            <!-- Infrastructure Tab -->
+            <div id="infrastructure-page" class="page-content" style="display: none;">
+                {% include 'infrastructure.html' %}
+            </div>
+
+            <!-- Local Apps Tab -->
+            <div id="local-apps-page" class="page-content" style="display: none;">
+                {% include 'local-apps.html' %}
+            </div>
+
+            <!-- System Monitor Tab -->
+            <div id="system-monitor-page" class="page-content" style="display: none;">
+                {% include 'system-monitor.html' %}
+            </div>
+
+            <!-- Projects List Tab -->
+            <div id="projects-list-page" class="page-content" style="display: none;">
+                {% include 'projects-list.html' %}
+            </div>
+
+            <!-- Prompting Disciplines Tab -->
+            <div id="prompting-disciplines-page" class="page-content" style="display: none;">
+                {% include 'prompting-disciplines.html' %}
+            </div>
+            {% endblock %}
+        </div>
+    </main>
+
+    <!-- Toast Container for Notifications -->
+    <div id="toast-container"></div>
+
+    <!-- JavaScript Modules -->
+    <script type="module" src="{{ url_for('static', filename='js/api.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/utils.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/todo.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/docker.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/local.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/activity.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/internet.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/mediastack.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/markets.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/infrastructure.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/local-apps.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/system-monitor.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/projects-list.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/calendar.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+    <!-- Modern Navigation Script -->
+    <script>
+        // Modern sidebar navigation
+        document.addEventListener('DOMContentLoaded', function() {
+            const navItems = document.querySelectorAll('.nav-item');
+            const pages = document.querySelectorAll('.page-content');
+
+            // Page titles mapping
+            const pageTitles = {
+                'activity': { title: 'Activite', subtitle: 'Historique des projets' },
+                'internet': { title: 'Internet', subtitle: 'Acces rapide a vos sites favoris' },
+                'local': { title: 'Applications', subtitle: 'Gestion des applications locales' },
+                'dashboard': { title: 'TODOs', subtitle: 'Gestion des taches' },
+                'calendar': { title: 'Agenda', subtitle: 'Planning hebdomadaire et Google Calendar' },
+                'markets': { title: 'Marches', subtitle: 'Suivi des marches financiers' },
+                'mediastack': { title: 'Media Stack', subtitle: 'Streaming & Telechargement' },
+                'infrastructure': { title: 'Infrastructure', subtitle: 'Monitoring systeme' },
+                'local-apps': { title: 'Applications Locales', subtitle: 'Projets developpes localement' },
+                'system-monitor': { title: 'System Monitor', subtitle: 'CPU / GPU / RAM / Stockage' },
+                'projects-list': { title: 'Liste Projets', subtitle: 'Infrastructure et Applications' },
+                'prompting-disciplines': { title: 'Prompting Disciplines', subtitle: 'Framework d\'optimisation Claude Code' }
+            };
+
+            function switchPage(pageName) {
+                // Update active nav item
+                navItems.forEach(item => {
+                    if (item.dataset.page === pageName) {
+                        item.classList.add('active');
+                    } else {
+                        item.classList.remove('active');
+                    }
+                });
+
+                // Update visible page
+                pages.forEach(page => {
+                    if (page.id === pageName + '-page') {
+                        page.style.display = 'block';
+                        page.classList.add('fade-in');
+                    } else {
+                        page.style.display = 'none';
+                    }
+                });
+
+                // Update page title and subtitle
+                if (pageTitles[pageName]) {
+                    document.getElementById('page-title-text').textContent = pageTitles[pageName].title;
+                    document.getElementById('page-subtitle').textContent = pageTitles[pageName].subtitle;
+                }
+
+                // Update URL hash
+                window.location.hash = pageName;
+
+                // Trigger module load
+                window.homeHub?.loadPage(pageName);
+            }
+
+            // Add click handlers
+            navItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const pageName = this.dataset.page;
+                    switchPage(pageName);
+                });
+            });
+
+            // Handle initial page load from hash
+            const initialPage = window.location.hash.slice(1) || 'internet';
+
+            // Show page immediately for visual feedback
+            const page = document.getElementById(initialPage + '-page');
+            if (page) page.style.display = 'block';
+            navItems.forEach(item => {
+                item.classList.toggle('active', item.dataset.page === initialPage);
+            });
+            if (pageTitles[initialPage]) {
+                document.getElementById('page-title-text').textContent = pageTitles[initialPage].title;
+                document.getElementById('page-subtitle').textContent = pageTitles[initialPage].subtitle;
+            }
+
+            // Load data when app is ready
+            window.addEventListener('homehub-ready', () => {
+                window.homeHub?.loadPage(initialPage);
+            }, { once: true });
+
+            // Refresh button
+            document.getElementById('btn-refresh')?.addEventListener('click', function() {
+                const currentPage = document.querySelector('.nav-item.active')?.dataset.page;
+                if (currentPage) {
+                    window.homeHub?.loadPage(currentPage);
+                }
+            });
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

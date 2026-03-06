@@ -1,0 +1,195 @@
+{
+  "version": "1.0",
+  "created": "2026-01-04",
+  "source": "planning_hebdomadaire.csv (Mistral)",
+  "days": ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"],
+  "slots": [
+    {
+      "start": "07:00",
+      "end": "08:00",
+      "activity": {
+        "default": "Petit-dejeuner + Ouverture maison + Feu",
+        "variations": {}
+      },
+      "category": "routine",
+      "is_flexible": false,
+      "color": "#f5f5f5"
+    },
+    {
+      "start": "08:00",
+      "end": "08:15",
+      "activity": {
+        "default": "Annonces immobilieres + Messages",
+        "variations": {}
+      },
+      "category": "routine",
+      "is_flexible": true,
+      "color": "#e8f4fc"
+    },
+    {
+      "start": "08:15",
+      "end": "08:30",
+      "activity": {
+        "default": "Mario Kart",
+        "variations": {}
+      },
+      "category": "loisirs",
+      "is_flexible": true,
+      "color": "#fff3e0"
+    },
+    {
+      "start": "08:30",
+      "end": "09:00",
+      "activity": {
+        "default": "Video actualite IA",
+        "variations": {
+          "Mercredi": "Video actualite Crypto",
+          "Vendredi": "Video libre"
+        }
+      },
+      "category": "veille",
+      "is_flexible": true,
+      "color": "#e3f2fd"
+    },
+    {
+      "start": "09:00",
+      "end": "09:30",
+      "activity": {
+        "default": "Musique (basse/guitare)",
+        "variations": {}
+      },
+      "category": "musique",
+      "is_flexible": false,
+      "color": "#f3e5f5"
+    },
+    {
+      "start": "09:30",
+      "end": "10:30",
+      "activity": {
+        "default": "Prospection Offshore Wind",
+        "variations": {}
+      },
+      "category": "prospection",
+      "is_flexible": true,
+      "color": "#e8f5e9"
+    },
+    {
+      "start": "10:30",
+      "end": "11:30",
+      "activity": {
+        "default": "Prospection IA",
+        "variations": {}
+      },
+      "category": "prospection",
+      "is_flexible": true,
+      "color": "#e8f5e9"
+    },
+    {
+      "start": "11:30",
+      "end": "12:00",
+      "activity": {
+        "default": "Candidatures LinkedIn",
+        "variations": {}
+      },
+      "category": "prospection",
+      "is_flexible": true,
+      "color": "#e8f5e9"
+    },
+    {
+      "start": "12:00",
+      "end": "14:00",
+      "activity": {
+        "default": "Pause dejeuner",
+        "variations": {
+          "Lundi": "Ski de fond (jan-mars)",
+          "Jeudi": "Ski de piste (jan-mars)"
+        }
+      },
+      "category": "pause",
+      "is_flexible": false,
+      "color": "#fafafa"
+    },
+    {
+      "start": "14:00",
+      "end": "17:00",
+      "activity": {
+        "default": null,
+        "variations": {
+          "Lundi": "Claude Code (applications)",
+          "Mardi": "Problemes perso (TODO list)",
+          "Mercredi": "Crypto",
+          "Jeudi": "Claude Code (outils numeriques)",
+          "Vendredi": "Posts LinkedIn (Wind Offshore + IA)"
+        }
+      },
+      "category": "dev",
+      "is_flexible": true,
+      "color": "#fff8e1"
+    },
+    {
+      "start": "19:30",
+      "end": "22:00",
+      "activity": {
+        "default": null,
+        "variations": {
+          "Mardi": "Chorale",
+          "Mercredi": "Soiree musique (3/4)"
+        }
+      },
+      "category": "musique",
+      "is_flexible": false,
+      "color": "#f3e5f5"
+    }
+  ],
+  "categories": {
+    "routine": {
+      "label": "Routine",
+      "color": "#f5f5f5",
+      "icon": "sunrise"
+    },
+    "veille": {
+      "label": "Veille",
+      "color": "#e3f2fd",
+      "icon": "video"
+    },
+    "musique": {
+      "label": "Musique",
+      "color": "#f3e5f5",
+      "icon": "music"
+    },
+    "prospection": {
+      "label": "Prospection",
+      "color": "#e8f5e9",
+      "icon": "search"
+    },
+    "dev": {
+      "label": "Developpement",
+      "color": "#fff8e1",
+      "icon": "code"
+    },
+    "loisirs": {
+      "label": "Loisirs",
+      "color": "#fff3e0",
+      "icon": "gamepad"
+    },
+    "pause": {
+      "label": "Pause",
+      "color": "#fafafa",
+      "icon": "coffee"
+    }
+  },
+  "mapping_todo_categories": {
+    "Tech": ["dev"],
+    "Infrastructure": ["dev"],
+    "Projet": ["dev", "prospection"],
+    "Pro": ["prospection"],
+    "SASU": ["prospection"],
+    "Admin": ["routine"],
+    "Finance": ["dev"],
+    "Immobilier": ["routine"],
+    "Musique": ["musique"],
+    "Perso": ["loisirs", "routine"],
+    "Sante": ["pause"],
+    "Loisirs": ["loisirs"]
+  }
+}
