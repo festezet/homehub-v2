@@ -40,6 +40,12 @@
             <!-- Tools Section -->
             <div class="nav-section">
                 <div class="nav-section-title">Outils</div>
+                <li class="nav-item" data-page="formation">
+                    <a href="#formation">
+                        <span class="icon">🎓</span>
+                        <span class="label">Formation</span>
+                    </a>
+                </li>
                 <li class="nav-item" data-page="dashboard">
                     <a href="#dashboard">
                         <span class="icon">✅</span>
@@ -156,6 +162,11 @@
                 {% include 'local.html' %}
             </div>
 
+            <!-- Formation Tab -->
+            <div id="formation-page" class="page-content" style="display: none;">
+                {% include 'formation.html' %}
+            </div>
+
             <!-- Dashboard Tab (TODOs) -->
             <div id="dashboard-page" class="page-content" style="display: none;">
                 {% include 'dashboard.html' %}
@@ -226,6 +237,7 @@
     <script type="module" src="{{ url_for('static', filename='js/system-monitor.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/projects-list.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/calendar.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/formation.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/app.js') }}"></script>
 
     <!-- Modern Navigation Script -->
@@ -240,6 +252,7 @@
                 'activity': { title: 'Activite', subtitle: 'Historique des projets' },
                 'internet': { title: 'Internet', subtitle: 'Acces rapide a vos sites favoris' },
                 'local': { title: 'Applications', subtitle: 'Gestion des applications locales' },
+                'formation': { title: 'Formation', subtitle: 'Plan d\'action DeepSignal V1' },
                 'dashboard': { title: 'TODOs', subtitle: 'Gestion des taches' },
                 'calendar': { title: 'Agenda', subtitle: 'Planning hebdomadaire et Google Calendar' },
                 'markets': { title: 'Marches', subtitle: 'Suivi des marches financiers' },

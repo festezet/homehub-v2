@@ -137,6 +137,37 @@ const API = {
         async getCategories() {
             return await API.fetch(`${API.BASE_URL}/internet/categories`);
         }
+    },
+
+    /**
+     * Formation API methods
+     */
+    formation: {
+        async getActions() {
+            return await API.fetch(`${API.BASE_URL}/formation/actions`);
+        },
+
+        async toggle(actionId) {
+            return await API.fetch(`${API.BASE_URL}/formation/actions/${actionId}/toggle`, {
+                method: 'POST'
+            });
+        },
+
+        async setStatus(actionId, status) {
+            return await API.fetch(`${API.BASE_URL}/formation/actions/${actionId}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status })
+            });
+        },
+
+        async getStats() {
+            return await API.fetch(`${API.BASE_URL}/formation/stats`);
+        },
+
+        async getContent() {
+            return await API.fetch(`${API.BASE_URL}/formation/content`);
+        }
     }
 };
 

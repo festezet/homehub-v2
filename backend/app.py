@@ -19,12 +19,14 @@ from services.todo_service import todo_service
 from services.internet_service import internet_service
 from services.activity_service import activity_service
 from services.infrastructure_service import infrastructure_service
+from services.formation_service import formation_service
 
 # Import API routes
 from api.docker_routes import docker_bp, init_docker_routes
 from api.todo_routes import todo_bp, init_todo_routes
 from api.internet_routes import internet_bp, init_internet_routes
 from api.calendar_routes import calendar_bp, init_calendar_routes
+from api.formation_routes import formation_bp, init_formation_routes
 
 # Configure logging
 logging.basicConfig(
@@ -128,12 +130,14 @@ CORS(app)
 init_docker_routes(docker_service)
 init_todo_routes(todo_service)
 init_internet_routes(internet_service)
+init_formation_routes(formation_service)
 
 # Register blueprints
 app.register_blueprint(docker_bp)
 app.register_blueprint(todo_bp)
 app.register_blueprint(internet_bp)
 app.register_blueprint(calendar_bp)
+app.register_blueprint(formation_bp)
 
 # ============================================
 # ROUTES - Pages

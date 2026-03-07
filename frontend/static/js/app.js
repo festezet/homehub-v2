@@ -17,6 +17,7 @@ import localAppsModule from './local-apps.js';
 import systemMonitorModule from './system-monitor.js';
 import projectsListModule from './projects-list.js';
 import { calendarModule } from './calendar.js';
+import formationModule from './formation.js';
 
 // Make modules available globally for now (will be refactored)
 window.API = API;
@@ -161,6 +162,10 @@ class HomeHubApp {
             case 'calendar':
                 console.log('📅 Loading Calendar module...');
                 await calendarModule.init();
+                break;
+            case 'formation':
+                console.log('Loading Formation module...');
+                await formationModule.load();
                 break;
             default:
                 console.warn('⚠️ Unknown tab:', tabName);
