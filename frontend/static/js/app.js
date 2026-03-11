@@ -18,6 +18,7 @@ import systemMonitorModule from './system-monitor.js';
 import projectsListModule from './projects-list.js';
 import { calendarModule } from './calendar.js';
 import formationModule from './formation.js';
+import servicesPortsModule from './services-ports.js';
 
 // Make modules available globally for now (will be refactored)
 window.API = API;
@@ -166,6 +167,10 @@ class HomeHubApp {
             case 'formation':
                 console.log('Loading Formation module...');
                 await formationModule.load();
+                break;
+            case 'services-ports':
+                console.log('Loading Services & Ports module...');
+                await servicesPortsModule.load();
                 break;
             default:
                 console.warn('⚠️ Unknown tab:', tabName);

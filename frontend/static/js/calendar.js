@@ -13,7 +13,10 @@ class CalendarModule {
         this.proposals = null;
         this.googleConnected = false;
         this.categories = {};
-        this.activeSubTab = 'agenda'; // 'agenda', 'actions', 'template'
+        this.activeSubTab = 'agenda'; // 'agenda', 'actions', 'template', 'google'
+        this.gcalEvents = []; // flat list for Google Calendar tab
+        this.gcalWeekStart = this.getMonday(new Date());
+        this.editingEvent = null; // event being edited in modal
 
         // Time slots for the grid (7:00 to 22:00)
         this.startHour = 7;
@@ -81,10 +84,40 @@ class CalendarModule {
         document.getElementById('propose-schedule-btn')?.addEventListener('click', () => this.proposeSchedule());
         document.getElementById('apply-schedule-btn')?.addEventListener('click', () => this.applySchedule());
         document.getElementById('cancel-proposal-btn')?.addEventListener('click', () => this.cancelProposal());
+
+        // Google Calendar tab
+        document.getElementById('gcal-prev-week')?.addEventListener('click', () => this.gcalNavigateWeek(-1));
+        document.getElementById('gcal-next-week')?.addEventListener('click', () => this.gcalNavigateWeek(1));
+        document.getElementById('gcal-today-btn')?.addEventListener('click', () => this.gcalGoToToday());
+        document.getElementById('gcal-add-event-btn')?.addEventListener('click', () => this.openEventForm());
+        document.getElementById('gcal-check-btn')?.addEventListener('click', () => this.gcalCheckConnection());
+
+        // Event form modal
+        document.getElementById('gcal-form-save')?.addEventListener('click', () => this.saveEvent());
+        document.getElementById('gcal-form-cancel')?.addEventListener('click', () => this.closeEventForm());
+        document.getElementById('gcal-modal-close')?.addEventListener('click', () => this.closeEventForm());
+
+        // Edit/delete buttons on event cards
+        document.querySelectorAll('.gcal-edit-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const eventId = e.currentTarget.dataset.eventId;
+                const event = this.gcalEvents.find(ev => ev.id === eventId);
+                if (event) this.openEventForm(event);
+            });
+        });
+        document.querySelectorAll('.gcal-delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const eventId = e.currentTarget.dataset.eventId;
+                this.deleteEvent(eventId);
+            });
+        });
     }
 
-    switchSubTab(tabName) {
+    async switchSubTab(tabName) {
         this.activeSubTab = tabName;
+        if (tabName === 'google' && this.gcalEvents.length === 0) {
+            await this.gcalLoadEvents();
+        }
         this.render();
     }
 
@@ -111,18 +144,11 @@ class CalendarModule {
     }
 
     async connectGoogle() {
-        window.location.href = '/api/calendar/google/auth';
+        alert('Run: cd /data/projects/homehub-v2 && python3 scripts/google_calendar_auth.py');
     }
 
     async disconnectGoogle() {
-        try {
-            await fetch('/api/calendar/google/disconnect', { method: 'POST' });
-            this.googleConnected = false;
-            this.googleEvents = {};
-            this.render();
-        } catch (error) {
-            console.error('[Calendar] Error disconnecting:', error);
-        }
+        alert('To disconnect, delete credentials/google_calendar_token.json');
     }
 
     async proposeSchedule() {
@@ -243,6 +269,9 @@ class CalendarModule {
                 <button class="calendar-subtab ${this.activeSubTab === 'template' ? 'active' : ''}" data-subtab="template">
                     Emploi du temps type
                 </button>
+                <button class="calendar-subtab subtab-google ${this.activeSubTab === 'google' ? 'active' : ''}" data-subtab="google">
+                    Google Calendar
+                </button>
             </div>
         `;
     }
@@ -255,6 +284,8 @@ class CalendarModule {
                 return this.renderActionsTab();
             case 'template':
                 return this.renderTemplateTab();
+            case 'google':
+                return this.renderGoogleCalendarTab();
             default:
                 return this.renderAgendaTab();
         }
@@ -374,7 +405,6 @@ class CalendarModule {
             <div class="calendar-header">
                 <h2>Agenda</h2>
                 <div class="calendar-legend">
-                    <span class="legend-item template-legend">Semaine type</span>
                     <span class="legend-item event-legend">Google Calendar</span>
                     <span class="legend-item todo-legend">TODO planifie</span>
                 </div>
@@ -402,7 +432,7 @@ class CalendarModule {
     }
 
     renderCalendarGrid() {
-        const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'];
+        const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
         const hours = [];
         for (let h = this.startHour; h <= this.endHour; h++) {
             hours.push(`${h.toString().padStart(2, '0')}:00`);
@@ -448,27 +478,15 @@ class CalendarModule {
         const dateStr = this.formatDate(dayDate);
         const isToday = this.isToday(dayDate);
 
-        // Get template slots for this day
-        const templateSlots = this.template?.[dayName]?.slots || [];
-        console.log(`[Calendar] ${dayName}: ${templateSlots.length} template slots`);
-
         // Get Google events for this day
         const dayEvents = this.googleEvents[dayName] || [];
 
         // Get scheduled todos for this day
         const dayScheduled = this.scheduledTodos.filter(t => t.scheduled_date === dateStr);
 
-        // Debug: if no slots, show message
-        const slotsHtml = templateSlots.length > 0
-            ? templateSlots.map(slot => this.renderTemplateSlot(slot)).join('')
-            : `<div class="no-slots" style="padding: 10px; color: #999; font-size: 0.8rem;">Aucun creneau</div>`;
-
         return `
             <div class="day-column ${isToday ? 'today' : ''}" data-day="${dayName}" data-date="${dateStr}">
-                <!-- Template slots (background) -->
-                ${slotsHtml}
-
-                <!-- Google Calendar events (foreground) -->
+                <!-- Google Calendar events -->
                 ${dayEvents.map(event => this.renderGoogleEvent(event)).join('')}
 
                 <!-- Scheduled TODOs -->
@@ -609,6 +627,369 @@ class CalendarModule {
                 <button id="propose-schedule-btn" class="btn-primary">Demander a Claude</button>
             </div>
         `;
+    }
+
+    // ============== Google Calendar Tab ==============
+
+    renderGoogleCalendarTab() {
+        if (!this.googleConnected) {
+            return this.renderGcalDisconnected();
+        }
+        return `
+            <div class="google-tab">
+                ${this.renderGcalNav()}
+                <div class="gcal-toolbar">
+                    <button id="gcal-add-event-btn" class="btn-primary btn-small">+ Nouvel evenement</button>
+                    <button id="gcal-check-btn" class="btn-secondary btn-small">Verifier connexion</button>
+                </div>
+                <div class="gcal-events-list">
+                    ${this.renderGcalEventsByDay()}
+                </div>
+                ${this.renderEventFormModal()}
+            </div>
+        `;
+    }
+
+    renderGcalDisconnected() {
+        return `
+            <div class="google-tab">
+                <div class="gcal-disconnected">
+                    <div class="gcal-disconnected-icon">G</div>
+                    <h3>Google Calendar non connecte</h3>
+                    <p>Pour connecter votre compte Google Calendar, executez :</p>
+                    <pre class="gcal-cmd">cd /data/projects/homehub-v2 && python3 scripts/google_calendar_auth.py</pre>
+                    <p class="gcal-hint">Cela ouvrira le navigateur pour autoriser l'acces au calendrier.</p>
+                    <button id="gcal-check-btn" class="btn-primary">Verifier la connexion</button>
+                </div>
+            </div>
+        `;
+    }
+
+    renderGcalNav() {
+        const weekEnd = new Date(this.gcalWeekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+        const options = { day: 'numeric', month: 'short' };
+        const startStr = this.gcalWeekStart.toLocaleDateString('fr-FR', options);
+        const endStr = weekEnd.toLocaleDateString('fr-FR', options);
+        const year = this.gcalWeekStart.getFullYear();
+
+        return `
+            <div class="week-nav">
+                <button id="gcal-prev-week" class="nav-btn" title="Semaine precedente">&#9664;</button>
+                <button id="gcal-today-btn" class="nav-btn today-btn">Aujourd'hui</button>
+                <span class="week-label">${startStr} - ${endStr} ${year}</span>
+                <button id="gcal-next-week" class="nav-btn" title="Semaine suivante">&#9654;</button>
+            </div>
+        `;
+    }
+
+    renderGcalEventsByDay() {
+        const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+        const daysByName = {};
+
+        // Group events by day
+        this.gcalEvents.forEach(event => {
+            const start = event.start;
+            let eventDate;
+            if (start?.dateTime) {
+                eventDate = new Date(start.dateTime);
+            } else if (start?.date) {
+                eventDate = new Date(start.date + 'T00:00:00');
+            } else {
+                return;
+            }
+            const dayIndex = eventDate.getDay();
+            const dayName = days[dayIndex === 0 ? 6 : dayIndex - 1];
+            if (!daysByName[dayName]) daysByName[dayName] = [];
+            daysByName[dayName].push(event);
+        });
+
+        let html = '';
+        days.forEach((day, i) => {
+            const dayDate = new Date(this.gcalWeekStart);
+            dayDate.setDate(dayDate.getDate() + i);
+            const isToday = this.isToday(dayDate);
+            const dateStr = dayDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+            const events = daysByName[day] || [];
+
+            html += `
+                <div class="gcal-day ${isToday ? 'gcal-day-today' : ''}">
+                    <div class="gcal-day-header">
+                        <span class="gcal-day-name">${dateStr}</span>
+                        <span class="gcal-day-count">${events.length} evt</span>
+                    </div>
+                    <div class="gcal-day-events">
+                        ${events.length === 0
+                            ? '<div class="gcal-no-events">Aucun evenement</div>'
+                            : events.map(ev => this.renderGcalEventCard(ev)).join('')}
+                    </div>
+                </div>
+            `;
+        });
+        return html;
+    }
+
+    renderGcalEventCard(event) {
+        const startTime = this.extractTime(event.start);
+        const endTime = this.extractTime(event.end);
+        const isAllDay = !event.start?.dateTime;
+        const timeStr = isAllDay ? 'Journee entiere' : `${startTime || '?'}${endTime ? ' - ' + endTime : ''}`;
+
+        return `
+            <div class="gcal-event-card" data-event-id="${event.id}">
+                <div class="gcal-event-main">
+                    <div class="gcal-event-time">${timeStr}</div>
+                    <div class="gcal-event-title">${event.summary || 'Sans titre'}</div>
+                    ${event.location ? `<div class="gcal-event-location">${event.location}</div>` : ''}
+                    ${event.description ? `<div class="gcal-event-desc">${event.description.substring(0, 100)}${event.description.length > 100 ? '...' : ''}</div>` : ''}
+                </div>
+                <div class="gcal-event-actions">
+                    <button class="gcal-edit-btn btn-icon" data-event-id="${event.id}" title="Modifier">&#9998;</button>
+                    <button class="gcal-delete-btn btn-icon btn-danger" data-event-id="${event.id}" title="Supprimer">&#10005;</button>
+                </div>
+            </div>
+        `;
+    }
+
+    renderEventFormModal() {
+        const ev = this.editingEvent;
+        const isEdit = !!ev;
+        const title = isEdit ? 'Modifier evenement' : 'Nouvel evenement';
+
+        // Pre-fill for edit
+        const summary = ev?.summary || '';
+        const description = ev?.description || '';
+        const location = ev?.location || '';
+        let startDate = '', startTime = '', endDate = '', endTime = '';
+        let allDay = false;
+
+        if (ev) {
+            if (ev.start?.dateTime) {
+                const sd = new Date(ev.start.dateTime);
+                startDate = this.formatDate(sd);
+                startTime = `${sd.getHours().toString().padStart(2,'0')}:${sd.getMinutes().toString().padStart(2,'0')}`;
+            } else if (ev.start?.date) {
+                startDate = ev.start.date;
+                allDay = true;
+            }
+            if (ev.end?.dateTime) {
+                const ed = new Date(ev.end.dateTime);
+                endDate = this.formatDate(ed);
+                endTime = `${ed.getHours().toString().padStart(2,'0')}:${ed.getMinutes().toString().padStart(2,'0')}`;
+            } else if (ev.end?.date) {
+                endDate = ev.end.date;
+            }
+        }
+
+        return `
+            <div id="gcal-event-modal" class="modal ${this.editingEvent !== null ? '' : 'hidden'}">
+                <div class="modal-content gcal-modal-content">
+                    <div class="modal-header">
+                        <h3>${title}</h3>
+                        <button id="gcal-modal-close" class="close-btn">&times;</button>
+                    </div>
+                    <div class="modal-body gcal-form">
+                        <div class="form-group">
+                            <label>Titre *</label>
+                            <input type="text" id="gcal-form-summary" value="${summary}" placeholder="RDV medecin, reunion...">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Date debut *</label>
+                                <input type="date" id="gcal-form-start-date" value="${startDate}">
+                            </div>
+                            <div class="form-group">
+                                <label>Heure debut</label>
+                                <input type="time" id="gcal-form-start-time" value="${startTime}">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Date fin</label>
+                                <input type="date" id="gcal-form-end-date" value="${endDate}">
+                            </div>
+                            <div class="form-group">
+                                <label>Heure fin</label>
+                                <input type="time" id="gcal-form-end-time" value="${endTime}">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label><input type="checkbox" id="gcal-form-allday" ${allDay ? 'checked' : ''}> Journee entiere</label>
+                        </div>
+                        <div class="form-group">
+                            <label>Lieu</label>
+                            <input type="text" id="gcal-form-location" value="${location}" placeholder="Adresse ou lieu">
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="gcal-form-description" rows="3" placeholder="Notes...">${description}</textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button id="gcal-form-save" class="btn-primary">${isEdit ? 'Modifier' : 'Creer'}</button>
+                        <button id="gcal-form-cancel" class="btn-secondary">Annuler</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // ---- Google Calendar CRUD methods ----
+
+    async gcalLoadEvents() {
+        const start = this.formatDate(this.gcalWeekStart);
+        const end = new Date(this.gcalWeekStart);
+        end.setDate(end.getDate() + 7);
+        const endStr = this.formatDate(end);
+
+        try {
+            const response = await fetch(`/api/calendar/events?start=${start}&end=${endStr}`);
+            const data = await response.json();
+            if (data.status === 'ok') {
+                this.googleConnected = data.connected !== false;
+                this.gcalEvents = data.events || [];
+            }
+        } catch (error) {
+            console.error('[Calendar] Error loading gcal events:', error);
+        }
+    }
+
+    async gcalNavigateWeek(direction) {
+        this.gcalWeekStart = new Date(this.gcalWeekStart.getTime() + direction * 7 * 24 * 60 * 60 * 1000);
+        await this.gcalLoadEvents();
+        this.render();
+    }
+
+    async gcalGoToToday() {
+        this.gcalWeekStart = this.getMonday(new Date());
+        await this.gcalLoadEvents();
+        this.render();
+    }
+
+    async gcalCheckConnection() {
+        try {
+            const response = await fetch('/api/calendar/google/status');
+            const data = await response.json();
+            if (data.connected) {
+                this.googleConnected = true;
+                await this.gcalLoadEvents();
+                this.showToast('Google Calendar connecte');
+            } else {
+                this.googleConnected = false;
+                this.showToast('Non connecte: ' + (data.reason || 'token manquant'));
+            }
+            this.render();
+        } catch (error) {
+            console.error('[Calendar] Error checking connection:', error);
+            this.showToast('Erreur de connexion');
+        }
+    }
+
+    openEventForm(event = null) {
+        this.editingEvent = event || 'new';
+        this.render();
+        // Focus on title field
+        setTimeout(() => {
+            document.getElementById('gcal-form-summary')?.focus();
+        }, 100);
+    }
+
+    closeEventForm() {
+        this.editingEvent = null;
+        this.render();
+    }
+
+    async saveEvent() {
+        const summary = document.getElementById('gcal-form-summary')?.value?.trim();
+        const startDate = document.getElementById('gcal-form-start-date')?.value;
+        const startTime = document.getElementById('gcal-form-start-time')?.value;
+        const endDate = document.getElementById('gcal-form-end-date')?.value || startDate;
+        const endTime = document.getElementById('gcal-form-end-time')?.value;
+        const allDay = document.getElementById('gcal-form-allday')?.checked;
+        const location = document.getElementById('gcal-form-location')?.value?.trim() || '';
+        const description = document.getElementById('gcal-form-description')?.value?.trim() || '';
+
+        if (!summary) {
+            this.showToast('Le titre est obligatoire');
+            return;
+        }
+        if (!startDate) {
+            this.showToast('La date de debut est obligatoire');
+            return;
+        }
+
+        let startStr, endStr;
+        if (allDay) {
+            startStr = startDate;
+            endStr = endDate || startDate;
+        } else {
+            startStr = `${startDate}T${startTime || '09:00'}:00`;
+            if (endDate && endTime) {
+                endStr = `${endDate}T${endTime}:00`;
+            } else if (startTime) {
+                // Default 1h duration
+                const [h, m] = startTime.split(':').map(Number);
+                const eh = h + 1;
+                endStr = `${startDate}T${eh.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:00`;
+            } else {
+                endStr = `${startDate}T10:00:00`;
+            }
+        }
+
+        const body = { summary, start: startStr, end: endStr, description, location, all_day: allDay };
+
+        try {
+            let response;
+            const isEdit = this.editingEvent && this.editingEvent !== 'new' && this.editingEvent.id;
+
+            if (isEdit) {
+                response = await fetch(`/api/calendar/google/events/${this.editingEvent.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+            } else {
+                response = await fetch('/api/calendar/google/events', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+            }
+
+            const data = await response.json();
+            if (data.status === 'ok') {
+                this.showToast(isEdit ? 'Evenement modifie' : 'Evenement cree');
+                this.editingEvent = null;
+                await this.gcalLoadEvents();
+                this.render();
+            } else {
+                this.showToast('Erreur: ' + (data.message || 'echec'));
+            }
+        } catch (error) {
+            console.error('[Calendar] Error saving event:', error);
+            this.showToast('Erreur reseau');
+        }
+    }
+
+    async deleteEvent(eventId) {
+        if (!confirm('Supprimer cet evenement ?')) return;
+
+        try {
+            const response = await fetch(`/api/calendar/google/events/${eventId}`, {
+                method: 'DELETE'
+            });
+            const data = await response.json();
+            if (data.status === 'ok') {
+                this.showToast('Evenement supprime');
+                await this.gcalLoadEvents();
+                this.render();
+            } else {
+                this.showToast('Erreur: ' + (data.message || 'echec'));
+            }
+        } catch (error) {
+            console.error('[Calendar] Error deleting event:', error);
+            this.showToast('Erreur reseau');
+        }
     }
 
     renderProposalModal() {

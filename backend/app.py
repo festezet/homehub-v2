@@ -198,6 +198,33 @@ def get_infrastructure_dashboard():
             'message': str(e)
         }), 500
 
+@app.route('/api/services/ports')
+def get_services_ports():
+    """Get port registry from infrastructure data"""
+    import json
+
+    registry_path = '/data/projects/infrastructure/data/port_registry.json'
+    try:
+        with open(registry_path, 'r') as f:
+            data = json.load(f)
+        return jsonify({
+            'status': 'ok',
+            'ports': data.get('ports', []),
+            'stacks': data.get('stacks', {}),
+            'allocation_ranges': data.get('allocation_ranges', {})
+        })
+    except FileNotFoundError:
+        return jsonify({
+            'status': 'error',
+            'message': 'port_registry.json not found'
+        }), 404
+    except Exception as e:
+        logger.error(f"Error reading port registry: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
 @app.route('/api/apps')
 def get_applications():
     """Get list of installed applications"""

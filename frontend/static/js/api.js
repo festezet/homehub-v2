@@ -140,6 +140,15 @@ const API = {
     },
 
     /**
+     * Services & Ports API methods
+     */
+    services: {
+        async getPorts() {
+            return await API.fetch(`${API.BASE_URL}/services/ports`);
+        }
+    },
+
+    /**
      * Formation API methods
      */
     formation: {

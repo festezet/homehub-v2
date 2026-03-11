@@ -109,6 +109,12 @@
                         <span class="label">Infrastructure</span>
                     </a>
                 </li>
+                <li class="nav-item" data-page="services-ports">
+                    <a href="#services-ports">
+                        <span class="icon">🔌</span>
+                        <span class="label">Services & Ports</span>
+                    </a>
+                </li>
                 <li class="nav-item" data-page="prompting-disciplines">
                     <a href="#prompting-disciplines">
                         <span class="icon">🧠</span>
@@ -211,6 +217,11 @@
                 {% include 'projects-list.html' %}
             </div>
 
+            <!-- Services & Ports Tab -->
+            <div id="services-ports-page" class="page-content" style="display: none;">
+                {% include 'services-ports.html' %}
+            </div>
+
             <!-- Prompting Disciplines Tab -->
             <div id="prompting-disciplines-page" class="page-content" style="display: none;">
                 {% include 'prompting-disciplines.html' %}
@@ -238,6 +249,7 @@
     <script type="module" src="{{ url_for('static', filename='js/projects-list.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/calendar.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/formation.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/services-ports.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/app.js') }}"></script>
 
     <!-- Modern Navigation Script -->
@@ -261,6 +273,7 @@
                 'local-apps': { title: 'Applications Locales', subtitle: 'Projets developpes localement' },
                 'system-monitor': { title: 'System Monitor', subtitle: 'CPU / GPU / RAM / Stockage' },
                 'projects-list': { title: 'Liste Projets', subtitle: 'Infrastructure et Applications' },
+                'services-ports': { title: 'Services & Ports', subtitle: 'Registre central des ports reseau' },
                 'prompting-disciplines': { title: 'Prompting Disciplines', subtitle: 'Framework d\'optimisation Claude Code' }
             };
 

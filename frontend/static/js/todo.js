@@ -311,6 +311,7 @@ class TodoModule {
                         <option value="Auto" ${todo.category === 'Auto' ? 'selected' : ''}>🚗 Auto</option>
                         <option value="Immobilier" ${todo.category === 'Immobilier' ? 'selected' : ''}>🏘️ Immobilier</option>
                         <option value="Loisirs" ${todo.category === 'Loisirs' ? 'selected' : ''}>🎯 Loisirs</option>
+                        <option value="Todo projet" ${todo.category === 'Todo projet' ? 'selected' : ''}>🤖 Todo projet</option>
                     </select>
                 </td>
                 <td>
