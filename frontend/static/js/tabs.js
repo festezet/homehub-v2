@@ -67,9 +67,6 @@ class TabsManager {
     onTabSwitch(tabName) {
         // Import modules dynamically when needed
         switch(tabName) {
-            case 'activity':
-                import('./activity.js').then(module => module.default.load());
-                break;
             case 'local':
                 import('./local.js').then(module => module.default.load());
                 break;

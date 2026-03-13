@@ -8,18 +8,15 @@ import Utils from './utils.js';
 import todoModule from './todo.js';
 import dockerModule from './docker.js';
 import localModule from './local.js';
-import activityModule from './activity.js';
 import internetModule from './internet.js';
 import infrastructureModule from './infrastructure.js';
 import mediaStackModule from './mediastack.js';
 import marketsModule from './markets.js';
 import localAppsModule from './local-apps.js';
 import systemMonitorModule from './system-monitor.js';
-import projectsListModule from './projects-list.js';
 import { calendarModule } from './calendar.js';
 import formationModule from './formation.js';
 import servicesPortsModule from './services-ports.js';
-import specsModule from './specs.js';
 import projectStatusModule from './project-status.js';
 
 // Make modules available globally for now (will be refactored)
