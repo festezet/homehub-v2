@@ -355,6 +355,17 @@ def get_projects():
             'tags': 'voice,whisper,claude,transcription',
             'launcher_path': '/data/projects/voice-dictation/scripts/start_claude_voice_input.sh',
             'launcher_type': 'bash'
+        },
+        {
+            'id': 'APP-007',
+            'name': 'Gmail Categorization',
+            'category': 'productivity',
+            'status': 'active',
+            'path': '/data/projects/gmail-cleaner',
+            'description': 'Catégorisation automatique emails tous les 2 jours avec daemon et popup GUI',
+            'tags': 'gmail,email,categorization,daemon,automation',
+            'launcher_path': '/data/projects/gmail-cleaner/start_categorization_manager.sh',
+            'launcher_type': 'bash'
         }
     ]
     projects.extend(additional_apps)
@@ -529,6 +540,11 @@ def launch_project(project_id):
             'name': 'Claude Voice Input',
             'path': '/data/projects/voice-dictation',
             'launcher_path': '/data/projects/voice-dictation/scripts/start_claude_voice_input.sh'
+        },
+        'APP-007': {
+            'name': 'Gmail Categorization',
+            'path': '/data/projects/gmail-cleaner',
+            'launcher_path': '/data/projects/gmail-cleaner/start_categorization_manager.sh'
         }
     }
 
