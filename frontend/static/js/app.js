@@ -19,6 +19,8 @@ import projectsListModule from './projects-list.js';
 import { calendarModule } from './calendar.js';
 import formationModule from './formation.js';
 import servicesPortsModule from './services-ports.js';
+import specsModule from './specs.js';
+import projectStatusModule from './project-status.js';
 
 // Make modules available globally for now (will be refactored)
 window.API = API;
@@ -119,9 +121,9 @@ class HomeHubApp {
     async loadTabData(tabName) {
         console.log('📄 loadTabData called for:', tabName);
         switch(tabName) {
-            case 'activity':
-                console.log('📊 Loading activity module...');
-                await activityModule.load();
+            case 'project-status':
+                console.log('Loading Project Status module...');
+                await projectStatusModule.load();
                 break;
             case 'internet':
                 console.log('🌐 Loading internet module...');
@@ -155,10 +157,6 @@ class HomeHubApp {
             case 'system-monitor':
                 console.log('📊 Loading System Monitor module...');
                 await systemMonitorModule.load();
-                break;
-            case 'projects-list':
-                console.log('📋 Loading Projects List module...');
-                await projectsListModule.load();
                 break;
             case 'calendar':
                 console.log('📅 Loading Calendar module...');

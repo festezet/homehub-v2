@@ -30,6 +30,7 @@ Total estimé : ~4500 lignes réparties en ~25 fichiers (< 500 lignes chacun)
 
 ## 📚 Documentation
 
+- **`docs/spec/SPEC.md`** : Specification technique complete (architecture, modele de donnees, features, API)
 - **`docs/MIGRATION_ANALYSIS.md`** : Analyse complète de la migration v1 → v2
   - Comparaison avec Crypto Portfolio
   - Plan de migration détaillé

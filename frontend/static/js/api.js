@@ -72,17 +72,43 @@ const API = {
     },
 
     /**
-     * Applications API methods
+     * Local Apps API methods
      */
-    apps: {
-        async getAll() {
-            return await API.fetch(`${API.BASE_URL}/apps`);
+    localApps: {
+        async getApps() {
+            return await API.fetch(`${API.BASE_URL}/local-apps/apps`);
         },
 
-        async launch(appId) {
-            return await API.fetch(`${API.BASE_URL}/apps/launch/${appId}`, {
+        async createApp(appData) {
+            return await API.fetch(`${API.BASE_URL}/local-apps/apps`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(appData)
+            });
+        },
+
+        async updateApp(id, data) {
+            return await API.fetch(`${API.BASE_URL}/local-apps/apps/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+        },
+
+        async deleteApp(id) {
+            return await API.fetch(`${API.BASE_URL}/local-apps/apps/${id}`, {
+                method: 'DELETE'
+            });
+        },
+
+        async launchApp(id) {
+            return await API.fetch(`${API.BASE_URL}/local-apps/apps/${id}/launch`, {
                 method: 'POST'
             });
+        },
+
+        async getCategories() {
+            return await API.fetch(`${API.BASE_URL}/local-apps/categories`);
         }
     },
 
@@ -99,8 +125,29 @@ const API = {
      * Activity Timeline API methods
      */
     activity: {
-        async getTimeline() {
-            return await API.fetch(`${API.BASE_URL}/activity/timeline`);
+        async getTimeline(params = {}) {
+            const qs = new URLSearchParams();
+            if (params.limit) qs.set('limit', params.limit);
+            if (params.project_id) qs.set('project_id', params.project_id);
+            if (params.type) qs.set('type', params.type);
+            const query = qs.toString();
+            return await API.fetch(`${API.BASE_URL}/activity/timeline${query ? '?' + query : ''}`);
+        },
+
+        async getProjectActivity(projectId, limit = 5) {
+            return await API.fetch(`${API.BASE_URL}/activity/project/${projectId}?limit=${limit}`);
+        },
+
+        async getStats() {
+            return await API.fetch(`${API.BASE_URL}/activity/stats`);
+        },
+
+        async log(data) {
+            return await API.fetch(`${API.BASE_URL}/activity/log`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
         }
     },
 
@@ -145,6 +192,35 @@ const API = {
     services: {
         async getPorts() {
             return await API.fetch(`${API.BASE_URL}/services/ports`);
+        }
+    },
+
+    /**
+     * Specs API methods
+     */
+    specs: {
+        async getAll() {
+            return await API.fetch(`${API.BASE_URL}/specs`);
+        },
+
+        async update(id, field, value) {
+            return await API.fetch(`${API.BASE_URL}/specs/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ field, value })
+            });
+        },
+
+        async scan() {
+            return await API.fetch(`${API.BASE_URL}/specs/scan`, {
+                method: 'POST'
+            });
+        },
+
+        async healthScan() {
+            return await API.fetch(`${API.BASE_URL}/specs/health-scan`, {
+                method: 'POST'
+            });
         }
     },
 

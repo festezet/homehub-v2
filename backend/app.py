@@ -20,6 +20,8 @@ from services.internet_service import internet_service
 from services.activity_service import activity_service
 from services.infrastructure_service import infrastructure_service
 from services.formation_service import formation_service
+from services.local_apps_service import local_apps_service
+from services.specs_service import specs_service
 
 # Import API routes
 from api.docker_routes import docker_bp, init_docker_routes
@@ -27,6 +29,9 @@ from api.todo_routes import todo_bp, init_todo_routes
 from api.internet_routes import internet_bp, init_internet_routes
 from api.calendar_routes import calendar_bp, init_calendar_routes
 from api.formation_routes import formation_bp, init_formation_routes
+from api.local_apps_routes import local_apps_bp, init_local_apps_routes
+from api.specs_routes import specs_bp, init_specs_routes
+from api.activity_routes import activity_bp, init_activity_routes
 
 # Configure logging
 logging.basicConfig(
@@ -131,6 +136,9 @@ init_docker_routes(docker_service)
 init_todo_routes(todo_service)
 init_internet_routes(internet_service)
 init_formation_routes(formation_service)
+init_local_apps_routes(local_apps_service)
+init_specs_routes(specs_service)
+init_activity_routes(activity_service)
 
 # Register blueprints
 app.register_blueprint(docker_bp)
@@ -138,6 +146,9 @@ app.register_blueprint(todo_bp)
 app.register_blueprint(internet_bp)
 app.register_blueprint(calendar_bp)
 app.register_blueprint(formation_bp)
+app.register_blueprint(local_apps_bp)
+app.register_blueprint(specs_bp)
+app.register_blueprint(activity_bp)
 
 # ============================================
 # ROUTES - Pages
@@ -164,23 +175,6 @@ def health():
             'todo': True
         }
     })
-
-@app.route('/api/activity/timeline')
-def get_activity_timeline():
-    """Get activity timeline (project milestones)"""
-    try:
-        timeline = activity_service.get_timeline(limit=20)
-        return jsonify({
-            'status': 'ok',
-            'timeline': timeline,
-            'count': len(timeline)
-        })
-    except Exception as e:
-        logger.error(f"Error getting timeline: {e}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
 
 @app.route('/api/infrastructure/dashboard')
 def get_infrastructure_dashboard():
@@ -356,17 +350,6 @@ def get_projects():
             'launcher_path': '/data/projects/voice-dictation/scripts/start_claude_voice_input.sh',
             'launcher_type': 'bash'
         },
-        {
-            'id': 'APP-007',
-            'name': 'Gmail Categorization',
-            'category': 'productivity',
-            'status': 'active',
-            'path': '/data/projects/gmail-cleaner',
-            'description': 'Catégorisation automatique emails tous les 2 jours avec daemon et popup GUI',
-            'tags': 'gmail,email,categorization,daemon,automation',
-            'launcher_path': '/data/projects/gmail-cleaner/start_categorization_manager.sh',
-            'launcher_type': 'bash'
-        }
     ]
     projects.extend(additional_apps)
 
@@ -541,11 +524,6 @@ def launch_project(project_id):
             'path': '/data/projects/voice-dictation',
             'launcher_path': '/data/projects/voice-dictation/scripts/start_claude_voice_input.sh'
         },
-        'APP-007': {
-            'name': 'Gmail Categorization',
-            'path': '/data/projects/gmail-cleaner',
-            'launcher_path': '/data/projects/gmail-cleaner/start_categorization_manager.sh'
-        }
     }
 
     # Vérifier si c'est une APP-XXX

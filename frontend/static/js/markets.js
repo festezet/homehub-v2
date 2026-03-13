@@ -156,7 +156,7 @@ class MarketsModule {
         this.createAdvancedChart('tradingview-nasdaq', 'FX:EURUSD', 'EUR / USD');
 
         // 7. NASDAQ
-        this.createAdvancedChart('tradingview-sp500', 'NASDAQ:IXIC', 'NASDAQ Composite');
+        this.createAdvancedChart('tradingview-sp500', 'PEPPERSTONE:NAS100', 'NASDAQ 100');
 
         // 8. S&P 500
         this.createAdvancedChart('tradingview-platinum', 'FOREXCOM:SPXUSD', 'S&P 500');

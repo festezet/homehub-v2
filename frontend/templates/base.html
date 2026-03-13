@@ -99,10 +99,10 @@
                         <span class="label">System Monitor</span>
                     </a>
                 </li>
-                <li class="nav-item" data-page="projects-list">
-                    <a href="#projects-list">
+                <li class="nav-item" data-page="project-status">
+                    <a href="#project-status">
                         <span class="icon">📋</span>
-                        <span class="label">Liste Projets</span>
+                        <span class="label">Project Status</span>
                     </a>
                 </li>
                 <li class="nav-item" data-page="infrastructure">
@@ -121,12 +121,6 @@
                     <a href="#prompting-disciplines">
                         <span class="icon">🧠</span>
                         <span class="label">Prompting Disciplines</span>
-                    </a>
-                </li>
-                <li class="nav-item" data-page="activity">
-                    <a href="#activity">
-                        <span class="icon">📈</span>
-                        <span class="label">Activite</span>
                     </a>
                 </li>
             </div>
@@ -155,9 +149,9 @@
 
         <div class="content">
             {% block content %}
-            <!-- Activity Tab -->
-            <div id="activity-page" class="page-content" style="display: none;">
-                {% include 'activity.html' %}
+            <!-- Project Status Tab (unified: Overview, Health & Specs, Activity Log) -->
+            <div id="project-status-page" class="page-content" style="display: none;">
+                {% include 'project-status.html' %}
             </div>
 
             <!-- Internet Tab -->
@@ -214,10 +208,6 @@
                 {% include 'system-monitor.html' %}
             </div>
 
-            <!-- Projects List Tab -->
-            <div id="projects-list-page" class="page-content" style="display: none;">
-                {% include 'projects-list.html' %}
-            </div>
 
             <!-- Services & Ports Tab -->
             <div id="services-ports-page" class="page-content" style="display: none;">
@@ -252,6 +242,8 @@
     <script type="module" src="{{ url_for('static', filename='js/calendar.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/formation.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/services-ports.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/specs.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/project-status.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/app.js') }}"></script>
 
     <!-- Modern Navigation Script -->
@@ -263,7 +255,6 @@
 
             // Page titles mapping
             const pageTitles = {
-                'activity': { title: 'Activite', subtitle: 'Historique des projets' },
                 'internet': { title: 'Internet', subtitle: 'Acces rapide a vos sites favoris' },
                 'local': { title: 'Applications', subtitle: 'Gestion des applications locales' },
                 'formation': { title: 'Formation', subtitle: 'Plan d\'action DeepSignal V1' },
@@ -274,7 +265,7 @@
                 'infrastructure': { title: 'Infrastructure', subtitle: 'Monitoring systeme' },
                 'local-apps': { title: 'Applications Locales', subtitle: 'Projets developpes localement' },
                 'system-monitor': { title: 'System Monitor', subtitle: 'CPU / GPU / RAM / Stockage' },
-                'projects-list': { title: 'Liste Projets', subtitle: 'Infrastructure et Applications' },
+                'project-status': { title: 'Project Status', subtitle: 'Vue unifiee des projets et activites' },
                 'services-ports': { title: 'Services & Ports', subtitle: 'Registre central des ports reseau' },
                 'prompting-disciplines': { title: 'Prompting Disciplines', subtitle: 'Framework d\'optimisation Claude Code' }
             };
@@ -322,7 +313,16 @@
             });
 
             // Handle initial page load from hash
-            const initialPage = window.location.hash.slice(1) || 'internet';
+            const hashRedirects = {
+                'projects-list': 'project-status',
+                'specs': 'project-status',
+                'activity': 'project-status'
+            };
+            let initialPage = window.location.hash.slice(1) || 'internet';
+            if (hashRedirects[initialPage]) {
+                initialPage = hashRedirects[initialPage];
+                window.location.hash = initialPage;
+            }
 
             // Show page immediately for visual feedback
             const page = document.getElementById(initialPage + '-page');

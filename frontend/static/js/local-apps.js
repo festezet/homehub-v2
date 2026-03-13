@@ -1,528 +1,585 @@
 /**
- * Local Apps Module - Display locally developed applications from projects.db
+ * Local Apps Module - Applications locales groupees par categorie
+ * Edit mode: click card to delete, + card to add
  */
+
+import API from './api.js';
+
+const CATEGORY_ICONS = {
+    'frequent-use': '\u2B50',
+    'ai': '\uD83E\uDD16',
+    'development': '\uD83D\uDCBB',
+    'business': '\uD83D\uDCBC',
+    'creative': '\uD83C\uDFA8',
+    'infrastructure': '\uD83C\uDFD7\uFE0F',
+    'data': '\uD83D\uDCCA',
+    'integration': '\uD83D\uDD17'
+};
+
+const DOCKER_STACKS = {
+    'llm': {
+        statusUrl: '/api/docker/llm/status',
+        startUrl: '/api/docker/llm/start',
+        stopUrl: '/api/docker/llm/stop',
+        startDelay: 30000,
+        label: 'Ollama + Open WebUI'
+    },
+    'stable-diffusion': {
+        statusUrl: '/api/docker/stable-diffusion/status',
+        startUrl: '/api/docker/stable-diffusion/start',
+        stopUrl: '/api/docker/stable-diffusion/stop',
+        startDelay: 180000,
+        label: 'Stable Diffusion'
+    }
+};
 
 class LocalAppsModule {
     constructor() {
-        this.projects = [];
-        this.filteredProjects = [];
         this.loaded = false;
+        this.data = null;
+        this.editMode = false;
+        this._deleting = false;
+        this._pollInterval = null;
     }
 
     async load() {
-        console.log('📱 Loading Local Apps module...');
-
-        // Show loading
-        const loading = document.getElementById('dev-apps-loading');
-        const grid = document.getElementById('dev-apps-grid');
-
-        if (loading) loading.style.display = 'flex';
-        if (grid) grid.style.display = 'none';
+        if (this.loaded) return;
 
         try {
-            await this.fetchProjects();
-            this.filteredProjects = [...this.projects];
-            this.render();
-            this.setupEventListeners();
-            this.loaded = true;
-
-            // Load AI Docker status
-            await this.updateAIStatus();
+            const response = await API.localApps.getApps();
+            if (response.status === 'ok') {
+                this.data = response.categories;
+                this.render(response.categories);
+                this.loaded = true;
+                this.pollDockerStatus();
+            }
         } catch (error) {
-            console.error('Error loading local apps:', error);
-            this.showError('Erreur lors du chargement des projets');
-        } finally {
-            if (loading) loading.style.display = 'none';
-            if (grid) grid.style.display = 'grid';
+            console.error('Failed to load local apps:', error);
+            document.getElementById('local-apps-container').innerHTML =
+                '<div style="text-align:center;padding:40px;color:#ef4444;">Erreur de chargement des applications</div>';
         }
     }
 
-    async updateAIStatus() {
-        // Update LLM status
-        try {
-            const llmResponse = await fetch('/api/docker/llm/status');
-            const llmData = await llmResponse.json();
+    toggleEditMode() {
+        this.editMode = !this.editMode;
+        const container = document.getElementById('local-apps-container');
+        if (!container) return;
 
-            const llmBadge = document.getElementById('llm-status-badge');
-            const btnStartLLM = document.getElementById('btn-start-llm');
-            const btnStopLLM = document.getElementById('btn-stop-llm');
-            const btnOpenLLM = document.getElementById('btn-open-llm');
+        container.classList.toggle('edit-mode', this.editMode);
 
-            if (llmData.running) {
-                if (llmBadge) llmBadge.innerHTML = '✅ En ligne';
-                if (llmBadge) llmBadge.className = 'app-status status-active';
-                if (btnStartLLM) btnStartLLM.disabled = true;
-                if (btnStartLLM) btnStartLLM.innerHTML = '<span>✅</span> Démarré';
-                if (btnStopLLM) btnStopLLM.disabled = false;
-                if (btnOpenLLM) btnOpenLLM.disabled = false;
-            } else {
-                if (llmBadge) llmBadge.innerHTML = '⏸️ Arrêté';
-                if (llmBadge) llmBadge.className = 'app-status status-paused';
-                if (btnStartLLM) btnStartLLM.disabled = false;
-                if (btnStartLLM) btnStartLLM.innerHTML = '<span>▶</span> Démarrer';
-                if (btnStopLLM) btnStopLLM.disabled = true;
-                if (btnOpenLLM) btnOpenLLM.disabled = true;
-            }
-        } catch (error) {
-            console.error('Error fetching LLM status:', error);
+        const btn = document.getElementById('la-edit-btn');
+        if (btn) {
+            btn.textContent = this.editMode ? 'Terminer' : 'Editer';
+            btn.classList.toggle('active', this.editMode);
         }
 
-        // Update Stable Diffusion status
-        try {
-            const sdResponse = await fetch('/api/docker/stable-diffusion/status');
-            const sdData = await sdResponse.json();
-
-            const sdBadge = document.getElementById('sd-status-badge');
-            const btnStartSD = document.getElementById('btn-start-sd');
-            const btnStopSD = document.getElementById('btn-stop-sd');
-            const btnOpenSD = document.getElementById('btn-open-sd');
-
-            if (sdData.running) {
-                if (sdBadge) sdBadge.innerHTML = '✅ En ligne';
-                if (sdBadge) sdBadge.className = 'app-status status-active';
-                if (btnStartSD) btnStartSD.disabled = true;
-                if (btnStartSD) btnStartSD.innerHTML = '<span>✅</span> Démarré';
-                if (btnStopSD) btnStopSD.disabled = false;
-                if (btnOpenSD) btnOpenSD.disabled = false;
-            } else {
-                if (sdBadge) sdBadge.innerHTML = '⏸️ Arrêté';
-                if (sdBadge) sdBadge.className = 'app-status status-paused';
-                if (btnStartSD) btnStartSD.disabled = false;
-                if (btnStartSD) btnStartSD.innerHTML = '<span>▶</span> Démarrer';
-                if (btnStopSD) btnStopSD.disabled = true;
-                if (btnOpenSD) btnOpenSD.disabled = true;
-            }
-        } catch (error) {
-            console.error('Error fetching SD status:', error);
+        const banner = document.getElementById('la-edit-banner');
+        if (banner) {
+            banner.style.display = this.editMode ? 'flex' : 'none';
         }
     }
 
-    async startLLM() {
-        console.log('🧠 Starting LLM stack...');
-        this.showToast('Démarrage de Ollama + Open WebUI...', 'info');
+    render(categories) {
+        const container = document.getElementById('local-apps-container');
+        if (!container) return;
 
-        const btnStartLLM = document.getElementById('btn-start-llm');
-        if (btnStartLLM) {
-            btnStartLLM.disabled = true;
-            btnStartLLM.innerHTML = '<span>⏳</span> Démarrage...';
-        }
+        let html = `
+        <div class="la-toolbar">
+            <button id="la-edit-btn" class="edit-mode-btn">Editer</button>
+        </div>
+        <div id="la-edit-banner" class="edit-mode-banner" style="display:none;">
+            Mode Edition — Cliquez sur une app pour la supprimer, + pour ajouter
+        </div>`;
 
-        try {
-            const response = await fetch('/api/docker/llm/start', { method: 'POST' });
-            const data = await response.json();
+        for (const cat of categories) {
+            if (cat.apps.length === 0 && !this.editMode) continue;
 
-            if (data.status === 'success') {
-                // Show if Stable Diffusion was stopped
-                if (data.stopped && data.stopped.length > 0) {
-                    this.showToast('⚠️ Stable Diffusion arrêté pour libérer VRAM', 'info');
-                }
+            const icon = CATEGORY_ICONS[cat.slug] || '';
+            const isFrequent = cat.slug === 'frequent-use';
+            const sectionClass = isFrequent ? 'la-category la-category-frequent-use' : 'la-category';
 
-                this.showToast(data.message + ' - Attendre 30s avant ouverture', 'success');
+            html += `
+            <div class="${sectionClass}" data-category="${this.esc(cat.slug)}">
+                <h2 class="la-category-header">
+                    <span class="la-category-icon">${icon}</span> ${this.esc(cat.name)}
+                </h2>
+                <div class="la-grid">`;
 
-                // Wait 30 seconds then enable open button
-                setTimeout(() => {
-                    const btnOpenLLM = document.getElementById('btn-open-llm');
-                    if (btnOpenLLM) btnOpenLLM.disabled = false;
-                    this.updateAIStatus();
-                }, 30000);
-            } else {
-                this.showToast('Erreur: ' + data.message, 'error');
-                if (btnStartLLM) {
-                    btnStartLLM.disabled = false;
-                    btnStartLLM.innerHTML = '<span>▶</span> Démarrer LLM';
+            for (const app of cat.apps) {
+                if (app.app_type === 'docker') {
+                    html += this.renderDockerCard(app);
+                } else {
+                    html += this.renderAppCard(app);
                 }
             }
-        } catch (error) {
-            console.error('Error starting LLM:', error);
-            this.showToast('Erreur lors du démarrage du LLM', 'error');
-            if (btnStartLLM) {
-                btnStartLLM.disabled = false;
-                btnStartLLM.innerHTML = '<span>▶</span> Démarrer LLM';
+
+            // Add card (visible in edit mode only, not for frequent-use)
+            if (!isFrequent) {
+                html += `
+                    <div class="la-add-card" data-category-slug="${this.esc(cat.slug)}">
+                        <div class="la-add-content">
+                            <span class="la-add-icon">+</span>
+                            <span class="la-add-text">Ajouter</span>
+                        </div>
+                    </div>`;
             }
-        }
-    }
 
-    async stopLLM() {
-        console.log('🛑 Stopping LLM stack...');
-        this.showToast('Arrêt de Ollama + Open WebUI...', 'info');
-
-        const btnStopLLM = document.getElementById('btn-stop-llm');
-        if (btnStopLLM) {
-            btnStopLLM.disabled = true;
-            btnStopLLM.innerHTML = '<span>⏳</span> Arrêt...';
-        }
-
-        try {
-            const response = await fetch('/api/docker/llm/stop', { method: 'POST' });
-            const data = await response.json();
-
-            if (data.status === 'success') {
-                this.showToast(data.message + ' - VRAM libérée', 'success');
-                this.updateAIStatus();
-            } else {
-                this.showToast('Erreur: ' + data.message, 'error');
-            }
-        } catch (error) {
-            console.error('Error stopping LLM:', error);
-            this.showToast('Erreur lors de l\'arrêt du LLM', 'error');
-        } finally {
-            if (btnStopLLM) {
-                btnStopLLM.disabled = false;
-                btnStopLLM.innerHTML = '<span>⏹</span> Arrêter';
-            }
-        }
-    }
-
-    async startStableDiffusion() {
-        console.log('🎨 Starting Stable Diffusion...');
-        this.showToast('Démarrage de Stable Diffusion (2-3 min)...', 'info');
-
-        const btnStartSD = document.getElementById('btn-start-sd');
-        if (btnStartSD) {
-            btnStartSD.disabled = true;
-            btnStartSD.innerHTML = '<span>⏳</span> Démarrage...';
-        }
-
-        try {
-            const response = await fetch('/api/docker/stable-diffusion/start', { method: 'POST' });
-            const data = await response.json();
-
-            if (data.status === 'success') {
-                // Show if LLM was stopped
-                if (data.stopped && data.stopped.length > 0) {
-                    const stoppedApps = data.stopped.join(', ');
-                    this.showToast(`⚠️ ${stoppedApps} arrêté(s) pour libérer VRAM`, 'info');
-                }
-
-                this.showToast(data.message + ' - Attendre 2-3 min', 'success');
-
-                // Wait 3 minutes then enable open button
-                setTimeout(() => {
-                    const btnOpenSD = document.getElementById('btn-open-sd');
-                    if (btnOpenSD) btnOpenSD.disabled = false;
-                    this.updateAIStatus();
-                }, 180000);
-            } else {
-                this.showToast('Erreur: ' + data.message, 'error');
-                if (btnStartSD) {
-                    btnStartSD.disabled = false;
-                    btnStartSD.innerHTML = '<span>▶</span> Démarrer SD';
-                }
-            }
-        } catch (error) {
-            console.error('Error starting Stable Diffusion:', error);
-            this.showToast('Erreur lors du démarrage de SD', 'error');
-            if (btnStartSD) {
-                btnStartSD.disabled = false;
-                btnStartSD.innerHTML = '<span>▶</span> Démarrer SD';
-            }
-        }
-    }
-
-    async stopStableDiffusion() {
-        console.log('🛑 Stopping Stable Diffusion...');
-        this.showToast('Arrêt de Stable Diffusion...', 'info');
-
-        const btnStopSD = document.getElementById('btn-stop-sd');
-        if (btnStopSD) {
-            btnStopSD.disabled = true;
-            btnStopSD.innerHTML = '<span>⏳</span> Arrêt...';
-        }
-
-        try {
-            const response = await fetch('/api/docker/stable-diffusion/stop', { method: 'POST' });
-            const data = await response.json();
-
-            if (data.status === 'success') {
-                this.showToast(data.message + ' - VRAM libérée', 'success');
-                this.updateAIStatus();
-            } else {
-                this.showToast('Erreur: ' + data.message, 'error');
-            }
-        } catch (error) {
-            console.error('Error stopping Stable Diffusion:', error);
-            this.showToast('Erreur lors de l\'arrêt de SD', 'error');
-        } finally {
-            if (btnStopSD) {
-                btnStopSD.disabled = false;
-                btnStopSD.innerHTML = '<span>⏹</span> Arrêter';
-            }
-        }
-    }
-
-    async fetchProjects() {
-        try {
-            const response = await fetch('/api/projects');
-            if (!response.ok) throw new Error('Failed to fetch projects');
-            const data = await response.json();
-            this.projects = data.projects || [];
-        } catch (error) {
-            console.error('Error fetching projects:', error);
-            // Fallback to static data if API fails
-            this.projects = await this.fetchProjectsFallback();
-        }
-    }
-
-    async fetchProjectsFallback() {
-        // Try the infrastructure service endpoint
-        try {
-            const response = await fetch('/api/infrastructure/projects');
-            if (response.ok) {
-                const data = await response.json();
-                return data.projects || [];
-            }
-        } catch (e) {
-            console.log('Infrastructure API not available, using static list');
-        }
-
-        // Return empty if all fails
-        return [];
-    }
-
-    getCategoryIcon(category) {
-        const icons = {
-            'development': '💻',
-            'business': '💼',
-            'creative': '🎨',
-            'infrastructure': '🏗️',
-            'data': '📊',
-            'integration': '🔗'
-        };
-        return icons[category] || '📁';
-    }
-
-    getCategoryClass(category) {
-        return `tag-${category}`;
-    }
-
-    getStatusClass(status) {
-        return `status-${status}`;
-    }
-
-    render() {
-        const grid = document.getElementById('dev-apps-grid');
-        if (!grid) return;
-
-        if (this.filteredProjects.length === 0) {
-            grid.innerHTML = `
-                <div class="no-results">
-                    <p>Aucun projet trouve</p>
-                    <p style="font-size: 0.9rem;">Essayez de modifier vos filtres</p>
+            html += `
                 </div>
-            `;
-            return;
+            </div>`;
         }
 
-        grid.innerHTML = this.filteredProjects.map(project => this.renderProjectCard(project)).join('');
-        this.updateStats();
+        container.innerHTML = html;
+        this.bindEvents(container);
     }
 
-    renderProjectCard(project) {
-        const icon = this.getCategoryIcon(project.category);
-        const categoryClass = this.getCategoryClass(project.category);
-        const statusClass = this.getStatusClass(project.status);
-        const hasLauncher = project.launcher_path ? 'has-launcher' : '';
-        const launchDisabled = !project.launcher_path ? 'disabled' : '';
-        const launchTitle = project.launcher_path
-            ? `Lancer ${project.name}`
-            : 'Pas de launcher configure';
+    renderAppCard(app) {
+        const catClass = `la-tag-${app.category_slug}`;
+        const hasLauncher = app.launcher_path || app.web_url;
+        const launchBadge = app.launch_count > 0
+            ? `<span class="la-launch-badge">${app.launch_count}x</span>`
+            : '';
 
         return `
-            <div class="app-card ${hasLauncher}" data-project-id="${project.id}">
-                <div class="app-card-header">
-                    <span class="app-icon">${icon}</span>
-                    <div class="app-info">
-                        <h4 class="app-name">${project.name}</h4>
-                        <span class="app-id">${project.id}</span>
+            <div class="la-card" data-app-id="${app.id}" data-app-name="${this.esc(app.name)}">
+                <div class="la-card-header">
+                    <div class="la-card-icon">${CATEGORY_ICONS[app.category_slug] || '\uD83D\uDCC1'}</div>
+                    <div class="la-card-info">
+                        <h4 class="la-card-name">${this.esc(app.name)}</h4>
+                        <span class="la-card-id">${this.esc(app.project_id)}</span>
                     </div>
                 </div>
-                <p class="app-description">${project.description || 'Pas de description'}</p>
-                <div class="app-meta">
-                    <span class="app-tag ${categoryClass}">${project.category}</span>
-                    <span class="app-status ${statusClass}">${project.status}</span>
+                <p class="la-card-desc">${this.esc(app.description || 'Pas de description')}</p>
+                <div class="la-card-meta">
+                    <span class="la-tag ${catClass}">${this.esc(app.category_slug)}</span>
+                    ${launchBadge}
                 </div>
-                <div class="app-actions">
-                    <button class="btn btn-launch" ${launchDisabled}
-                            onclick="window.localAppsModule.launchProject('${project.id}')"
-                            title="${launchTitle}">
-                        <span>▶</span> Lancer
+                <div class="la-card-actions">
+                    <button class="la-btn la-btn-launch" ${!hasLauncher ? 'disabled' : ''}
+                            data-launch-id="${app.id}">
+                        Launch
                     </button>
-                    <button class="btn btn-folder"
-                            onclick="window.localAppsModule.openFolder('${project.id}')"
-                            title="Ouvrir le dossier">
-                        <span>📁</span> Dossier
+                    ${app.web_url ? `<button class="la-btn la-btn-open" data-open-url="${this.esc(app.web_url)}">Ouvrir</button>` : ''}
+                </div>
+            </div>`;
+    }
+
+    renderDockerCard(app) {
+        const stack = app.docker_stack;
+        return `
+            <div class="la-card la-card-docker" data-app-id="${app.id}" data-app-name="${this.esc(app.name)}"
+                 data-docker-stack="${this.esc(stack)}">
+                <div class="la-card-header">
+                    <div class="la-card-icon">${stack === 'llm' ? '\uD83E\uDDE0' : '\uD83C\uDFA8'}</div>
+                    <div class="la-card-info">
+                        <h4 class="la-card-name">${this.esc(app.name)}</h4>
+                        <span class="la-card-id">${this.esc(app.project_id)}</span>
+                    </div>
+                </div>
+                <p class="la-card-desc">${this.esc(app.description || '')}</p>
+                <div class="la-card-meta">
+                    <span class="la-tag la-tag-ai">Docker AI</span>
+                    <span class="la-docker-status loading" id="docker-status-${this.esc(stack)}">Chargement...</span>
+                </div>
+                <div class="la-card-actions">
+                    <button class="la-btn la-btn-launch" id="docker-start-${this.esc(stack)}"
+                            data-docker-start="${this.esc(stack)}">
+                        Demarrer
+                    </button>
+                    <button class="la-btn la-btn-stop" id="docker-stop-${this.esc(stack)}"
+                            data-docker-stop="${this.esc(stack)}" disabled>
+                        Arreter
+                    </button>
+                    <button class="la-btn la-btn-open" id="docker-open-${this.esc(stack)}"
+                            data-open-url="${this.esc(app.web_url)}" disabled>
+                        Ouvrir
                     </button>
                 </div>
-            </div>
-        `;
+            </div>`;
     }
 
-    updateStats() {
-        const countEl = document.getElementById('dev-apps-count');
-        const categoriesEl = document.getElementById('dev-apps-categories');
+    bindEvents(container) {
+        // Edit mode toggle
+        document.getElementById('la-edit-btn')?.addEventListener('click', () => this.toggleEditMode());
 
-        if (countEl) {
-            countEl.textContent = `${this.filteredProjects.length} projet(s)`;
-        }
+        container.addEventListener('click', (e) => {
+            // Add card
+            const addCard = e.target.closest('.la-add-card');
+            if (addCard && this.editMode) {
+                e.preventDefault();
+                this.showAddModal(addCard.dataset.categorySlug);
+                return;
+            }
 
-        if (categoriesEl) {
-            const categories = {};
-            this.filteredProjects.forEach(p => {
-                categories[p.category] = (categories[p.category] || 0) + 1;
-            });
-            const catText = Object.entries(categories)
-                .map(([cat, count]) => `${cat}: ${count}`)
-                .join(' | ');
-            categoriesEl.textContent = catText;
-        }
-    }
+            // Launch button
+            const launchBtn = e.target.closest('[data-launch-id]');
+            if (launchBtn && !this.editMode && !launchBtn.disabled) {
+                this.launchApp(parseInt(launchBtn.dataset.launchId));
+                return;
+            }
 
-    setupEventListeners() {
-        // Search
-        const searchInput = document.getElementById('local-apps-search');
-        if (searchInput) {
-            searchInput.addEventListener('input', (e) => this.filterProjects());
-        }
+            // Open URL button
+            const openBtn = e.target.closest('[data-open-url]');
+            if (openBtn && !this.editMode && !openBtn.disabled && !openBtn.dataset.dockerStart && !openBtn.dataset.dockerStop) {
+                window.open(openBtn.dataset.openUrl, '_blank');
+                return;
+            }
 
-        // Category filter
-        const filterSelect = document.getElementById('local-apps-filter');
-        if (filterSelect) {
-            filterSelect.addEventListener('change', (e) => this.filterProjects());
-        }
+            // Docker start
+            const startBtn = e.target.closest('[data-docker-start]');
+            if (startBtn && !this.editMode && !startBtn.disabled) {
+                this.startDockerApp(startBtn.dataset.dockerStart);
+                return;
+            }
 
-        // Refresh button
-        const refreshBtn = document.getElementById('btn-refresh-local-apps');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => this.load());
-        }
-    }
+            // Docker stop
+            const stopBtn = e.target.closest('[data-docker-stop]');
+            if (stopBtn && !this.editMode && !stopBtn.disabled) {
+                this.stopDockerApp(stopBtn.dataset.dockerStop);
+                return;
+            }
 
-    filterProjects() {
-        const searchTerm = document.getElementById('local-apps-search')?.value.toLowerCase() || '';
-        const category = document.getElementById('local-apps-filter')?.value || 'all';
-
-        this.filteredProjects = this.projects.filter(project => {
-            const matchesSearch = !searchTerm ||
-                project.name.toLowerCase().includes(searchTerm) ||
-                (project.description && project.description.toLowerCase().includes(searchTerm)) ||
-                project.id.toLowerCase().includes(searchTerm);
-
-            const matchesCategory = category === 'all' || project.category === category;
-
-            return matchesSearch && matchesCategory;
+            // Edit mode: click card to delete
+            const card = e.target.closest('.la-card:not(.la-add-card)');
+            if (card && this.editMode) {
+                const id = parseInt(card.dataset.appId);
+                const name = card.dataset.appName;
+                this.deleteApp(id, name, card);
+            }
         });
-
-        this.render();
     }
 
-    async launchProject(projectId) {
-        console.log('Launching project:', projectId);
-
-        // Chercher le projet dans les données locales
-        const project = this.projects.find(p => p.id === projectId);
-
-        // Toujours lancer via l'API backend d'abord (pour démarrer le serveur si nécessaire)
+    async launchApp(id) {
         try {
-            const response = await fetch(`/api/projects/launch/${projectId}`, {
-                method: 'POST'
-            });
-            const data = await response.json();
+            const resp = await API.localApps.launchApp(id);
+            if (resp.status === 'ok') {
+                this.showToast(resp.message, 'success');
 
-            if (data.status === 'success') {
-                this.showToast(`${data.message}`, 'success');
-
-                // Si le projet a une web_url, ouvrir après un court délai
-                if (project && project.web_url) {
-                    this.showToast(`Ouverture de ${project.name} dans 2s...`, 'info');
-                    setTimeout(() => {
-                        window.open(project.web_url, '_blank');
-                    }, 2000);
+                // Open web_url if available
+                const app = resp.app;
+                if (app && app.web_url && app.app_type !== 'docker') {
+                    setTimeout(() => window.open(app.web_url, '_blank'), 2000);
                 }
-                // Cas spéciaux : projets avec interface web à ouvrir après lancement
-                else if (projectId === 'PRJ-024') {
-                    // location-calendar : attendre 1s que le fichier soit généré
-                    setTimeout(() => {
-                        window.open('/api/files/calendar', '_blank');
-                    }, 1000);
-                } else if (projectId === 'PRJ-014') {
-                    // monitoring : attendre 5s que Docker démarre, puis ouvrir
-                    this.showToast('Démarrage Docker... ouverture dans 5s', 'info');
-                    setTimeout(() => {
-                        window.open('http://localhost:8888', '_blank');
-                    }, 5000);
+
+                // Update launch count in local data
+                if (this.data) {
+                    for (const cat of this.data) {
+                        const found = cat.apps.find(a => a.id === id);
+                        if (found) {
+                            found.launch_count = (found.launch_count || 0) + 1;
+                            break;
+                        }
+                    }
+                }
+
+                // Update badge in DOM
+                const card = document.querySelector(`[data-app-id="${id}"]`);
+                if (card) {
+                    const meta = card.querySelector('.la-card-meta');
+                    let badge = meta?.querySelector('.la-launch-badge');
+                    const app2 = this.findApp(id);
+                    if (badge && app2) {
+                        badge.textContent = `${app2.launch_count}x`;
+                    } else if (meta && app2) {
+                        const span = document.createElement('span');
+                        span.className = 'la-launch-badge';
+                        span.textContent = `${app2.launch_count}x`;
+                        meta.appendChild(span);
+                    }
                 }
             } else {
-                this.showToast(`Erreur: ${data.message}`, 'error');
+                this.showToast(resp.message || 'Erreur', 'error');
             }
         } catch (error) {
-            console.error('Error launching project:', error);
+            console.error('Launch failed:', error);
             this.showToast('Erreur lors du lancement', 'error');
         }
     }
 
-    async openFolder(projectId) {
-        console.log('Opening folder for:', projectId);
+    findApp(id) {
+        if (!this.data) return null;
+        for (const cat of this.data) {
+            const found = cat.apps.find(a => a.id === id);
+            if (found) return found;
+        }
+        return null;
+    }
+
+    async deleteApp(id, name, card) {
+        if (this._deleting) return;
+        if (!confirm(`Supprimer "${name}" ?`)) return;
+
+        this._deleting = true;
         try {
-            const response = await fetch(`/api/projects/open/${projectId}`, {
-                method: 'POST'
+            const resp = await API.localApps.deleteApp(id);
+            if (resp.status === 'ok') {
+                card.style.transition = 'opacity 0.3s, transform 0.3s';
+                card.style.opacity = '0';
+                card.style.transform = 'scale(0.8)';
+                setTimeout(() => card.remove(), 300);
+                // Update local data
+                for (const cat of this.data) {
+                    cat.apps = cat.apps.filter(a => a.id !== id);
+                }
+            } else {
+                alert(resp.message || 'Erreur lors de la suppression');
+            }
+        } catch (error) {
+            console.error('Delete failed:', error);
+            alert('Erreur lors de la suppression');
+        } finally {
+            this._deleting = false;
+        }
+    }
+
+    showAddModal(categorySlug) {
+        const existing = document.getElementById('la-add-modal');
+        if (existing) existing.remove();
+
+        const catName = this.data?.find(c => c.slug === categorySlug)?.name || categorySlug;
+        const categories = this.data?.filter(c => c.slug !== 'frequent-use') || [];
+
+        const modal = document.createElement('div');
+        modal.id = 'la-add-modal';
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Ajouter une app dans "${this.esc(catName)}"</h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <form id="la-add-form" class="modal-form">
+                    <div class="form-group">
+                        <label for="la-app-name">Nom</label>
+                        <input type="text" id="la-app-name" placeholder="Ex: Mon App" required autofocus>
+                    </div>
+                    <div class="form-group">
+                        <label for="la-app-desc">Description</label>
+                        <input type="text" id="la-app-desc" placeholder="Description courte">
+                    </div>
+                    <div class="form-group">
+                        <label for="la-app-category">Categorie</label>
+                        <select id="la-app-category">
+                            ${categories.map(c => `<option value="${this.esc(c.slug)}" ${c.slug === categorySlug ? 'selected' : ''}>${this.esc(c.name)}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="la-app-type">Type</label>
+                        <select id="la-app-type">
+                            <option value="project">Projet</option>
+                            <option value="system">Systeme</option>
+                            <option value="docker">Docker</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="la-app-launcher">Launcher path (optionnel)</label>
+                        <input type="text" id="la-app-launcher" placeholder="/data/projects/mon-app/start.sh">
+                    </div>
+                    <div class="form-group">
+                        <label for="la-app-url">Web URL (optionnel)</label>
+                        <input type="text" id="la-app-url" placeholder="http://localhost:5050">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel">Annuler</button>
+                        <button type="submit" class="btn-save">Ajouter</button>
+                    </div>
+                </form>
+            </div>`;
+
+        document.body.appendChild(modal);
+
+        const removeModal = () => {
+            modal.remove();
+            document.removeEventListener('keydown', handleEscape);
+        };
+        const handleEscape = (e) => { if (e.key === 'Escape') removeModal(); };
+        document.addEventListener('keydown', handleEscape);
+
+        modal.addEventListener('click', (e) => { if (e.target === modal) removeModal(); });
+        modal.querySelector('.modal-close').addEventListener('click', removeModal);
+        modal.querySelector('.btn-cancel').addEventListener('click', removeModal);
+
+        document.getElementById('la-add-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await this.addApp(removeModal);
+        });
+    }
+
+    async addApp(removeModal) {
+        const name = document.getElementById('la-app-name').value.trim();
+        const description = document.getElementById('la-app-desc').value.trim();
+        const category = document.getElementById('la-app-category').value;
+        const app_type = document.getElementById('la-app-type').value;
+        const launcher_path = document.getElementById('la-app-launcher').value.trim();
+        const web_url = document.getElementById('la-app-url').value.trim();
+
+        if (!name) return;
+
+        const saveBtn = document.querySelector('#la-add-form .btn-save');
+        saveBtn.textContent = '...';
+        saveBtn.disabled = true;
+
+        try {
+            const resp = await API.localApps.createApp({
+                name, description, category, app_type, launcher_path, web_url
             });
-            const data = await response.json();
+            if (resp.status === 'ok') {
+                removeModal();
+                this.loaded = false;
+                this.editMode = false;
+                await this.load();
+                this.toggleEditMode();
+            } else {
+                alert(resp.message || 'Erreur lors de la creation');
+                saveBtn.textContent = 'Ajouter';
+                saveBtn.disabled = false;
+            }
+        } catch (error) {
+            console.error('Create failed:', error);
+            alert('Erreur lors de la creation');
+            saveBtn.textContent = 'Ajouter';
+            saveBtn.disabled = false;
+        }
+    }
+
+    // Docker status polling
+    async pollDockerStatus() {
+        await this.updateDockerStatuses();
+        if (this._pollInterval) clearInterval(this._pollInterval);
+        this._pollInterval = setInterval(() => this.updateDockerStatuses(), 30000);
+    }
+
+    async updateDockerStatuses() {
+        for (const [stack, config] of Object.entries(DOCKER_STACKS)) {
+            try {
+                const resp = await fetch(config.statusUrl);
+                const data = await resp.json();
+                this.updateDockerUI(stack, data.running);
+            } catch {
+                this.updateDockerUI(stack, false);
+            }
+        }
+    }
+
+    updateDockerUI(stack, running) {
+        const badge = document.getElementById(`docker-status-${stack}`);
+        const startBtn = document.getElementById(`docker-start-${stack}`);
+        const stopBtn = document.getElementById(`docker-stop-${stack}`);
+        const openBtn = document.getElementById(`docker-open-${stack}`);
+
+        if (badge) {
+            badge.textContent = running ? 'En ligne' : 'Arrete';
+            badge.className = `la-docker-status ${running ? 'online' : 'offline'}`;
+        }
+        if (startBtn) {
+            startBtn.disabled = running;
+            startBtn.textContent = running ? 'Demarre' : 'Demarrer';
+        }
+        if (stopBtn) stopBtn.disabled = !running;
+        if (openBtn) openBtn.disabled = !running;
+    }
+
+    async startDockerApp(stack) {
+        const config = DOCKER_STACKS[stack];
+        if (!config) return;
+
+        this.showToast(`Demarrage de ${config.label}...`, 'info');
+        const startBtn = document.getElementById(`docker-start-${stack}`);
+        if (startBtn) { startBtn.disabled = true; startBtn.textContent = 'Demarrage...'; }
+
+        // Record launch via local apps API
+        const app = this.findDockerApp(stack);
+        if (app) {
+            try { await API.localApps.launchApp(app.id); } catch { /* ignore */ }
+        }
+
+        try {
+            const resp = await fetch(config.startUrl, { method: 'POST' });
+            const data = await resp.json();
 
             if (data.status === 'success') {
-                this.showToast(`Dossier ouvert: ${data.path}`, 'success');
+                if (data.stopped && data.stopped.length > 0) {
+                    this.showToast(`Autre stack GPU arrete pour liberer VRAM`, 'info');
+                }
+                this.showToast(`${data.message}`, 'success');
+                setTimeout(() => this.updateDockerStatuses(), config.startDelay);
+            } else {
+                this.showToast(`Erreur: ${data.message}`, 'error');
+                if (startBtn) { startBtn.disabled = false; startBtn.textContent = 'Demarrer'; }
+            }
+        } catch (error) {
+            console.error(`Error starting ${stack}:`, error);
+            this.showToast(`Erreur demarrage ${config.label}`, 'error');
+            if (startBtn) { startBtn.disabled = false; startBtn.textContent = 'Demarrer'; }
+        }
+    }
+
+    async stopDockerApp(stack) {
+        const config = DOCKER_STACKS[stack];
+        if (!config) return;
+
+        this.showToast(`Arret de ${config.label}...`, 'info');
+        const stopBtn = document.getElementById(`docker-stop-${stack}`);
+        if (stopBtn) { stopBtn.disabled = true; stopBtn.textContent = 'Arret...'; }
+
+        try {
+            const resp = await fetch(config.stopUrl, { method: 'POST' });
+            const data = await resp.json();
+
+            if (data.status === 'success') {
+                this.showToast(`${data.message} - VRAM liberee`, 'success');
+                this.updateDockerStatuses();
             } else {
                 this.showToast(`Erreur: ${data.message}`, 'error');
             }
         } catch (error) {
-            console.error('Error opening folder:', error);
-            this.showToast('Erreur lors de l\'ouverture', 'error');
+            console.error(`Error stopping ${stack}:`, error);
+            this.showToast(`Erreur arret ${config.label}`, 'error');
+        } finally {
+            if (stopBtn) { stopBtn.disabled = false; stopBtn.textContent = 'Arreter'; }
         }
     }
 
+    findDockerApp(stack) {
+        if (!this.data) return null;
+        for (const cat of this.data) {
+            const found = cat.apps.find(a => a.docker_stack === stack);
+            if (found) return found;
+        }
+        return null;
+    }
+
     showToast(message, type = 'info') {
-        // Use global utils if available, otherwise console
         if (window.Utils && window.Utils.showToast) {
             window.Utils.showToast(message, type);
         } else {
-            console.log(`[${type}] ${message}`);
-            // Simple fallback toast
             const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-            toast.textContent = message;
             toast.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                padding: 12px 20px;
-                border-radius: 8px;
-                color: white;
-                font-weight: 500;
-                z-index: 9999;
-                animation: fadeIn 0.3s ease;
-                background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#667eea'};
+                position: fixed; bottom: 20px; right: 20px;
+                padding: 12px 20px; border-radius: 8px; color: white;
+                font-weight: 500; z-index: 9999; animation: fadeIn 0.3s ease;
+                background: ${type === 'success' ? '#22c55e' : type === 'error' ? '#ef4444' : '#3b82f6'};
             `;
+            toast.textContent = message;
             document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 3000);
         }
     }
 
-    showError(message) {
-        const grid = document.getElementById('dev-apps-grid');
-        if (grid) {
-            grid.innerHTML = `
-                <div class="no-results">
-                    <p style="color: #ef4444;">${message}</p>
-                </div>
-            `;
-        }
+    esc(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     }
 
     reload() {
+        this.loaded = false;
+        if (this._pollInterval) clearInterval(this._pollInterval);
         this.load();
     }
 }
 
-// Create and export singleton
 const localAppsModule = new LocalAppsModule();
 window.localAppsModule = localAppsModule;
 
