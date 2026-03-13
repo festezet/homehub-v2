@@ -28,13 +28,11 @@ else
     echo "✅ TODO API déjà actif"
 fi
 
-# Start Docker Control API (port 9999) if not already running
+# Docker Control API (port 9999) - managed by systemd: homehub-docker-control.service
+# Enable if not done: sudo systemctl enable --now homehub-docker-control.service
 if ! curl -s http://localhost:9999/api/health > /dev/null 2>&1; then
-    echo "🐳 Démarrage Docker Control API (port 9999)..."
-    python3 /data/projects/infrastructure/scripts/docker_control_server.py &
-    sleep 1
-else
-    echo "✅ Docker Control API déjà actif"
+    echo "⚠️  Docker Control API (port 9999) non actif"
+    echo "   Activer: sudo systemctl enable --now homehub-docker-control.service"
 fi
 
 # Start Flask application
