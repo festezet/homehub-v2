@@ -95,6 +95,22 @@ def get_project_activity(project_id):
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
+@activity_bp.route('/api/projects/recent-sessions')
+def get_recent_sessions():
+    """Get projects with most recent activity and last milestone"""
+    try:
+        limit = request.args.get('limit', 10, type=int)
+        sessions = _service.get_recent_sessions(limit=limit)
+        return jsonify({
+            'status': 'ok',
+            'sessions': sessions,
+            'count': len(sessions)
+        })
+    except Exception as e:
+        logger.error(f"Error getting recent sessions: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
 @activity_bp.route('/api/activity/stats')
 def get_stats():
     """Get activity statistics"""

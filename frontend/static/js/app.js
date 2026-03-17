@@ -17,7 +17,9 @@ import systemMonitorModule from './system-monitor.js';
 import { calendarModule } from './calendar.js';
 import formationModule from './formation.js';
 import servicesPortsModule from './services-ports.js';
+import threadDigestModule from './thread-digest.js';
 import projectStatusModule from './project-status.js';
+import mediaRecommenderModule from './media-recommender.js';
 
 // Make modules available globally for now (will be refactored)
 window.API = API;
@@ -155,6 +157,10 @@ class HomeHubApp {
                 console.log('📊 Loading System Monitor module...');
                 await systemMonitorModule.load();
                 break;
+            case 'thread-digest':
+                console.log('Loading Thread Digest module...');
+                await threadDigestModule.load();
+                break;
             case 'calendar':
                 console.log('📅 Loading Calendar module...');
                 await calendarModule.init();
@@ -166,6 +172,10 @@ class HomeHubApp {
             case 'services-ports':
                 console.log('Loading Services & Ports module...');
                 await servicesPortsModule.load();
+                break;
+            case 'media-reco':
+                console.log('Loading Media Recommender module...');
+                await mediaRecommenderModule.load();
                 break;
             default:
                 console.warn('⚠️ Unknown tab:', tabName);

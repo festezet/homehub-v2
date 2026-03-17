@@ -240,6 +240,91 @@
     font-size: 1rem;
 }
 
+/* === Recent Sessions Cards === */
+.ps-sessions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ps-session-card {
+    background: white;
+    padding: 14px 16px;
+    border-radius: 10px;
+    border-left: 3px solid #667eea;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    transition: box-shadow 0.2s ease;
+}
+
+.ps-session-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.ps-session-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.ps-session-project {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ps-session-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #1f2937;
+}
+
+.ps-session-id {
+    font-size: 0.7rem;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: #eef2ff;
+    color: #667eea;
+    font-weight: 600;
+    font-family: monospace;
+}
+
+.ps-session-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ps-session-date {
+    font-size: 0.82rem;
+    color: #9ca3af;
+    white-space: nowrap;
+}
+
+.ps-session-title {
+    font-size: 0.9rem;
+    color: #374151;
+    font-weight: 500;
+    margin-bottom: 4px;
+    line-height: 1.4;
+}
+
+.ps-session-desc {
+    font-size: 0.85rem;
+    color: #6b7280;
+    line-height: 1.5;
+    white-space: pre-line;
+    max-height: 7.5em;
+    overflow: hidden;
+}
+
+.ps-session-doc {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin-top: 4px;
+    font-family: monospace;
+}
+
 /* === Projects List CSS (needed when old template is removed in Phase 3) === */
 .ps-content .projects-list-container {
     padding: 0;

@@ -7,6 +7,7 @@ import API from './api.js';
 import Utils from './utils.js';
 import projectsListModule from './projects-list.js';
 import specsModule from './specs.js';
+import modularityAuditModule from './modularity-audit.js';
 
 class ProjectStatusModule {
     constructor() {
@@ -27,7 +28,9 @@ class ProjectStatusModule {
         const tabs = [
             { id: 'overview', label: 'Overview' },
             { id: 'health', label: 'Health & Specs' },
-            { id: 'activity-log', label: 'Activity Log' }
+            { id: 'activity-log', label: 'Activity Log' },
+            { id: 'recent-sessions', label: 'Sessions Recentes' },
+            { id: 'modularity', label: 'Modularity' }
         ];
 
         container.innerHTML = tabs.map(tab => `
@@ -59,6 +62,13 @@ class ProjectStatusModule {
                 break;
             case 'activity-log':
                 await this.renderActivityLog(content);
+                break;
+            case 'recent-sessions':
+                await this.renderRecentSessions(content);
+                break;
+            case 'modularity':
+                content.innerHTML = '<div id="modularity-container"></div>';
+                await modularityAuditModule.load();
                 break;
         }
     }
@@ -259,6 +269,69 @@ class ProjectStatusModule {
                         </div>
                     </div>`;
                 }).join('')}
+            </div>
+        `;
+    }
+
+    // --- RECENT SESSIONS SUB-TAB ---
+
+    async renderRecentSessions(content) {
+        let sessions = [];
+        try {
+            const response = await API.activity.getRecentSessions(10);
+            sessions = response.sessions || [];
+        } catch (e) {
+            console.error('Failed to load recent sessions:', e);
+        }
+
+        const typeColors = {
+            'feature': '#3b82f6', 'fix': '#ef4444', 'optimization': '#10b981',
+            'creation': '#8b5cf6', 'refactoring': '#f59e0b', 'documentation': '#6b7280',
+            'deployment': '#0ea5e9', 'other': '#9ca3af'
+        };
+
+        const typeLabels = {
+            'feature': 'Feature', 'fix': 'Fix', 'optimization': 'Optim',
+            'creation': 'Creation', 'refactoring': 'Refactor', 'documentation': 'Docs',
+            'deployment': 'Deploy', 'other': 'Autre'
+        };
+
+        content.innerHTML = `
+            <div class="ps-recent-sessions">
+                ${sessions.length === 0 ? `
+                    <div class="ps-empty">Aucun projet avec activite recente.</div>
+                ` : `
+                <div class="ps-sessions-list">
+                    ${sessions.map(s => {
+                        const m = s.milestone;
+                        const mType = m.type || 'other';
+                        const color = typeColors[mType] || '#9ca3af';
+                        const label = typeLabels[mType] || mType;
+                        const desc = m.description || '';
+                        const dateStr = m.date ? Utils.formatSessionDate(m.date) : '-';
+                        // Clean title: remove "SESSION YYYY-MM-DD - " prefix
+                        let title = m.title || '';
+                        title = title.replace(/^SESSION\s+\d{4}-\d{2}-\d{2}\s*[-:]\s*/i, '');
+                        title = title.replace(/^Session\s+\d{4}-\d{2}-\d{2}\s*[-:]\s*/i, '');
+                        return `
+                        <div class="ps-session-card" style="border-left: 3px solid ${color};">
+                            <div class="ps-session-header">
+                                <div class="ps-session-project">
+                                    <span class="ps-session-name">${this.escapeHtml(s.name)}</span>
+                                    <span class="ps-session-id">${this.escapeHtml(s.unique_id)}</span>
+                                </div>
+                                <div class="ps-session-meta">
+                                    <span class="ps-timeline-type" style="background: ${color}15; color: ${color};">${label}</span>
+                                    <span class="ps-session-date">${dateStr}</span>
+                                </div>
+                            </div>
+                            <div class="ps-session-title">${this.escapeHtml(title)}</div>
+                            ${desc ? `<div class="ps-session-desc">${this.escapeHtml(desc)}</div>` : ''}
+                            ${m.session_doc ? `<div class="ps-session-doc">${this.escapeHtml(m.session_doc)}</div>` : ''}
+                        </div>`;
+                    }).join('')}
+                </div>
+                `}
             </div>
         `;
     }

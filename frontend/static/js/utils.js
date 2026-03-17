@@ -35,6 +35,36 @@ const Utils = {
     },
 
     /**
+     * Format date for session display (shows "Aujourd'hui", "Hier", or exact date)
+     * @param {string} dateStr - Date string (YYYY-MM-DD format)
+     * @returns {string} Formatted date
+     */
+    formatSessionDate(dateStr) {
+        if (!dateStr) return '';
+
+        const inputDate = new Date(dateStr + 'T00:00:00');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        const diffMs = today - inputDate;
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffDays === 0) return "Aujourd'hui";
+        if (diffDays === 1) return "Hier";
+        if (diffDays < 7) {
+            const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+            return days[inputDate.getDay()];
+        }
+
+        const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
+        const day = inputDate.getDate();
+        const month = months[inputDate.getMonth()];
+        return `${day} ${month}`;
+    },
+
+    /**
      * Get priority style class
      * @param {string} priority - Priority level
      * @returns {object} Style object with background and color

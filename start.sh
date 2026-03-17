@@ -35,6 +35,15 @@ if ! curl -s http://localhost:9999/api/health > /dev/null 2>&1; then
     echo "   Activer: sudo systemctl enable --now homehub-docker-control.service"
 fi
 
+# Start Media Recommender (port 5056) if not already running
+if ! curl -s http://localhost:5056/api/health > /dev/null 2>&1; then
+    echo "🎬 Démarrage Media Recommender (port 5056)..."
+    bash /data/projects/media-recommender/scripts/start.sh > /tmp/media-reco.log 2>&1 &
+    sleep 2
+else
+    echo "✅ Media Recommender déjà actif"
+fi
+
 # Start Flask application
 echo "✅ Lancement serveur Flask..."
 echo "📊 URL: http://localhost:5000"

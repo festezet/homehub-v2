@@ -131,7 +131,7 @@ class ProjectsListModule {
     }
 
     mapDatabaseProjects(projects) {
-        return projects.slice(0, 15).map(project => ({
+        return projects.map(project => ({
             category: 'App Dev',
             categoryClass: 'dev',
             id: project.id,

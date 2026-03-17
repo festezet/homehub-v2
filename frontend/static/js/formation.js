@@ -238,13 +238,21 @@ class FormationModule {
                 const subItems = action.children.map(child => {
                     const childIcon = child.status === 'done' ? '&#10003;' :
                                      child.status === 'in_progress' ? '&#9679;' : '';
+                    const descHtml = child.description
+                        ? `<div class="formation-sub-desc">${child.description}</div>`
+                        : '';
                     return `
                         <div class="formation-sub-item ${child.status}">
                             <button class="formation-sub-btn ${child.status}"
                                     onclick="window.formationModule.toggleAction(${child.id}, event)"
                                     title="Changer le statut">${childIcon}</button>
-                            <span class="formation-sub-title">${child.title}</span>
-                            <span class="formation-sub-who">${child.who}</span>
+                            <div class="formation-sub-content">
+                                <div class="formation-sub-title-row">
+                                    <span class="formation-sub-title">${child.title}</span>
+                                    <span class="formation-sub-who">${child.who}</span>
+                                </div>
+                                ${descHtml}
+                            </div>
                         </div>
                     `;
                 }).join('');

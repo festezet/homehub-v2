@@ -1,0 +1,576 @@
+<!-- Thread Digest Tab -->
+<div class="thread-digest-page">
+    <!-- Header Bar -->
+    <div class="td-header">
+        <div class="td-header-left">
+            <span class="td-status-indicator" id="td-status-dot"></span>
+            <span class="td-status-text" id="td-status-text">Chargement...</span>
+        </div>
+        <div class="td-header-right">
+            <button class="btn btn-sm td-config-btn" id="td-config-btn" title="Gerer les fils">&#9881; Config</button>
+            <button class="btn btn-sm td-refresh-btn" id="td-refresh-btn" title="Rafraichir">&#x1f504; Refresh</button>
+        </div>
+    </div>
+
+    <!-- Thread Cards -->
+    <div id="td-cards" class="td-cards">
+        <div class="loading-state">
+            <p>Chargement des digests...</p>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="td-empty" class="td-empty" style="display:none;">
+        <p>Aucun fil configure.</p>
+        <p class="td-empty-hint">Ajoutez un fil WhatsApp a surveiller via le bouton Config.</p>
+    </div>
+
+    <!-- Config Modal -->
+    <div id="td-config-modal" class="td-modal" style="display:none;">
+        <div class="td-modal-backdrop"></div>
+        <div class="td-modal-content">
+            <div class="td-modal-header">
+                <h3>Fils surveilles</h3>
+                <button class="td-modal-close" id="td-config-close">&times;</button>
+            </div>
+            <div class="td-modal-body">
+                <div id="td-config-list" class="td-config-list"></div>
+                <div class="td-config-add">
+                    <h4>Ajouter un fil</h4>
+                    <div class="td-form-row">
+                        <input type="text" id="td-add-name" placeholder="Nom du fil" class="td-input">
+                        <input type="text" id="td-add-jid" placeholder="JID WhatsApp" class="td-input">
+                        <button class="btn btn-sm td-add-btn" id="td-add-btn">Ajouter</button>
+                    </div>
+                    <button class="btn btn-sm td-discover-btn" id="td-discover-btn">Decouvrir chats WhatsApp</button>
+                    <div id="td-discover-list" class="td-discover-list" style="display:none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Thread Digest Page Styles */
+.thread-digest-page {
+    max-width: 960px;
+}
+
+/* Header */
+.td-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 10px 0;
+}
+
+.td-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.td-status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--text-secondary, #a0a0b0);
+    flex-shrink: 0;
+}
+
+.td-status-indicator.ok { background: #22c55e; }
+.td-status-indicator.needs { background: #f59e0b; }
+.td-status-indicator.error { background: #ef4444; }
+
+.td-status-text {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #a0a0b0);
+}
+
+.td-header-right {
+    display: flex;
+    gap: 8px;
+}
+
+.td-config-btn, .td-refresh-btn {
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+}
+
+/* Cards Grid */
+.td-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Thread Card */
+.td-card {
+    background: var(--card-bg, #1a1a2e);
+    border: 1px solid var(--border-color, #333);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+}
+
+.td-card:hover {
+    border-color: var(--accent-color, #6366f1);
+}
+
+.td-card.needs-analysis {
+    border-left: 3px solid #f59e0b;
+}
+
+.td-card-header {
+    display: flex;
+    align-items: center;
+    padding: 14px 18px 10px;
+    gap: 10px;
+}
+
+/* Reorder Arrows */
+.td-card-reorder {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.td-move-btn {
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary, #a0a0b0);
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 6px;
+    line-height: 1;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.td-move-btn:hover:not([disabled]) {
+    color: var(--accent-color, #6366f1);
+    border-color: var(--accent-color, #6366f1);
+    background: rgba(99, 102, 241, 0.08);
+}
+
+.td-move-btn:active:not([disabled]) {
+    background: rgba(99, 102, 241, 0.15);
+}
+
+.td-move-btn[disabled] {
+    opacity: 0.2;
+    cursor: default;
+}
+
+.td-card-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+}
+
+.td-card-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text-primary, #e0e0f0);
+}
+
+.td-card-platform {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(37, 211, 102, 0.15);
+    color: #25d366;
+}
+
+.td-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.8rem;
+    color: var(--text-secondary, #a0a0b0);
+}
+
+.td-card-badge {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+}
+
+.td-card-badge.new-msgs {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+}
+
+.td-card-badge.up-to-date {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+}
+
+/* Digest Body */
+.td-card-body {
+    padding: 0 18px 16px;
+}
+
+.td-card-no-digest {
+    padding: 20px 0;
+    text-align: center;
+    color: var(--text-secondary, #a0a0b0);
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
+/* Summary */
+.td-summary {
+    padding: 12px 14px;
+    background: rgba(99, 102, 241, 0.06);
+    border-left: 2px solid var(--accent-color, #6366f1);
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 12px;
+}
+
+.td-summary-text {
+    font-size: 0.9rem;
+    color: var(--text-primary, #e0e0f0);
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.td-summary-date {
+    font-size: 0.75rem;
+    color: var(--text-secondary, #a0a0b0);
+    margin-top: 6px;
+}
+
+/* Action Items */
+.td-section-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary, #a0a0b0);
+    margin-bottom: 6px;
+    margin-top: 10px;
+}
+
+.td-actions-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.td-action-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 0;
+    font-size: 0.85rem;
+    color: var(--text-primary, #e0e0f0);
+}
+
+.td-action-bullet {
+    color: #f59e0b;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.td-action-urgency {
+    font-size: 0.7rem;
+    padding: 1px 6px;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.td-action-urgency.high { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+.td-action-urgency.medium { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+.td-action-urgency.low { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+
+/* Links */
+.td-links-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.td-link-item {
+    padding: 4px 0;
+    font-size: 0.85rem;
+}
+
+.td-link-item a {
+    color: var(--accent-color, #6366f1);
+    text-decoration: none;
+}
+
+.td-link-item a:hover {
+    text-decoration: underline;
+}
+
+.td-link-context {
+    color: var(--text-secondary, #a0a0b0);
+    font-size: 0.8rem;
+    margin-left: 4px;
+}
+
+/* Topics */
+.td-topics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.td-topic-tag {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--accent-color, #6366f1);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+/* Card Footer */
+.td-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 18px;
+    border-top: 1px solid var(--border-color, #333);
+    font-size: 0.8rem;
+    color: var(--text-secondary, #a0a0b0);
+}
+
+/* Empty State */
+.td-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary, #a0a0b0);
+}
+
+.td-empty-hint {
+    font-size: 0.85rem;
+    margin-top: 8px;
+    opacity: 0.7;
+}
+
+/* Modal */
+.td-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.td-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.td-modal-content {
+    position: relative;
+    background: var(--card-bg, #1a1a2e);
+    border: 1px solid var(--border-color, #333);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.td-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color, #333);
+}
+
+.td-modal-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--text-primary, #e0e0f0);
+}
+
+.td-modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-secondary, #a0a0b0);
+    cursor: pointer;
+    padding: 0 4px;
+}
+
+.td-modal-close:hover {
+    color: var(--text-primary, #e0e0f0);
+}
+
+.td-modal-body {
+    padding: 20px;
+}
+
+/* Config List */
+.td-config-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.td-config-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color, #333);
+    border-radius: 8px;
+}
+
+.td-config-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.td-config-item-name {
+    font-weight: 600;
+    color: var(--text-primary, #e0e0f0);
+    font-size: 0.9rem;
+}
+
+.td-config-item-jid {
+    font-size: 0.75rem;
+    color: var(--text-secondary, #a0a0b0);
+    font-family: monospace;
+}
+
+.td-config-item-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.td-toggle {
+    width: 40px;
+    height: 22px;
+    border-radius: 11px;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s;
+}
+
+.td-toggle.on { background: #22c55e; }
+.td-toggle.off { background: var(--border-color, #555); }
+
+.td-toggle::after {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: white;
+    top: 2px;
+    transition: left 0.2s;
+}
+
+.td-toggle.on::after { left: 20px; }
+.td-toggle.off::after { left: 2px; }
+
+.td-delete-btn {
+    background: none;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    padding: 4px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.75rem;
+}
+
+.td-delete-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* Add Form */
+.td-config-add {
+    border-top: 1px solid var(--border-color, #333);
+    padding-top: 16px;
+}
+
+.td-config-add h4 {
+    margin: 0 0 10px;
+    color: var(--text-primary, #e0e0f0);
+    font-size: 0.95rem;
+}
+
+.td-form-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.td-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color, #333);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary, #e0e0f0);
+    font-size: 0.85rem;
+}
+
+.td-input::placeholder {
+    color: var(--text-secondary, #666);
+}
+
+.td-add-btn {
+    white-space: nowrap;
+}
+
+.td-discover-btn {
+    margin-bottom: 10px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+}
+
+/* Discover List */
+.td-discover-list {
+    max-height: 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.td-discover-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color, #333);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.td-discover-item:hover {
+    border-color: var(--accent-color, #6366f1);
+}
+
+.td-discover-item-name {
+    color: var(--text-primary, #e0e0f0);
+}
+
+.td-discover-item-jid {
+    font-size: 0.7rem;
+    color: var(--text-secondary, #a0a0b0);
+    font-family: monospace;
+}
+</style>

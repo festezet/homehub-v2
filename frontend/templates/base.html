@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/calendar.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/formation.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/prompting-disciplines.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/media-recommender.css') }}">
 
     {% block extra_css %}{% endblock %}
 </head>
@@ -54,6 +55,12 @@
                         <span class="label">TODOs</span>
                     </a>
                 </li>
+                <li class="nav-item" data-page="thread-digest">
+                    <a href="#thread-digest">
+                        <span class="icon">💬</span>
+                        <span class="label">Thread Digest</span>
+                    </a>
+                </li>
                 <li class="nav-item" data-page="calendar">
                     <a href="#calendar">
                         <span class="icon">📅</span>
@@ -75,6 +82,12 @@
                     <a href="#mediastack">
                         <span class="icon">🎬</span>
                         <span class="label">Media Stack</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="media-reco">
+                    <a href="#media-reco">
+                        <span class="icon">🎯</span>
+                        <span class="label">Recommandations</span>
                     </a>
                 </li>
             </div>
@@ -179,6 +192,11 @@
                 {% include 'markets.html' %}
             </div>
 
+            <!-- Thread Digest Tab -->
+            <div id="thread-digest-page" class="page-content" style="display: none;">
+                {% include 'thread-digest.html' %}
+            </div>
+
             <!-- Calendar Tab -->
             <div id="calendar-page" class="page-content" style="display: none;">
                 <div id="calendar-container" class="calendar-page">
@@ -191,6 +209,11 @@
             <!-- Media Stack Tab -->
             <div id="mediastack-page" class="page-content" style="display: none;">
                 {% include 'mediastack.html' %}
+            </div>
+
+            <!-- Media Recommender Tab -->
+            <div id="media-reco-page" class="page-content" style="display: none;">
+                {% include 'media-recommender.html' %}
             </div>
 
             <!-- Infrastructure Tab -->
@@ -238,11 +261,13 @@
     <script type="module" src="{{ url_for('static', filename='js/local-apps.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/system-monitor.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/projects-list.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/thread-digest.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/calendar.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/formation.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/services-ports.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/specs.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/project-status.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/media-recommender.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/app.js') }}"></script>
 
     <!-- Modern Navigation Script -->
@@ -258,9 +283,11 @@
                 'local': { title: 'Applications', subtitle: 'Gestion des applications locales' },
                 'formation': { title: 'Formation', subtitle: 'Plan d\'action DeepSignal V1' },
                 'dashboard': { title: 'TODOs', subtitle: 'Gestion des taches' },
+                'thread-digest': { title: 'Thread Digest', subtitle: 'Digests WhatsApp par Claude' },
                 'calendar': { title: 'Agenda', subtitle: 'Planning hebdomadaire et Google Calendar' },
                 'markets': { title: 'Marches', subtitle: 'Suivi des marches financiers' },
                 'mediastack': { title: 'Media Stack', subtitle: 'Streaming & Telechargement' },
+                'media-reco': { title: 'Recommandations', subtitle: 'Films & Series recommandes par IA' },
                 'infrastructure': { title: 'Infrastructure', subtitle: 'Monitoring systeme' },
                 'local-apps': { title: 'Applications Locales', subtitle: 'Projets developpes localement' },
                 'system-monitor': { title: 'System Monitor', subtitle: 'CPU / GPU / RAM / Stockage' },

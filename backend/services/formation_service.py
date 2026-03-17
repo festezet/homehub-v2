@@ -62,12 +62,12 @@ class FormationService:
                 "priority": 1,
                 "position": 1,
                 "children": [
-                    {"title": "Canvas Micro-SaaS (12 sections)", "description": "Template Notion avec les 12 sections remplies pour DeepSignal", "who": "Fabrice", "priority": 1},
-                    {"title": "Resultats 5 GPTs S1", "description": "Gold Digger, Solution Architect, Ikigai, Score Canvas, Stack Technique", "who": "Fabrice", "priority": 2},
-                    {"title": "Workflow Whimsical (S1-V7)", "description": "Workflow DeepSignal etape par etape", "who": "Fabrice", "priority": 1},
-                    {"title": "Tunnel de vente Whimsical (S1-V9)", "description": "Trafic -> Conversion prospect -> Achat -> Onboarding", "who": "Fabrice", "priority": 3},
-                    {"title": "Prototype Gemini (S2-V4)", "description": "Maquette visuelle de reference creee avec Google AI Studio", "who": "Fabrice", "priority": 2},
-                    {"title": "Resultats 2 GPTs S2", "description": "Vibe code ta maquette + Kodefast Assistant", "who": "Fabrice", "priority": 3},
+                    {"title": "Canvas Micro-SaaS - Remplir les 12 sections", "description": "Dupliquer le template Notion, remplir : Segment client, Proposition valeur, Source trafic, CTA, Workflow, Stack technique, Livraison, Business modele, Prix, Tunnel de vente, Engagement, Criteres de reussite. Exporter en Markdown ou copier-coller.", "who": "Fabrice", "priority": 1},
+                    {"title": "Resultats des 5 GPTs Semaine 1", "description": "Recuperer les conversations ChatGPT : Gold Digger (opportunite marche), Solution Architect (proposition valeur), Ikigai Micro-SaaS (positionnement), Score Canvas (evaluation + feedback), Stack Technique Helper (stack validee). Copier-coller les resultats finaux de chaque GPT.", "who": "Fabrice", "priority": 2},
+                    {"title": "Workflow Whimsical - Schema fonctionnel DeepSignal", "description": "Schema Whimsical du fonctionnement DeepSignal etape par etape (rectangles = actions user, fleches = redirections, fleches + texte = automatisations). Partager le lien Whimsical ou exporter en PNG/PDF.", "who": "Fabrice", "priority": 1},
+                    {"title": "Tunnel de vente Whimsical - Parcours prospect a client", "description": "Schema du tunnel : Trafic (acquisition) -> Conversion prospect (landing/CTA) -> Conversion achat (pricing/checkout) -> Onboarding. Partager le lien Whimsical ou exporter en PNG/PDF.", "who": "Fabrice", "priority": 3},
+                    {"title": "Prototype Gemini - Maquette visuelle de reference", "description": "Prototype visuel cree avec Google AI Studio (aistudio.google.com). C'est la reference graphique pour le frontend DeepSignal. Partager le lien Google AI Studio, des screenshots, ou le code HTML/CSS genere.", "who": "Fabrice", "priority": 2},
+                    {"title": "Resultats des 2 GPTs Semaine 2", "description": "Recuperer les conversations ChatGPT : Vibe Code ta Maquette (instructions pour le prototype Gemini) et Kodefast Assistant (aide Kodefast, aide continue). Copier-coller les resultats.", "who": "Fabrice", "priority": 3},
                 ]
             },
             # Action 2: Definir features V1

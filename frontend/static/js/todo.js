@@ -312,6 +312,7 @@ class TodoModule {
                         <option value="Immobilier" ${todo.category === 'Immobilier' ? 'selected' : ''}>🏘️ Immobilier</option>
                         <option value="Loisirs" ${todo.category === 'Loisirs' ? 'selected' : ''}>🎯 Loisirs</option>
                         <option value="Todo projet" ${todo.category === 'Todo projet' ? 'selected' : ''}>🤖 Todo projet</option>
+                        <option value="Rapport Systeme" ${todo.category === 'Rapport Systeme' ? 'selected' : ''}>📊 Rapport Systeme</option>
                     </select>
                 </td>
                 <td>
@@ -353,6 +354,9 @@ class TodoModule {
         }
         if (this.filters.category.length > 0) {
             filtered = filtered.filter(t => this.filters.category.includes(t.category));
+        } else {
+            // Hide "Rapport Systeme" by default (auto-generated system reports)
+            filtered = filtered.filter(t => t.category !== 'Rapport Systeme');
         }
         if (this.filters.objective.length > 0) {
             filtered = filtered.filter(t => this.filters.objective.includes(t.objective));
@@ -511,7 +515,8 @@ class TodoModule {
                 'Admin': '🏢', 'Projet': '📁', 'Perso': '👤', 'Pro': '💼',
                 'SASU': '🏭', 'Maison': '🏠', 'Bricolage': '🔧', 'Finance': '💰',
                 'Santé': '🏥', 'Tech': '💻', 'Infrastructure': '🖥️', 'Musique': '🎵',
-                'Auto': '🚗', 'Immobilier': '🏘️', 'Loisirs': '🎯'
+                'Auto': '🚗', 'Immobilier': '🏘️', 'Loisirs': '🎯',
+                'Rapport Systeme': '📊', 'Todo projet': '🤖'
             }[value] || '📂';
             tags.push(`
                 <span class="filter-tag">

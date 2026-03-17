@@ -22,6 +22,10 @@ from services.infrastructure_service import infrastructure_service
 from services.formation_service import formation_service
 from services.local_apps_service import local_apps_service
 from services.specs_service import specs_service
+from services.thread_digest_service import thread_digest_service
+from services.whatsapp_proxy_service import whatsapp_proxy_service
+from services.modularity_service import modularity_service
+# media_recommender_service removed — proxied to standalone project (port 5056)
 
 # Import API routes
 from api.docker_routes import docker_bp, init_docker_routes
@@ -32,6 +36,9 @@ from api.formation_routes import formation_bp, init_formation_routes
 from api.local_apps_routes import local_apps_bp, init_local_apps_routes
 from api.specs_routes import specs_bp, init_specs_routes
 from api.activity_routes import activity_bp, init_activity_routes
+from api.thread_digest_routes import thread_digest_bp, init_thread_digest_routes
+from api.modularity_routes import modularity_bp, init_modularity_routes
+from api.media_recommender_routes import media_reco_bp
 
 # Configure logging
 logging.basicConfig(
@@ -139,6 +146,9 @@ init_formation_routes(formation_service)
 init_local_apps_routes(local_apps_service)
 init_specs_routes(specs_service)
 init_activity_routes(activity_service)
+init_thread_digest_routes(thread_digest_service, whatsapp_proxy_service)
+init_modularity_routes(modularity_service)
+# media_reco routes are now a proxy — no init needed
 
 # Register blueprints
 app.register_blueprint(docker_bp)
@@ -149,6 +159,9 @@ app.register_blueprint(formation_bp)
 app.register_blueprint(local_apps_bp)
 app.register_blueprint(specs_bp)
 app.register_blueprint(activity_bp)
+app.register_blueprint(thread_digest_bp)
+app.register_blueprint(modularity_bp)
+app.register_blueprint(media_reco_bp)
 
 # ============================================
 # ROUTES - Pages

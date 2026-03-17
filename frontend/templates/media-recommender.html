@@ -1,0 +1,80 @@
+<!-- Media Recommender Sub-tabs -->
+<div class="media-reco-subtabs">
+    <button class="media-reco-subtab active" data-subtab="library"
+            onclick="window.mediaRecommenderModule.switchSubTab('library')">
+        Bibliotheque
+    </button>
+    <button class="media-reco-subtab" data-subtab="recommendations"
+            onclick="window.mediaRecommenderModule.switchSubTab('recommendations')">
+        Recommandations IA
+    </button>
+    <button class="media-reco-subtab" data-subtab="taste"
+            onclick="window.mediaRecommenderModule.switchSubTab('taste')">
+        Profil de Gout
+    </button>
+    <button class="media-reco-subtab" data-subtab="preferences"
+            onclick="window.mediaRecommenderModule.switchSubTab('preferences')">
+        Preferences
+    </button>
+</div>
+
+<!-- Library Sub-tab -->
+<div class="media-reco-subtab-content active" id="media-reco-tab-library">
+    <div class="media-reco-filters">
+        <select id="media-reco-filter-type" onchange="window.mediaRecommenderModule.applyFilters()">
+            <option value="all">Tous</option>
+            <option value="movie">Films</option>
+            <option value="series">Series</option>
+        </select>
+        <select id="media-reco-filter-genre" onchange="window.mediaRecommenderModule.applyFilters()">
+            <option value="all">Tous les genres</option>
+        </select>
+        <select id="media-reco-filter-status" onchange="window.mediaRecommenderModule.applyFilters()">
+            <option value="all">Tous les statuts</option>
+            <option value="available">Disponible</option>
+            <option value="monitored">En attente</option>
+        </select>
+        <span id="media-reco-library-count" class="media-reco-count"></span>
+        <button class="media-reco-btn-sync" id="media-reco-btn-sync"
+                onclick="window.mediaRecommenderModule.triggerSync()">
+            Sync Radarr/Sonarr
+        </button>
+    </div>
+    <div id="media-reco-library-grid" class="media-reco-grid">
+        <div class="media-reco-loading">Chargement de la bibliotheque...</div>
+    </div>
+</div>
+
+<!-- Recommendations Sub-tab -->
+<div class="media-reco-subtab-content" id="media-reco-tab-recommendations">
+    <div class="media-reco-generate-bar">
+        <select id="media-reco-gen-type">
+            <option value="both">Films & Series</option>
+            <option value="movie">Films uniquement</option>
+            <option value="series">Series uniquement</option>
+        </select>
+        <button class="media-reco-btn-generate" id="media-reco-btn-gen"
+                onclick="window.mediaRecommenderModule.generateRecommendations()">
+            Generer des recommandations
+        </button>
+    </div>
+    <div id="media-reco-suggestions" class="media-reco-grid">
+        <div class="media-reco-empty">
+            <p>Cliquez sur "Generer" pour obtenir des recommandations personnalisees</p>
+        </div>
+    </div>
+</div>
+
+<!-- Taste Profile Sub-tab -->
+<div class="media-reco-subtab-content" id="media-reco-tab-taste">
+    <div id="media-reco-taste">
+        <div class="media-reco-loading">Chargement du profil...</div>
+    </div>
+</div>
+
+<!-- Preferences Sub-tab -->
+<div class="media-reco-subtab-content" id="media-reco-tab-preferences">
+    <div id="media-reco-preferences">
+        <div class="media-reco-loading">Chargement des preferences...</div>
+    </div>
+</div>
