@@ -65,14 +65,14 @@ def create_link():
                 position=len(existing_cats)
             )
 
-        link_id = internet_service.create_link(
-            name=data['name'],
-            url=data['url'],
-            category_slug=category,
-            favicon_alt=data.get('favicon_alt', ''),
-            description=data.get('description', ''),
-            position=data.get('position', 0)
-        )
+        link_id = internet_service.create_link({
+            'name': data['name'],
+            'url': data['url'],
+            'category_slug': category,
+            'favicon_alt': data.get('favicon_alt', ''),
+            'description': data.get('description', ''),
+            'position': data.get('position', 0),
+        })
 
         return jsonify({
             'status': 'ok',

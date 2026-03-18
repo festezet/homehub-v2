@@ -63,7 +63,7 @@ def create_todo():
         }
 
         # Create todo with all supported fields
-        todo_id = todo_service.create_todo(**todo_data)
+        todo_id = todo_service.create_todo(todo_data)
 
         # Return created todo object for frontend
         todo_data['id'] = todo_id

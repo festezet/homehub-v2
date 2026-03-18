@@ -34,6 +34,14 @@ class ThreadDigestService:
         """Initialize database schema"""
         os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
         conn = self._get_conn()
+        self._create_tables(conn)
+        self._migrate_position_column(conn)
+        conn.close()
+        logger.info(f"Thread digest DB initialized at {DB_PATH}")
+
+    @staticmethod
+    def _create_tables(conn):
+        """Create core tables and indexes"""
         conn.executescript("""
             CREATE TABLE IF NOT EXISTS thread_configs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -80,13 +88,14 @@ class ThreadDigestService:
         """)
         conn.commit()
 
-        # Migration: add position column if missing
+    @staticmethod
+    def _migrate_position_column(conn):
+        """Add position column to thread_configs if missing"""
         cols = [r[1] for r in conn.execute(
             "PRAGMA table_info(thread_configs)").fetchall()]
         if 'position' not in cols:
             conn.execute(
                 "ALTER TABLE thread_configs ADD COLUMN position INTEGER NOT NULL DEFAULT 0")
-            # Backfill existing rows with sequential positions
             rows = conn.execute(
                 "SELECT id FROM thread_configs ORDER BY name"
             ).fetchall()
@@ -96,9 +105,6 @@ class ThreadDigestService:
                     (i, row['id']))
             conn.commit()
             logger.info("Migrated thread_configs: added position column")
-
-        conn.close()
-        logger.info(f"Thread digest DB initialized at {DB_PATH}")
 
     # ------------------------------------------------------------------
     # Thread configs CRUD
@@ -395,65 +401,73 @@ class ThreadDigestService:
             "SELECT * FROM thread_configs WHERE enabled = 1"
         ).fetchall()
 
-        results = []
         now = datetime.now()
-
-        for t in threads:
-            thread_id = t['id']
-
-            # Get last analysis info
-            last_log = conn.execute(
-                """SELECT message_count_at_analysis, created_at
-                   FROM thread_analysis_log
-                   WHERE thread_id = ? AND status = 'completed'
-                   ORDER BY created_at DESC LIMIT 1""",
-                (thread_id,)
-            ).fetchone()
-
-            last_count = last_log['message_count_at_analysis'] if last_log else 0
-            last_date = None
-            days_elapsed = 999
-            if last_log and last_log['created_at']:
-                try:
-                    last_date = datetime.fromisoformat(last_log['created_at'])
-                    days_elapsed = (now - last_date).days
-                except (ValueError, TypeError):
-                    pass
-
-            # Get current message count from Evolution API if available
-            current_count = last_count
-            if whatsapp_proxy and t['platform'] == 'whatsapp':
-                live_count = whatsapp_proxy.get_message_count(t['jid'])
-                if live_count > 0:
-                    current_count = live_count
-
-            new_messages = max(0, current_count - last_count)
-            threshold_msgs = t['threshold_messages']
-            threshold_days = t['threshold_days']
-
-            needs_analysis = (
-                (new_messages >= threshold_msgs) or
-                (days_elapsed >= threshold_days and new_messages > 0)
-            )
-
-            results.append({
-                'thread_id': thread_id,
-                'jid': t['jid'],
-                'name': t['name'],
-                'platform': t['platform'],
-                'current_count': current_count,
-                'last_analyzed_count': last_count,
-                'new_messages': new_messages,
-                'days_since_analysis': days_elapsed if days_elapsed < 999 else None,
-                'last_analysis_date': (
-                    last_date.isoformat() if last_date else None),
-                'threshold_messages': threshold_msgs,
-                'threshold_days': threshold_days,
-                'needs_analysis': needs_analysis
-            })
+        results = [
+            self._compute_thread_status(conn, t, now, whatsapp_proxy)
+            for t in threads
+        ]
 
         conn.close()
         return results
+
+    def _compute_thread_status(self, conn, t, now, whatsapp_proxy):
+        """Compute status for a single thread"""
+        thread_id = t['id']
+
+        last_log = conn.execute(
+            """SELECT message_count_at_analysis, created_at
+               FROM thread_analysis_log
+               WHERE thread_id = ? AND status = 'completed'
+               ORDER BY created_at DESC LIMIT 1""",
+            (thread_id,)
+        ).fetchone()
+
+        last_count = last_log['message_count_at_analysis'] if last_log else 0
+        last_date, days_elapsed = self._parse_last_analysis(last_log, now)
+
+        current_count = last_count
+        if whatsapp_proxy and t['platform'] == 'whatsapp':
+            live_count = whatsapp_proxy.get_message_count(t['jid'])
+            if live_count > 0:
+                current_count = live_count
+
+        new_messages = max(0, current_count - last_count)
+        threshold_msgs = t['threshold_messages']
+        threshold_days = t['threshold_days']
+
+        needs_analysis = (
+            (new_messages >= threshold_msgs) or
+            (days_elapsed >= threshold_days and new_messages > 0)
+        )
+
+        return {
+            'thread_id': thread_id,
+            'jid': t['jid'],
+            'name': t['name'],
+            'platform': t['platform'],
+            'current_count': current_count,
+            'last_analyzed_count': last_count,
+            'new_messages': new_messages,
+            'days_since_analysis': days_elapsed if days_elapsed < 999 else None,
+            'last_analysis_date': (
+                last_date.isoformat() if last_date else None),
+            'threshold_messages': threshold_msgs,
+            'threshold_days': threshold_days,
+            'needs_analysis': needs_analysis
+        }
+
+    @staticmethod
+    def _parse_last_analysis(last_log, now):
+        """Parse last analysis date and compute days elapsed"""
+        last_date = None
+        days_elapsed = 999
+        if last_log and last_log['created_at']:
+            try:
+                last_date = datetime.fromisoformat(last_log['created_at'])
+                days_elapsed = (now - last_date).days
+            except (ValueError, TypeError):
+                pass
+        return last_date, days_elapsed
 
     # ------------------------------------------------------------------
     # Helpers

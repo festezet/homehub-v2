@@ -97,12 +97,18 @@ class GoogleCalendarService:
 
     # ---- CREATE ----
 
-    def create_event(self, summary: str, start_datetime: str, end_datetime: str,
-                     description: str = '', location: str = '',
-                     all_day: bool = False) -> Optional[Dict]:
+    def create_event(self, event_data: Dict) -> Optional[Dict]:
+        """Create event from dict: summary, start_datetime, end_datetime, description, location, all_day"""
         service = self._get_service()
         if not service:
             return None
+
+        summary = event_data.get('summary', '')
+        start_datetime = event_data.get('start_datetime', '')
+        end_datetime = event_data.get('end_datetime', '')
+        description = event_data.get('description', '')
+        location = event_data.get('location', '')
+        all_day = event_data.get('all_day', False)
 
         if all_day:
             body = {

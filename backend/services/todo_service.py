@@ -64,11 +64,20 @@ class TodoService:
             logger.error(f"Error getting todos: {e}")
             raise
 
-    def create_todo(self, action, status='To Do', priority='P3-Normal',
-                   deadline=None, blocking='Non', category='Admin',
-                   notes='', objective='', withClaude='Non', time=30):
-        """Create a new TODO item"""
+    def create_todo(self, todo_data):
+        """Create a new TODO item from dict"""
         try:
+            action = todo_data.get('action', '')
+            status = todo_data.get('status', 'To Do')
+            priority = todo_data.get('priority', 'P3-Normal')
+            deadline = todo_data.get('deadline')
+            blocking = todo_data.get('blocking', 'Non')
+            category = todo_data.get('category', 'Admin')
+            notes = todo_data.get('notes', '')
+            objective = todo_data.get('objective', '')
+            withClaude = todo_data.get('withClaude', 'Non')
+            time = todo_data.get('time', 30)
+
             conn = self._get_connection()
             cursor = conn.cursor()
 

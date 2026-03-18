@@ -20,12 +20,12 @@ def init_local_apps_routes(service):
 
 
 def _get_x11_env():
-    """Import get_x11_env from app module"""
+    """Import get_x11_env from system_utils module"""
     import sys
     backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if backend_dir not in sys.path:
         sys.path.insert(0, backend_dir)
-    from app import get_x11_env
+    from system_utils import get_x11_env
     return get_x11_env()
 
 
@@ -45,23 +45,37 @@ def get_apps():
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
+def _ensure_category_exists(category):
+    """Auto-create category if it doesn't exist"""
+    existing_cats = [c['slug'] for c in local_apps_service.get_categories()]
+    if category not in existing_cats:
+        local_apps_service.create_category(
+            slug=category,
+            name=category.replace('-', ' ').title(),
+            position=len(existing_cats)
+        )
+
+
+def _create_app_from_data(data, category):
+    """Create app entry from request data and return app_id"""
+    return local_apps_service.create_app(
+        name=data['name'],
+        category_slug=category,
+        description=data.get('description', ''),
+        icon=data.get('icon', ''),
+        app_type=data.get('app_type', 'project'),
+        project_id=data.get('project_id', ''),
+        launcher_path=data.get('launcher_path', ''),
+        launcher_type=data.get('launcher_type', ''),
+        web_url=data.get('web_url', ''),
+        docker_stack=data.get('docker_stack', ''),
+        position=data.get('position', 0)
+    )
+
+
 @local_apps_bp.route('/apps', methods=['POST'])
 def create_app():
-    """Create a new app entry.
-
-    JSON body:
-        name (str): Display name (required)
-        category (str): Category slug (required)
-        description (str): Optional description
-        icon (str): Optional icon/emoji
-        app_type (str): project|docker|system (default: project)
-        project_id (str): Optional PRJ-XXX or APP-XXX
-        launcher_path (str): Optional path to launcher script
-        launcher_type (str): Optional launcher type
-        web_url (str): Optional web URL
-        docker_stack (str): Optional docker stack name
-        position (int): Optional sort order
-    """
+    """Create a new app entry"""
     try:
         data = request.get_json()
 
@@ -72,29 +86,8 @@ def create_app():
             }), 400
 
         category = data['category']
-
-        # Auto-create category if it doesn't exist
-        existing_cats = [c['slug'] for c in local_apps_service.get_categories()]
-        if category not in existing_cats:
-            local_apps_service.create_category(
-                slug=category,
-                name=category.replace('-', ' ').title(),
-                position=len(existing_cats)
-            )
-
-        app_id = local_apps_service.create_app(
-            name=data['name'],
-            category_slug=category,
-            description=data.get('description', ''),
-            icon=data.get('icon', ''),
-            app_type=data.get('app_type', 'project'),
-            project_id=data.get('project_id', ''),
-            launcher_path=data.get('launcher_path', ''),
-            launcher_type=data.get('launcher_type', ''),
-            web_url=data.get('web_url', ''),
-            docker_stack=data.get('docker_stack', ''),
-            position=data.get('position', 0)
-        )
+        _ensure_category_exists(category)
+        app_id = _create_app_from_data(data, category)
 
         return jsonify({
             'status': 'ok',
@@ -146,17 +139,66 @@ def delete_app(app_id):
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
+def _launch_system_app(app, launcher_path):
+    """Launch a system app via direct command"""
+    if not launcher_path:
+        return jsonify({
+            'status': 'error',
+            'message': f"No launcher configured for {app['name']}"
+        }), 400
+
+    env = _get_x11_env()
+    subprocess.Popen(
+        ['setsid', '-f', launcher_path],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        env=env,
+        close_fds=True
+    )
+    return jsonify({
+        'status': 'ok',
+        'message': f"{app['name']} launched successfully",
+        'app': app
+    })
+
+
+def _launch_project_app(app, app_id, launcher_path):
+    """Launch a project app via bash with logging"""
+    if not launcher_path or not os.path.exists(launcher_path):
+        return jsonify({
+            'status': 'error',
+            'message': f"Launcher not found for {app['name']}: {launcher_path}"
+        }), 404
+
+    env = _get_x11_env()
+    project_id = app.get('project_id', f'app-{app_id}')
+    log_stdout = f"/tmp/homehub_{project_id}_stdout.log"
+    log_stderr = f"/tmp/homehub_{project_id}_stderr.log"
+    cwd = os.path.dirname(launcher_path)
+
+    with open(log_stdout, 'w') as out, open(log_stderr, 'w') as err:
+        subprocess.Popen(
+            ['bash', launcher_path],
+            stdout=out, stderr=err, stdin=subprocess.DEVNULL,
+            start_new_session=True, cwd=cwd, env=env, close_fds=True
+        )
+
+    logger.info(f"Launched {app['name']}, logs: {log_stdout}")
+    return jsonify({
+        'status': 'ok',
+        'message': f"{app['name']} launched successfully",
+        'app': app
+    })
+
+
 @local_apps_bp.route('/apps/<int:app_id>/launch', methods=['POST'])
 def launch_app(app_id):
     """Launch an app: increment counter + subprocess launch"""
     try:
         app = local_apps_service.record_launch(app_id)
-
         app_type = app.get('app_type', 'project')
         launcher_path = app.get('launcher_path', '')
-        docker_stack = app.get('docker_stack', '')
 
-        # Docker apps are handled by existing docker API, just record the launch
         if app_type == 'docker':
             return jsonify({
                 'status': 'ok',
@@ -165,62 +207,10 @@ def launch_app(app_id):
                 'action': 'docker'
             })
 
-        # System apps (direct command)
         if app_type == 'system':
-            if not launcher_path:
-                return jsonify({
-                    'status': 'error',
-                    'message': f"No launcher configured for {app['name']}"
-                }), 400
+            return _launch_system_app(app, launcher_path)
 
-            env = _get_x11_env()
-            subprocess.Popen(
-                ['setsid', '-f', launcher_path],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                env=env,
-                close_fds=True
-            )
-
-            return jsonify({
-                'status': 'ok',
-                'message': f"{app['name']} launched successfully",
-                'app': app
-            })
-
-        # Project apps (bash launcher with logging)
-        if not launcher_path or not os.path.exists(launcher_path):
-            return jsonify({
-                'status': 'error',
-                'message': f"Launcher not found for {app['name']}: {launcher_path}"
-            }), 404
-
-        env = _get_x11_env()
-        project_id = app.get('project_id', f'app-{app_id}')
-        log_stdout = f"/tmp/homehub_{project_id}_stdout.log"
-        log_stderr = f"/tmp/homehub_{project_id}_stderr.log"
-
-        cwd = os.path.dirname(launcher_path)
-
-        with open(log_stdout, 'w') as out, open(log_stderr, 'w') as err:
-            subprocess.Popen(
-                ['bash', launcher_path],
-                stdout=out,
-                stderr=err,
-                stdin=subprocess.DEVNULL,
-                start_new_session=True,
-                cwd=cwd,
-                env=env,
-                close_fds=True
-            )
-
-        logger.info(f"Launched {app['name']}, logs: {log_stdout}")
-
-        return jsonify({
-            'status': 'ok',
-            'message': f"{app['name']} launched successfully",
-            'app': app
-        })
+        return _launch_project_app(app, app_id, launcher_path)
 
     except Exception as e:
         logger.error(f"Error launching app {app_id}: {e}")

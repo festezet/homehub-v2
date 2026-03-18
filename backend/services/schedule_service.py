@@ -105,48 +105,38 @@ class ScheduleService:
         return ids
 
     def propose_schedule(self, user_email: str, week_start: datetime) -> Dict:
-        """
-        Generate a scheduling proposal for TODOs using Claude logic
-
-        This analyzes available slots and TODO requirements to create
-        an optimal schedule proposal for user validation.
-
-        Args:
-            user_email: Google account email for calendar access
-            week_start: Monday of the week to schedule
-
-        Returns:
-            Dict with proposed schedule and reasoning
-        """
-        # Get schedulable todos
+        """Generate a scheduling proposal for TODOs using Claude logic"""
         todos = self.get_schedulable_todos()
         if not todos:
             return {
-                'success': True,
-                'proposals': [],
+                'success': True, 'proposals': [],
                 'message': 'Aucun TODO P1/P2 a planifier'
             }
 
-        # Get week schedule (template)
         week_schedule = calendar_service.get_week_schedule(week_start)
-
-        # Get Google Calendar events
         google_events = {}
         if google_calendar_service.is_authenticated(user_email):
             google_events = google_calendar_service.get_week_events(user_email, week_start)
 
-        # Generate proposals
+        proposals = self._build_proposals(todos, week_schedule, google_events)
+        return {
+            'success': True, 'proposals': proposals,
+            'week_start': week_start.strftime('%Y-%m-%d'),
+            'todos_analyzed': len(todos),
+            'todos_scheduled': len(proposals)
+        }
+
+    def _build_proposals(self, todos, week_schedule, google_events):
+        """Build slot proposals for each TODO"""
         proposals = []
-        used_slots = set()  # Track used (day, start_time) pairs
+        used_slots = set()
 
         for todo in todos:
-            # Find best slot for this todo
             best_slot = self._find_slot_for_todo(
                 todo, week_schedule, google_events, used_slots
             )
-
             if best_slot:
-                proposal = {
+                proposals.append({
                     'todo_id': todo['id'],
                     'todo_action': todo['action'],
                     'todo_priority': todo['priority'],
@@ -158,99 +148,78 @@ class ScheduleService:
                     'end_time': best_slot['end'],
                     'slot_activity': best_slot['activity'],
                     'reasoning': self._generate_reasoning(todo, best_slot)
-                }
-                proposals.append(proposal)
-
-                # Mark slot as used
+                })
                 used_slots.add((best_slot['day'], best_slot['start']))
-
-        return {
-            'success': True,
-            'proposals': proposals,
-            'week_start': week_start.strftime('%Y-%m-%d'),
-            'todos_analyzed': len(todos),
-            'todos_scheduled': len(proposals)
-        }
+        return proposals
 
     def _find_slot_for_todo(self, todo: Dict, week_schedule: Dict,
                             google_events: Dict, used_slots: set) -> Optional[Dict]:
         """Find the best available slot for a TODO"""
-        todo_category = todo.get('category', 'Admin')
         todo_time = todo.get('time', 30)
-        todo_deadline = todo.get('deadline')
-
-        # Get category mapping
         mapping = calendar_service.get_todo_category_mapping()
-        preferred_categories = mapping.get(todo_category, ['dev', 'prospection'])
+        preferred = mapping.get(todo.get('category', 'Admin'), ['dev', 'prospection'])
+        days_to_check = self._sort_days_by_deadline(todo, week_schedule)
 
-        # Calculate deadline urgency
-        deadline_priority_days = {}
-        if todo_deadline:
-            try:
-                deadline_date = datetime.strptime(todo_deadline, '%Y-%m-%d')
-                for day_name, day_data in week_schedule.items():
-                    day_date = datetime.strptime(day_data['date'], '%Y-%m-%d')
-                    days_until_deadline = (deadline_date - day_date).days
-                    deadline_priority_days[day_name] = days_until_deadline
-            except:
-                pass
+        result = self._find_preferred_slot(
+            days_to_check, week_schedule, google_events, used_slots, preferred, todo_time)
+        if result:
+            return result
+        return self._find_fallback_slot(
+            days_to_check, week_schedule, google_events, used_slots, todo_time)
 
-        # Sort days by deadline proximity if applicable
-        days_to_check = list(week_schedule.keys())
-        if deadline_priority_days:
-            days_to_check = sorted(
-                days_to_check,
-                key=lambda d: deadline_priority_days.get(d, 999)
-            )
+    def _sort_days_by_deadline(self, todo, week_schedule):
+        """Sort week days by deadline proximity"""
+        days = list(week_schedule.keys())
+        deadline = todo.get('deadline')
+        if not deadline:
+            return days
+        try:
+            deadline_date = datetime.strptime(deadline, '%Y-%m-%d')
+            priority = {}
+            for day_name, day_data in week_schedule.items():
+                day_date = datetime.strptime(day_data['date'], '%Y-%m-%d')
+                priority[day_name] = (deadline_date - day_date).days
+            return sorted(days, key=lambda d: priority.get(d, 999))
+        except Exception:
+            return days
 
-        for day_name in days_to_check:
+    def _find_preferred_slot(self, days, week_schedule, google_events,
+                             used_slots, preferred_cats, min_time):
+        """Find slot matching preferred categories"""
+        for day_name in days:
             day_data = week_schedule[day_name]
-            day_events = google_events.get(day_name, [])
-
-            # Get available slots for this day
-            available = calendar_service.get_available_slots(day_name, day_events)
-
-            for slot in available:
-                # Skip if slot already used
-                if (day_name, slot['start']) in used_slots:
-                    continue
-
-                # Check if slot category matches
-                if slot['category'] in preferred_categories:
-                    # Check if slot duration is sufficient
-                    slot_duration = self._get_slot_duration(slot)
-                    if slot_duration >= todo_time:
-                        return {
-                            'day': day_name,
-                            'date': day_data['date'],
-                            'start': slot['start'],
-                            'end': slot['end'],
-                            'activity': slot['activity'],
-                            'category': slot['category']
-                        }
-
-        # Fallback: any flexible slot with sufficient time
-        for day_name in days_to_check:
-            day_data = week_schedule[day_name]
-            day_events = google_events.get(day_name, [])
-            available = calendar_service.get_available_slots(day_name, day_events)
-
+            available = calendar_service.get_available_slots(
+                day_name, google_events.get(day_name, []))
             for slot in available:
                 if (day_name, slot['start']) in used_slots:
                     continue
-
-                slot_duration = self._get_slot_duration(slot)
-                if slot_duration >= todo_time:
-                    return {
-                        'day': day_name,
-                        'date': day_data['date'],
-                        'start': slot['start'],
-                        'end': slot['end'],
-                        'activity': slot['activity'],
-                        'category': slot['category']
-                    }
-
+                if slot['category'] in preferred_cats:
+                    if self._get_slot_duration(slot) >= min_time:
+                        return self._make_slot_result(day_name, day_data, slot)
         return None
+
+    def _find_fallback_slot(self, days, week_schedule, google_events,
+                            used_slots, min_time):
+        """Find any available slot with sufficient time"""
+        for day_name in days:
+            day_data = week_schedule[day_name]
+            available = calendar_service.get_available_slots(
+                day_name, google_events.get(day_name, []))
+            for slot in available:
+                if (day_name, slot['start']) in used_slots:
+                    continue
+                if self._get_slot_duration(slot) >= min_time:
+                    return self._make_slot_result(day_name, day_data, slot)
+        return None
+
+    @staticmethod
+    def _make_slot_result(day_name, day_data, slot):
+        """Build slot result dict"""
+        return {
+            'day': day_name, 'date': day_data['date'],
+            'start': slot['start'], 'end': slot['end'],
+            'activity': slot['activity'], 'category': slot['category']
+        }
 
     def _get_slot_duration(self, slot: Dict) -> int:
         """Calculate slot duration in minutes"""

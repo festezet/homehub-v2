@@ -126,12 +126,18 @@ class InternetService:
         conn.close()
         return links
 
-    def create_link(self, name, url, category_slug, favicon_alt='', description='', position=0):
-        """Create a new internet link"""
+    def create_link(self, link_data):
+        """Create a new internet link from dict: name, url, category_slug, favicon_alt, description, position"""
+        name = link_data.get('name', '')
+        url = link_data.get('url', '')
+        category_slug = link_data.get('category_slug', '')
+        favicon_alt = link_data.get('favicon_alt', '')
+        description = link_data.get('description', '')
+        position = link_data.get('position', 0)
+
         conn = self._get_connection()
         cursor = conn.cursor()
 
-        # Auto-generate favicon_alt if not provided
         if not favicon_alt:
             favicon_alt = name[:2].upper()
 

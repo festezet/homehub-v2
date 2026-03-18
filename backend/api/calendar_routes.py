@@ -151,14 +151,14 @@ def create_event():
     if not data or not data.get('summary') or not data.get('start'):
         return jsonify({'status': 'error', 'message': 'summary and start required'}), 400
 
-    event = google_calendar_service.create_event(
-        summary=data['summary'],
-        start_datetime=data['start'],
-        end_datetime=data.get('end', ''),
-        description=data.get('description', ''),
-        location=data.get('location', ''),
-        all_day=data.get('all_day', False),
-    )
+    event = google_calendar_service.create_event({
+        'summary': data['summary'],
+        'start_datetime': data['start'],
+        'end_datetime': data.get('end', ''),
+        'description': data.get('description', ''),
+        'location': data.get('location', ''),
+        'all_day': data.get('all_day', False),
+    })
 
     if event:
         return jsonify({'status': 'ok', 'event': event})

@@ -62,14 +62,8 @@ ADDITIONAL_APPS = [
 ]
 
 
-def seed():
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute("PRAGMA foreign_keys = ON")
-    cursor = conn.cursor()
-
-    # Create tables (idempotent)
+def _create_tables(cursor, conn):
+    """Create tables (idempotent)"""
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS app_categories (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -103,7 +97,9 @@ def seed():
     """)
     conn.commit()
 
-    # Seed categories (idempotent via INSERT OR IGNORE)
+
+def _seed_categories(cursor, conn):
+    """Seed categories (idempotent via INSERT OR IGNORE)"""
     for slug, name, icon, position in CATEGORIES:
         cursor.execute(
             "INSERT OR IGNORE INTO app_categories (slug, name, icon, position) VALUES (?, ?, ?, ?)",
@@ -112,92 +108,88 @@ def seed():
     conn.commit()
     print(f"Categories: {len(CATEGORIES)} seeded")
 
-    # Import projects from projects.db
+
+def _import_projects(cursor, conn):
+    """Import projects from projects.db"""
     if not os.path.exists(PROJECTS_DB):
         print(f"WARNING: {PROJECTS_DB} not found, skipping project import")
-    else:
-        proj_conn = sqlite3.connect(PROJECTS_DB)
-        proj_conn.row_factory = sqlite3.Row
-        proj_cursor = proj_conn.cursor()
+        return
 
-        proj_cursor.execute("""
-            SELECT unique_id, name, description, category, path, launcher_path, launcher_type, web_url
-            FROM projects
-            WHERE status IN ('active', 'stable')
-            ORDER BY category, name
-        """)
+    proj_conn = sqlite3.connect(PROJECTS_DB)
+    proj_conn.row_factory = sqlite3.Row
+    proj_cursor = proj_conn.cursor()
 
-        imported = 0
-        skipped = 0
+    proj_cursor.execute("""
+        SELECT unique_id, name, description, category, path, launcher_path, launcher_type, web_url
+        FROM projects
+        WHERE status IN ('active', 'stable')
+        ORDER BY category, name
+    """)
 
-        for row in proj_cursor.fetchall():
-            project_id = row['unique_id']
+    imported = 0
+    skipped = 0
 
-            # Skip if already exists (idempotent)
-            cursor.execute("SELECT id FROM app_entries WHERE project_id = ?", (project_id,))
-            if cursor.fetchone():
-                skipped += 1
-                continue
+    for row in proj_cursor.fetchall():
+        project_id = row['unique_id']
+        cursor.execute("SELECT id FROM app_entries WHERE project_id = ?", (project_id,))
+        if cursor.fetchone():
+            skipped += 1
+            continue
 
-            # Map category - use as-is since categories match
-            category_slug = row['category'] or 'development'
+        category_slug = row['category'] or 'development'
+        cursor.execute("""
+            INSERT INTO app_entries (name, description, category_slug, app_type, project_id,
+                                    launcher_path, launcher_type, web_url, position)
+            VALUES (?, ?, ?, 'project', ?, ?, ?, ?, 0)
+        """, (
+            row['name'],
+            row['description'] or '',
+            category_slug,
+            project_id,
+            row['launcher_path'] or '',
+            row['launcher_type'] or 'bash',
+            row['web_url'] or '',
+        ))
+        imported += 1
 
-            cursor.execute("""
-                INSERT INTO app_entries (name, description, category_slug, app_type, project_id,
-                                        launcher_path, launcher_type, web_url, position)
-                VALUES (?, ?, ?, 'project', ?, ?, ?, ?, 0)
-            """, (
-                row['name'],
-                row['description'] or '',
-                category_slug,
-                project_id,
-                row['launcher_path'] or '',
-                row['launcher_type'] or 'bash',
-                row['web_url'] or '',
-            ))
-            imported += 1
+    proj_conn.close()
+    conn.commit()
+    print(f"Projects: {imported} imported, {skipped} already existed")
 
-        proj_conn.close()
-        conn.commit()
-        print(f"Projects: {imported} imported, {skipped} already existed")
 
-    # Add Docker apps (idempotent)
-    docker_added = 0
-    for app in DOCKER_APPS:
+def _seed_app_list(cursor, conn, app_list, label):
+    """Seed a list of apps idempotently. Returns count added."""
+    added = 0
+    for app in app_list:
         cursor.execute("SELECT id FROM app_entries WHERE project_id = ?", (app['project_id'],))
         if cursor.fetchone():
             continue
-        cursor.execute("""
-            INSERT INTO app_entries (name, description, category_slug, icon, app_type,
-                                    project_id, web_url, docker_stack, position)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            app['name'], app['description'], app['category_slug'], app['icon'],
-            app['app_type'], app['project_id'], app['web_url'], app['docker_stack'],
-            app['position']
-        ))
-        docker_added += 1
+        fields = ['name', 'description', 'category_slug', 'icon', 'app_type',
+                  'project_id', 'web_url', 'docker_stack', 'launcher_path', 'position']
+        values = {f: app.get(f, '') for f in fields}
+        cols = [k for k, v in values.items() if v != '' or k in ('name', 'description', 'category_slug', 'icon', 'app_type', 'project_id', 'position')]
+        placeholders = ', '.join(['?'] * len(cols))
+        cursor.execute(
+            f"INSERT INTO app_entries ({', '.join(cols)}) VALUES ({placeholders})",
+            tuple(values[c] for c in cols)
+        )
+        added += 1
     conn.commit()
-    print(f"Docker apps: {docker_added} added")
+    print(f"{label}: {added} added")
 
-    # Add additional apps (idempotent)
-    additional_added = 0
-    for app in ADDITIONAL_APPS:
-        cursor.execute("SELECT id FROM app_entries WHERE project_id = ?", (app['project_id'],))
-        if cursor.fetchone():
-            continue
-        cursor.execute("""
-            INSERT INTO app_entries (name, description, category_slug, icon, app_type,
-                                    project_id, launcher_path, position)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            app['name'], app['description'], app['category_slug'], app['icon'],
-            app['app_type'], app['project_id'], app.get('launcher_path', ''),
-            app['position']
-        ))
-        additional_added += 1
-    conn.commit()
-    print(f"Additional apps: {additional_added} added")
+
+def seed():
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("PRAGMA foreign_keys = ON")
+    cursor = conn.cursor()
+
+    _create_tables(cursor, conn)
+    _seed_categories(cursor, conn)
+    _import_projects(cursor, conn)
+    _seed_app_list(cursor, conn, DOCKER_APPS, "Docker apps")
+    _seed_app_list(cursor, conn, ADDITIONAL_APPS, "Additional apps")
 
     # Summary
     cursor.execute("SELECT COUNT(*) FROM app_entries")

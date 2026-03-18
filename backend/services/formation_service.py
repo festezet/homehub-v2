@@ -53,7 +53,37 @@ class FormationService:
 
     def _seed_data(self, cursor):
         """Seed the 7 actions from PLAN_ACTION_DEEPSIGNAL_V1.md"""
-        actions = [
+        actions = self._build_seed_actions()
+        for action in actions:
+            self._insert_action_with_children(cursor, action)
+
+    @staticmethod
+    def _insert_action_with_children(cursor, action):
+        """Insert a parent action and its children into the DB"""
+        children = action.pop("children", [])
+        prereqs = action.pop("prerequisite_ids", [])
+        action["prerequisite_ids"] = json.dumps(prereqs)
+        status = action.get("status", "pending")
+
+        cursor.execute("""
+            INSERT INTO formation_actions (parent_id, title, description, who, status, priority, prerequisite_ids, position)
+            VALUES (NULL, ?, ?, ?, ?, ?, ?, ?)
+        """, (action["title"], action["description"], action["who"], status, action["priority"], action["prerequisite_ids"], action["position"]))
+
+        parent_id = cursor.lastrowid
+
+        for i, child in enumerate(children):
+            child_status = child.get("status", "pending")
+            child_priority = child.get("priority", 0)
+            cursor.execute("""
+                INSERT INTO formation_actions (parent_id, title, description, who, status, priority, prerequisite_ids, position)
+                VALUES (?, ?, ?, ?, ?, ?, '[]', ?)
+            """, (parent_id, child["title"], child["description"], child["who"], child_status, child_priority, i + 1))
+
+    @staticmethod
+    def _build_seed_actions():
+        """Build the list of seed actions with children"""
+        return [
             # Action 1: Recuperer livrables S1-S2
             {
                 "title": "Recuperer les livrables S1-S2",
@@ -155,27 +185,6 @@ class FormationService:
                 ]
             },
         ]
-
-        for action in actions:
-            children = action.pop("children", [])
-            prereqs = action.pop("prerequisite_ids", [])
-            action["prerequisite_ids"] = json.dumps(prereqs)
-            status = action.get("status", "pending")
-
-            cursor.execute("""
-                INSERT INTO formation_actions (parent_id, title, description, who, status, priority, prerequisite_ids, position)
-                VALUES (NULL, ?, ?, ?, ?, ?, ?, ?)
-            """, (action["title"], action["description"], action["who"], status, action["priority"], action["prerequisite_ids"], action["position"]))
-
-            parent_id = cursor.lastrowid
-
-            for i, child in enumerate(children):
-                child_status = child.get("status", "pending")
-                child_priority = child.get("priority", 0)
-                cursor.execute("""
-                    INSERT INTO formation_actions (parent_id, title, description, who, status, priority, prerequisite_ids, position)
-                    VALUES (?, ?, ?, ?, ?, ?, '[]', ?)
-                """, (parent_id, child["title"], child["description"], child["who"], child_status, child_priority, i + 1))
 
     def get_all(self):
         """Get all actions organized hierarchically"""

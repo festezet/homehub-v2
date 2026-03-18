@@ -1,6 +1,4 @@
-"""
-Specs & Health Service - Track SPEC.md status and project health across projects
-"""
+"""Specs & Health Service - Track SPEC.md status and project health"""
 
 import sqlite3
 import os
@@ -15,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 DB_PATH = '/data/projects/project-management/data/projects.db'
 PORT_REGISTRY = '/data/projects/infrastructure/data/port_registry.json'
-
 SOURCE_EXTENSIONS = {
     '.py', '.js', '.html', '.css', '.ts', '.tsx', '.dart',
     '.sh', '.sql', '.jsx', '.vue', '.svelte'
@@ -28,14 +25,13 @@ EXCLUDE_DIRS = {
 
 
 class SpecsService:
-    """Service to track specification files and project health across projects"""
+    """Track specification files and project health across projects"""
 
     def __init__(self, db_path=DB_PATH):
         self.db_path = db_path
-        logger.info(f"Specs Service initialized with database: {db_path}")
+        logger.info(f"Specs Service initialized: {db_path}")
 
     def _get_connection(self):
-        """Get database connection"""
         return sqlite3.connect(self.db_path)
 
     def get_all_specs(self):
@@ -57,34 +53,11 @@ class SpecsService:
                 ORDER BY name
             """)
 
-            specs = []
             port_map = self._load_port_map()
-
-            for row in cursor.fetchall():
-                project_name = row['name']
-                port_info = port_map.get(project_name, {})
-
-                specs.append({
-                    'id': row['id'],
-                    'unique_id': row['unique_id'],
-                    'name': row['name'],
-                    'path': row['path'],
-                    'project_status': row['status'],
-                    'spec_status': row['spec_status'] or 'missing',
-                    'spec_date': row['spec_date'],
-                    'spec_lines': row['spec_lines'] or 0,
-                    'spec_notes': row['spec_notes'] or '',
-                    'health_loc': row['health_loc'] or 0,
-                    'health_has_tests': row['health_has_tests'] or 0,
-                    'health_deps_count': row['health_deps_count'] or 0,
-                    'health_last_commit': row['health_last_commit'],
-                    'health_readme_score': row['health_readme_score'] or 0,
-                    'health_has_gitignore': row['health_has_gitignore'] or 0,
-                    'health_portability_score': row['health_portability_score'] or 0,
-                    'health_score': row['health_score'] or 0,
-                    'health_port': port_info.get('port'),
-                    'health_service_up': self._check_port(port_info.get('port')) if port_info.get('port') else None
-                })
+            specs = [
+                self._row_to_spec(row, port_map)
+                for row in cursor.fetchall()
+            ]
 
             conn.close()
             return specs
@@ -93,8 +66,33 @@ class SpecsService:
             logger.error(f"Error getting specs: {e}")
             raise
 
+    def _row_to_spec(self, row, port_map):
+        """Convert a project DB row to a spec dict with port info"""
+        port_info = port_map.get(row['name'], {})
+        return {
+            'id': row['id'],
+            'unique_id': row['unique_id'],
+            'name': row['name'],
+            'path': row['path'],
+            'project_status': row['status'],
+            'spec_status': row['spec_status'] or 'missing',
+            'spec_date': row['spec_date'],
+            'spec_lines': row['spec_lines'] or 0,
+            'spec_notes': row['spec_notes'] or '',
+            'health_loc': row['health_loc'] or 0,
+            'health_has_tests': row['health_has_tests'] or 0,
+            'health_deps_count': row['health_deps_count'] or 0,
+            'health_last_commit': row['health_last_commit'],
+            'health_readme_score': row['health_readme_score'] or 0,
+            'health_has_gitignore': row['health_has_gitignore'] or 0,
+            'health_portability_score': row['health_portability_score'] or 0,
+            'health_score': row['health_score'] or 0,
+            'health_port': port_info.get('port'),
+            'health_service_up': self._check_port(port_info.get('port')) if port_info.get('port') else None
+        }
+
     def update_spec(self, project_id, field, value):
-        """Update a specific spec field for a project"""
+        """Update a specific spec field"""
         try:
             valid_fields = ['spec_status', 'spec_date', 'spec_lines', 'spec_notes']
             if field not in valid_fields:
@@ -116,9 +114,8 @@ class SpecsService:
             conn.commit()
             conn.close()
 
-            logger.info(f"Spec updated for project {project_id}: {field} = {value}")
+            logger.info(f"Spec updated: {project_id} {field}={value}")
             return True
-
         except Exception as e:
             logger.error(f"Error updating spec {project_id}: {e}")
             raise
@@ -195,36 +192,7 @@ class SpecsService:
                     continue
 
                 try:
-                    loc = self._count_loc(path)
-                    has_tests = 1 if self._has_tests(path) else 0
-                    deps_count = self._count_deps(path)
-                    last_commit = self._last_commit(path)
-                    readme_score = self._readme_score(path)
-                    has_gitignore = 1 if os.path.exists(os.path.join(path, '.gitignore')) else 0
-                    portability_score = self._portability_score(path)
-
-                    health_score = self._compute_health_score(
-                        spec_status=row['spec_status'] or 'missing',
-                        readme_score=readme_score,
-                        has_tests=has_tests,
-                        has_gitignore=has_gitignore,
-                        last_commit=last_commit,
-                        loc=loc,
-                        deps_count=deps_count,
-                        portability_score=portability_score
-                    )
-
-                    cursor.execute("""
-                        UPDATE projects SET
-                            health_loc = ?, health_has_tests = ?, health_deps_count = ?,
-                            health_last_commit = ?, health_readme_score = ?,
-                            health_has_gitignore = ?, health_portability_score = ?,
-                            health_score = ?,
-                            updated_at = CURRENT_TIMESTAMP
-                        WHERE id = ?
-                    """, (loc, has_tests, deps_count, last_commit, readme_score,
-                          has_gitignore, portability_score, health_score, row['id']))
-
+                    self._scan_project_health(cursor, row)
                     results['scanned'] += 1
                 except Exception as e:
                     logger.warning(f"Error scanning health for {row['name']}: {e}")
@@ -240,7 +208,34 @@ class SpecsService:
             logger.error(f"Error in health scan: {e}")
             raise
 
-    # --- Health metric helpers ---
+    def _scan_project_health(self, cursor, row):
+        """Collect health metrics for a single project and update DB"""
+        path = row['path']
+        health_data = {
+            'spec_status': row['spec_status'] or 'missing',
+            'loc': self._count_loc(path),
+            'has_tests': 1 if self._has_tests(path) else 0,
+            'deps_count': self._count_deps(path),
+            'last_commit': self._last_commit(path),
+            'readme_score': self._readme_score(path),
+            'has_gitignore': 1 if os.path.exists(os.path.join(path, '.gitignore')) else 0,
+            'portability_score': self._portability_score(path),
+        }
+        health_data['health_score'] = self._compute_health_score(health_data)
+
+        cursor.execute("""
+            UPDATE projects SET
+                health_loc = ?, health_has_tests = ?, health_deps_count = ?,
+                health_last_commit = ?, health_readme_score = ?,
+                health_has_gitignore = ?, health_portability_score = ?,
+                health_score = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """, (health_data['loc'], health_data['has_tests'],
+              health_data['deps_count'], health_data['last_commit'],
+              health_data['readme_score'], health_data['has_gitignore'],
+              health_data['portability_score'], health_data['health_score'],
+              row['id']))
 
     def _count_loc(self, project_path):
         """Count lines of source code, excluding generated/vendor dirs"""
@@ -259,7 +254,6 @@ class SpecsService:
         return total
 
     def _has_tests(self, project_path):
-        """Check if project has test files or test directories"""
         for root, dirs, files in os.walk(project_path):
             dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS and not d.startswith('.')]
             for d in dirs:
@@ -273,7 +267,6 @@ class SpecsService:
         return False
 
     def _count_deps(self, project_path):
-        """Count project dependencies from manifest files"""
         count = 0
 
         # Python requirements.txt
@@ -319,7 +312,6 @@ class SpecsService:
         return count
 
     def _last_commit(self, project_path):
-        """Get date of last git commit"""
         try:
             result = subprocess.run(
                 ['git', '-C', project_path, 'log', '-1', '--format=%cd', '--date=short'],
@@ -332,7 +324,7 @@ class SpecsService:
         return None
 
     def _readme_score(self, project_path):
-        """Check README completeness (0-100), matching health_check.py logic"""
+        """Check README completeness (0-100)"""
         readme_path = os.path.join(project_path, 'README.md')
         if not os.path.exists(readme_path):
             return 0
@@ -355,7 +347,7 @@ class SpecsService:
         return score
 
     def _portability_score(self, project_path):
-        """Check project portability (0-100) based on PRJ-031 criteria"""
+        """Check project portability (0-100)"""
         score = 100
 
         # Check hardcoded absolute paths in source files
@@ -391,7 +383,7 @@ class SpecsService:
         return max(0, score)
 
     def _count_pattern_files(self, project_path, pattern):
-        """Count number of source files matching a regex pattern using grep"""
+        """Count source files matching a regex pattern"""
         try:
             excludes = []
             for d in EXCLUDE_DIRS:
@@ -413,7 +405,6 @@ class SpecsService:
             return 0
 
     def _check_port(self, port):
-        """Check if a TCP port is responding"""
         if not port:
             return None
         try:
@@ -426,7 +417,7 @@ class SpecsService:
             return False
 
     def _load_port_map(self):
-        """Load port registry and build project->port mapping"""
+
         try:
             if os.path.exists(PORT_REGISTRY):
                 with open(PORT_REGISTRY, 'r') as f:
@@ -446,57 +437,64 @@ class SpecsService:
             logger.warning(f"Could not load port registry: {e}")
         return {}
 
-    def _compute_health_score(self, spec_status, readme_score, has_tests,
-                               has_gitignore, last_commit, loc, deps_count,
-                               portability_score=0):
-        """Compute composite health score 0-100"""
+    def _compute_health_score(self, health_data):
+        """Compute composite health score 0-100 from health_data dict"""
         score = 0
 
         # SPEC.md present: 15 pts
+        spec_status = health_data.get('spec_status', 'missing')
         if spec_status == 'complete':
             score += 15
         elif spec_status == 'draft':
             score += 7
 
         # README completeness: 10 pts (proportional)
-        score += int(readme_score * 10 / 100)
+        score += int(health_data.get('readme_score', 0) * 10 / 100)
 
         # Has tests: 15 pts
-        if has_tests:
+        if health_data.get('has_tests'):
             score += 15
 
         # Has .gitignore: 5 pts
-        if has_gitignore:
+        if health_data.get('has_gitignore'):
             score += 5
 
         # Git recency: 15 pts
-        if last_commit:
-            try:
-                commit_date = datetime.strptime(last_commit, '%Y-%m-%d')
-                days_ago = (datetime.now() - commit_date).days
-                if days_ago <= 30:
-                    score += 15
-                elif days_ago <= 90:
-                    score += 10
-                elif days_ago <= 180:
-                    score += 5
-            except Exception:
-                pass
+        score += self._git_recency_score(health_data.get('last_commit'))
 
         # Dependencies tracked: 10 pts
-        if deps_count > 0:
+        if health_data.get('deps_count', 0) > 0:
             score += 10
 
         # Has code: 10 pts
+        loc = health_data.get('loc', 0)
         if loc > 100:
             score += 10
         elif loc > 0:
             score += 5
 
         # Portability: 20 pts (proportional to 0-100 score)
-        score += int(portability_score * 20 / 100)
+        score += int(health_data.get('portability_score', 0) * 20 / 100)
 
         return min(score, 100)
+
+    @staticmethod
+    def _git_recency_score(last_commit):
+        """Calculate git recency score (0-15) from last commit date string"""
+        if not last_commit:
+            return 0
+        try:
+            commit_date = datetime.strptime(last_commit, '%Y-%m-%d')
+            days_ago = (datetime.now() - commit_date).days
+            if days_ago <= 30:
+                return 15
+            elif days_ago <= 90:
+                return 10
+            elif days_ago <= 180:
+                return 5
+        except Exception:
+            pass
+        return 0
 
 
 specs_service = SpecsService()

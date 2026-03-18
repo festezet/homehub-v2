@@ -59,14 +59,14 @@ def log_activity():
                 'message': 'project_id and title are required'
             }), 400
 
-        entry_id = _service.log_activity(
-            project_id=project_id,
-            activity_type=activity_type,
-            title=title,
-            description=data.get('description'),
-            session_doc=data.get('session_doc'),
-            date=data.get('date')
-        )
+        entry_id = _service.log_activity({
+            'project_id': project_id,
+            'type': activity_type,
+            'title': title,
+            'description': data.get('description'),
+            'session_doc': data.get('session_doc'),
+            'date': data.get('date')
+        })
 
         return jsonify({
             'status': 'ok',
