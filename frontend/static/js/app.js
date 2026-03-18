@@ -114,71 +114,40 @@ class HomeHubApp {
     }
 
     /**
+     * Get tab name to loader function mapping
+     * @returns {Object} map of tabName -> loader function
+     */
+    _getTabLoaders() {
+        return {
+            'project-status': () => projectStatusModule.load(),
+            'internet': () => internetModule.load(),
+            'local': () => localModule.load(),
+            'dashboard': () => todoModule.init(),
+            'mediastack': () => mediaStackModule.load(),
+            'markets': () => marketsModule.load(),
+            'infrastructure': () => infrastructureModule.load(),
+            'local-apps': () => localAppsModule.load(),
+            'system-monitor': () => systemMonitorModule.load(),
+            'thread-digest': () => threadDigestModule.load(),
+            'calendar': () => calendarModule.init(),
+            'formation': () => formationModule.load(),
+            'services-ports': () => servicesPortsModule.load(),
+            'media-reco': () => mediaRecommenderModule.load(),
+        };
+    }
+
+    /**
      * Load data for specific tab
      * @param {string} tabName
      */
     async loadTabData(tabName) {
-        console.log('📄 loadTabData called for:', tabName);
-        switch(tabName) {
-            case 'project-status':
-                console.log('Loading Project Status module...');
-                await projectStatusModule.load();
-                break;
-            case 'internet':
-                console.log('🌐 Loading internet module...');
-                await internetModule.load();
-                break;
-            case 'local':
-                console.log('💻 Loading local module...');
-                await localModule.load();
-                break;
-            case 'dashboard':
-                console.log('✅ Loading TODO module...');
-                await todoModule.init();
-                console.log('✅ TODO module initialized');
-                break;
-            case 'mediastack':
-                console.log('🎬 Loading Media Stack module...');
-                await mediaStackModule.load();
-                break;
-            case 'markets':
-                console.log('📈 Loading Markets module...');
-                await marketsModule.load();
-                break;
-            case 'infrastructure':
-                console.log('🛠️ Loading infrastructure module...');
-                await infrastructureModule.load();
-                break;
-            case 'local-apps':
-                console.log('📱 Loading Local Apps module...');
-                await localAppsModule.load();
-                break;
-            case 'system-monitor':
-                console.log('📊 Loading System Monitor module...');
-                await systemMonitorModule.load();
-                break;
-            case 'thread-digest':
-                console.log('Loading Thread Digest module...');
-                await threadDigestModule.load();
-                break;
-            case 'calendar':
-                console.log('📅 Loading Calendar module...');
-                await calendarModule.init();
-                break;
-            case 'formation':
-                console.log('Loading Formation module...');
-                await formationModule.load();
-                break;
-            case 'services-ports':
-                console.log('Loading Services & Ports module...');
-                await servicesPortsModule.load();
-                break;
-            case 'media-reco':
-                console.log('Loading Media Recommender module...');
-                await mediaRecommenderModule.load();
-                break;
-            default:
-                console.warn('⚠️ Unknown tab:', tabName);
+        console.log('loadTabData called for:', tabName);
+        const loaders = this._getTabLoaders();
+        const loader = loaders[tabName];
+        if (loader) {
+            await loader();
+        } else {
+            console.warn('Unknown tab:', tabName);
         }
     }
 

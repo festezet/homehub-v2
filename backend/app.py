@@ -13,6 +13,12 @@ import os
 # Add backend directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# Import system utilities (extracted from app.py for modularity)
+from system_utils import (
+    get_x11_env, get_storage_data,
+    _resolve_launch_command, _execute_launch
+)
+
 # Import services
 from services.docker_service import docker_service
 from services.todo_service import todo_service
@@ -46,89 +52,6 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
-
-# Detect X11 display environment for GUI app launching
-def get_x11_env():
-    """Get environment variables for launching GUI apps.
-    Captures full environment from active X11 session."""
-    import subprocess as _sp
-    env = os.environ.copy()
-
-    # Critical variables for GUI apps
-    critical_vars = [
-        'DISPLAY',
-        'XAUTHORITY',
-        'DBUS_SESSION_BUS_ADDRESS',
-        'XDG_RUNTIME_DIR',
-        'XDG_SESSION_TYPE',
-        'HOME',
-        'USER',
-        'LOGNAME'
-    ]
-
-    # Try to get environment from active user session
-    # Find the user's systemd --user process to extract environment
-    try:
-        # Get the user's systemd --user PID
-        result = _sp.run(
-            ['pgrep', '-u', 'fabrice-ryzen', '-f', 'systemd --user'],
-            capture_output=True,
-            text=True,
-            timeout=2
-        )
-        if result.returncode == 0 and result.stdout.strip():
-            systemd_pid = result.stdout.strip().split()[0]
-
-            # Read environment from /proc/<PID>/environ
-            environ_file = f'/proc/{systemd_pid}/environ'
-            if os.path.exists(environ_file):
-                with open(environ_file, 'rb') as f:
-                    environ_data = f.read()
-                    # Parse null-separated environment variables
-                    for item in environ_data.split(b'\0'):
-                        if b'=' in item:
-                            key, value = item.decode('utf-8', errors='ignore').split('=', 1)
-                            if key in critical_vars:
-                                env[key] = value
-
-    except Exception as e:
-        logger.warning(f"Could not extract user session environment: {e}")
-
-    # Fallback detection for critical variables if not found
-    if 'DISPLAY' not in env:
-        for display in [':0', ':1', ':2']:
-            try:
-                result = _sp.run(['xdpyinfo'], env={**env, 'DISPLAY': display},
-                       capture_output=True, timeout=2)
-                if result.returncode == 0:
-                    env['DISPLAY'] = display
-                    break
-            except Exception:
-                continue
-        else:
-            env['DISPLAY'] = ':0'
-
-    if 'XAUTHORITY' not in env:
-        xauth_paths = ['/run/user/1000/gdm/Xauthority', '/home/fabrice-ryzen/.Xauthority']
-        for xauth in xauth_paths:
-            if os.path.exists(xauth):
-                env['XAUTHORITY'] = xauth
-                break
-
-    if 'DBUS_SESSION_BUS_ADDRESS' not in env:
-        env['DBUS_SESSION_BUS_ADDRESS'] = 'unix:path=/run/user/1000/bus'
-
-    if 'XDG_RUNTIME_DIR' not in env:
-        env['XDG_RUNTIME_DIR'] = '/run/user/1000'
-
-    if 'HOME' not in env:
-        env['HOME'] = '/home/fabrice-ryzen'
-
-    if 'USER' not in env:
-        env['USER'] = 'fabrice-ryzen'
-        env['LOGNAME'] = 'fabrice-ryzen'
-
-    return env
 
 # Create Flask app
 app = Flask(__name__,
@@ -375,93 +298,7 @@ def get_projects():
 @app.route('/api/system/storage')
 def get_storage_info():
     """Get disk storage information in hierarchical format by disk"""
-    import subprocess
-
-    def get_partition_info(mount_point):
-        """Get disk usage for a specific mount point"""
-        try:
-            result = subprocess.run(
-                ['df', '-h', mount_point],
-                capture_output=True, text=True, timeout=5
-            )
-            if result.returncode == 0:
-                lines = result.stdout.strip().split('\n')
-                if len(lines) > 1:
-                    parts = lines[1].split()
-                    if len(parts) >= 5:
-                        return {
-                            'total': parts[1],
-                            'used': parts[2],
-                            'available': parts[3],
-                            'percent': int(parts[4].rstrip('%'))
-                        }
-        except Exception as e:
-            logger.debug(f"Could not get info for {mount_point}: {e}")
-        return None
-
-    storage = {}
-
-    try:
-        # SDD - System disk (mounted)
-        sdd_data = {}
-        root_info = get_partition_info('/')
-        if root_info:
-            sdd_data['root'] = root_info
-        home_info = get_partition_info('/home')
-        if home_info:
-            sdd_data['home'] = home_info
-        if sdd_data:
-            storage['sdd'] = sdd_data
-
-        # SDB - System backup disk (not mounted, use static estimates)
-        # Based on sdd sizes since it's a clone
-        if root_info and home_info:
-            storage['sdb'] = {
-                'root': {
-                    'total': '143G',
-                    'used': root_info['used'],  # Approximate same usage
-                    'available': '~' + root_info['available'],
-                    'percent': root_info['percent']
-                },
-                'home': {
-                    'total': '143G',
-                    'used': home_info['used'],
-                    'available': '~' + home_info['available'],
-                    'percent': home_info['percent']
-                }
-            }
-
-        # SDA - LVM Data volumes (mounted)
-        sda_data = {}
-        projects_info = get_partition_info('/data/projects')
-        if projects_info:
-            sda_data['projects'] = projects_info
-        docker_info = get_partition_info('/data/docker')
-        if docker_info:
-            sda_data['docker'] = docker_info
-        media_info = get_partition_info('/data/media')
-        if media_info:
-            sda_data['media'] = media_info
-        if sda_data:
-            storage['sda'] = sda_data
-
-        # SDC - Data backup disk (mounted)
-        sdc_data = {}
-        backup_projects_info = get_partition_info('/backup/projects')
-        if backup_projects_info:
-            sdc_data['projects'] = backup_projects_info
-        backup_docker_info = get_partition_info('/backup/docker')
-        if backup_docker_info:
-            sdc_data['docker'] = backup_docker_info
-        backup_media_info = get_partition_info('/backup/media')
-        if backup_media_info:
-            sdc_data['media'] = backup_media_info
-        if sdc_data:
-            storage['sdc'] = sdc_data
-
-    except Exception as e:
-        logger.error(f"Error getting storage info: {e}")
-
+    storage = get_storage_data()
     return jsonify({
         'status': 'ok' if storage else 'error',
         **storage
@@ -526,10 +363,6 @@ def launch_application(app_id):
 @app.route('/api/projects/launch/<project_id>', methods=['POST'])
 def launch_project(project_id):
     """Launch a project by its ID (PRJ-XXX or APP-XXX)"""
-    import subprocess
-    import sqlite3
-    import os
-
     # Applications additionnelles (APP-XXX) non dans la DB
     additional_apps = {
         'APP-005': {
@@ -539,106 +372,13 @@ def launch_project(project_id):
         },
     }
 
-    # Vérifier si c'est une APP-XXX
-    if project_id in additional_apps:
-        app_info = additional_apps[project_id]
-        launcher_path = app_info['launcher_path']
-
-        if not os.path.exists(launcher_path):
-            return jsonify({
-                'status': 'error',
-                'message': f'Launcher not found: {launcher_path}'
-            }), 404
-
-        env = get_x11_env()
-
-        # Launch with proper logging
-        log_stdout = f"/tmp/homehub_{project_id}_stdout.log"
-        log_stderr = f"/tmp/homehub_{project_id}_stderr.log"
-
-        with open(log_stdout, 'w') as out, open(log_stderr, 'w') as err:
-            subprocess.Popen(
-                ['bash', launcher_path],
-                stdout=out,
-                stderr=err,
-                start_new_session=True,
-                cwd=app_info['path'],
-                env=env
-            )
-
-        logger.info(f"Launched app: {app_info['name']}, logs: {log_stdout}, {log_stderr}")
-
-        return jsonify({
-            'status': 'success',
-            'message': f"{app_info['name']} launched successfully",
-            'project_id': project_id
-        })
-
-    # Sinon, chercher dans la DB (PRJ-XXX)
-    db_path = '/data/projects/project-management/data/projects.db'
-
     try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
+        project_info, error = _resolve_launch_command(project_id, additional_apps)
+        if error:
+            return jsonify(error[0]), error[1]
 
-        cursor.execute('''
-            SELECT name, path, launcher_path, launcher_type
-            FROM projects
-            WHERE unique_id = ?
-        ''', (project_id,))
-
-        row = cursor.fetchone()
-        conn.close()
-
-        if not row:
-            return jsonify({
-                'status': 'error',
-                'message': f'Project {project_id} not found'
-            }), 404
-
-        launcher_path = row['launcher_path']
-        if not launcher_path:
-            return jsonify({
-                'status': 'error',
-                'message': f'Project {row["name"]} has no launcher configured'
-            }), 400
-
-        # Check if launcher exists
-        import os
-        if not os.path.exists(launcher_path):
-            return jsonify({
-                'status': 'error',
-                'message': f'Launcher not found: {launcher_path}'
-            }), 404
-
-        env = get_x11_env()
-
-        # Launch the project with proper logging
-        log_stdout = f"/tmp/homehub_{project_id}_stdout.log"
-        log_stderr = f"/tmp/homehub_{project_id}_stderr.log"
-
-        with open(log_stdout, 'w') as out, open(log_stderr, 'w') as err:
-            subprocess.Popen(
-                ['bash', launcher_path],
-                stdout=out,
-                stderr=err,
-                stdin=subprocess.DEVNULL,
-                start_new_session=True,
-                cwd=row['path'],
-                env=env,
-                close_fds=True
-            )
-
-        logger.info(f"Launched {row['name']}, logs: {log_stdout}, {log_stderr}")
-
-        logger.info(f"Launched project: {row['name']} ({launcher_path})")
-
-        return jsonify({
-            'status': 'success',
-            'message': f"{row['name']} launched successfully",
-            'project_id': project_id
-        })
+        result = _execute_launch(project_id, project_info)
+        return jsonify(result)
 
     except Exception as e:
         logger.error(f"Error launching project {project_id}: {e}")

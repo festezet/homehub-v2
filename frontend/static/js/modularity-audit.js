@@ -38,36 +38,55 @@ class ModularityAuditModule {
         }
 
         const sorted = this._sortData([...entries]);
-        const avgScore = Math.round(entries.reduce((s, e) => s + (e.score || 0), 0) / entries.length);
-        const totalRed = entries.reduce((s, e) => s + (e.summary?.red || 0), 0);
-        const totalYellow = entries.reduce((s, e) => s + (e.summary?.yellow || 0), 0);
-        const worstProject = entries.reduce((w, e) => (!w || (e.score || 0) < (w.score || 0)) ? e : w, null);
-        const cleanProjects = entries.filter(e => (e.summary?.red || 0) === 0).length;
+        const stats = this._computeStats(entries);
 
         container.innerHTML = `
+            ${this._renderStatsCards(stats)}
+            ${this._renderSortBar()}
+            ${this._renderWorstAlert(stats.worstProject)}
+            ${this._renderAuditTable(sorted)}
+        `;
+    }
+
+    _computeStats(entries) {
+        return {
+            avgScore: Math.round(entries.reduce((s, e) => s + (e.score || 0), 0) / entries.length),
+            totalRed: entries.reduce((s, e) => s + (e.summary?.red || 0), 0),
+            totalYellow: entries.reduce((s, e) => s + (e.summary?.yellow || 0), 0),
+            worstProject: entries.reduce((w, e) => (!w || (e.score || 0) < (w.score || 0)) ? e : w, null),
+            cleanProjects: entries.filter(e => (e.summary?.red || 0) === 0).length,
+            total: entries.length
+        };
+    }
+
+    _renderStatsCards(stats) {
+        return `
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-bottom: 24px;">
-                <div class="sp-stat-card" style="border-top: 3px solid ${this._scoreColor(avgScore)};">
-                    <div class="sp-stat-number" style="color: ${this._scoreColor(avgScore)};">${avgScore}</div>
+                <div class="sp-stat-card" style="border-top: 3px solid ${this._scoreColor(stats.avgScore)};">
+                    <div class="sp-stat-number" style="color: ${this._scoreColor(stats.avgScore)};">${stats.avgScore}</div>
                     <div class="sp-stat-label">Score moyen</div>
                 </div>
                 <div class="sp-stat-card" style="border-top: 3px solid #10b981;">
-                    <div class="sp-stat-number" style="color: #10b981;">${cleanProjects}</div>
+                    <div class="sp-stat-number" style="color: #10b981;">${stats.cleanProjects}</div>
                     <div class="sp-stat-label">Sans issues rouges</div>
                 </div>
                 <div class="sp-stat-card" style="border-top: 3px solid #ef4444;">
-                    <div class="sp-stat-number" style="color: #ef4444;">${totalRed}</div>
+                    <div class="sp-stat-number" style="color: #ef4444;">${stats.totalRed}</div>
                     <div class="sp-stat-label">Issues rouges</div>
                 </div>
                 <div class="sp-stat-card" style="border-top: 3px solid #f59e0b;">
-                    <div class="sp-stat-number" style="color: #f59e0b;">${totalYellow}</div>
+                    <div class="sp-stat-number" style="color: #f59e0b;">${stats.totalYellow}</div>
                     <div class="sp-stat-label">Issues jaunes</div>
                 </div>
                 <div class="sp-stat-card">
-                    <div class="sp-stat-number">${entries.length}</div>
+                    <div class="sp-stat-number">${stats.total}</div>
                     <div class="sp-stat-label">Projets scannes</div>
                 </div>
-            </div>
+            </div>`;
+    }
 
+    _renderSortBar() {
+        return `
             <div style="margin-bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
                 <span style="font-size: 0.85em; color: #6b7280;">Trier par :</span>
                 <button class="sp-filter-btn ${this.sort === 'score-asc' ? 'active' : ''}" onclick="window.ModularityAuditModule.setSort('score-asc')">Score (pire)</button>
@@ -78,14 +97,19 @@ class ModularityAuditModule {
                 <button id="modularity-scan-btn" class="sp-filter-btn" style="background: #6366f1; color: white;" onclick="window.ModularityAuditModule.runScan()">
                     ${this.scanning ? 'Scan en cours...' : 'Lancer le scan'}
                 </button>
-            </div>
+            </div>`;
+    }
 
-            ${worstProject ? `
+    _renderWorstAlert(worstProject) {
+        if (!worstProject) return '';
+        return `
             <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; font-size: 0.85em;">
                 Projet le plus critique : <strong>${this._escapeHtml(worstProject.name || worstProject.project)}</strong> — score ${worstProject.score}, ${worstProject.summary?.red || 0} rouge(s), ${worstProject.summary?.yellow || 0} jaune(s)
-            </div>
-            ` : ''}
+            </div>`;
+    }
 
+    _renderAuditTable(sorted) {
+        return `
             <div class="sp-ports-table">
                 <table>
                     <thead>
@@ -103,8 +127,7 @@ class ModularityAuditModule {
                         ${sorted.map(e => this._renderRow(e)).join('')}
                     </tbody>
                 </table>
-            </div>
-        `;
+            </div>`;
     }
 
     _renderRow(entry) {

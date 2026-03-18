@@ -30,52 +30,10 @@ class ActivityService:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
 
-            query = """
-                SELECT
-                    m.id,
-                    m.project_id,
-                    p.name as project_name,
-                    m.title,
-                    m.description,
-                    m.type,
-                    m.date,
-                    m.status,
-                    m.status_notes,
-                    m.source
-                FROM project_milestones m
-                LEFT JOIN projects p ON m.project_id = p.unique_id
-                WHERE 1=1
-            """
-            params = []
-
-            if project_id:
-                query += " AND m.project_id = ?"
-                params.append(project_id)
-
-            if activity_type:
-                query += " AND m.type = ?"
-                params.append(activity_type)
-
-            query += " ORDER BY m.date DESC LIMIT ?"
-            params.append(limit)
-
+            query, params = self._build_timeline_query(project_id, activity_type, limit)
             cursor.execute(query, params)
 
-            timeline = []
-            for row in cursor.fetchall():
-                timeline.append({
-                    'id': row['id'],
-                    'project_id': row['project_id'],
-                    'project_name': row['project_name'],
-                    'title': row['title'],
-                    'description': row['description'],
-                    'type': row['type'],
-                    'date': row['date'],
-                    'status': row['status'],
-                    'status_notes': row['status_notes'],
-                    'source': row['source']
-                })
-
+            timeline = [self._row_to_timeline_entry(row) for row in cursor.fetchall()]
             conn.close()
             return timeline
 
@@ -83,30 +41,74 @@ class ActivityService:
             logger.error(f"Error getting timeline: {e}")
             return []
 
+    @staticmethod
+    def _build_timeline_query(project_id, activity_type, limit):
+        """Build SQL query and params for timeline"""
+        query = """
+            SELECT
+                m.id, m.project_id, p.name as project_name,
+                m.title, m.description, m.type, m.date,
+                m.status, m.status_notes, m.source
+            FROM project_milestones m
+            LEFT JOIN projects p ON m.project_id = p.unique_id
+            WHERE 1=1
+        """
+        params = []
+        if project_id:
+            query += " AND m.project_id = ?"
+            params.append(project_id)
+        if activity_type:
+            query += " AND m.type = ?"
+            params.append(activity_type)
+        query += " ORDER BY m.date DESC LIMIT ?"
+        params.append(limit)
+        return query, params
+
+    @staticmethod
+    def _row_to_timeline_entry(row):
+        """Convert a DB row to a timeline entry dict"""
+        return {
+            'id': row['id'],
+            'project_id': row['project_id'],
+            'project_name': row['project_name'],
+            'title': row['title'],
+            'description': row['description'],
+            'type': row['type'],
+            'date': row['date'],
+            'status': row['status'],
+            'status_notes': row['status_notes'],
+            'source': row['source']
+        }
+
     def get_project_activity(self, project_id, limit=5):
         """Get recent activity for a specific project"""
         return self.get_timeline(limit=limit, project_id=project_id)
 
-    def log_activity(self, project_id, activity_type, title, description=None, session_doc=None, date=None):
-        """Log a new activity entry via API"""
+    def log_activity(self, data):
+        """Log a new activity entry via API.
+
+        Args:
+            data: dict with keys: project_id, type, title,
+                  and optional: description, session_doc, date
+        """
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
 
-            if not date:
-                date = datetime.now().strftime('%Y-%m-%d')
+            date = data.get('date') or datetime.now().strftime('%Y-%m-%d')
 
             cursor.execute("""
                 INSERT INTO project_milestones
                     (project_id, date, type, title, description, session_doc, status, source)
                 VALUES (?, ?, ?, ?, ?, ?, 'completed', 'api')
-            """, (project_id, date, activity_type, title, description, session_doc))
+            """, (data['project_id'], date, data['type'], data['title'],
+                  data.get('description'), data.get('session_doc')))
 
             conn.commit()
             entry_id = cursor.lastrowid
             conn.close()
 
-            logger.info(f"Activity logged: [{project_id}] {title}")
+            logger.info(f"Activity logged: [{data['project_id']}] {data['title']}")
             return entry_id
 
         except Exception as e:

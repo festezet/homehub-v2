@@ -77,39 +77,49 @@ class MediaStackModule {
      * Render a single service card
      */
     renderServiceCard(service) {
+        if (service.special) {
+            return this._renderSpecialCard(service);
+        }
         const status = this.containerStatuses[service.container] || 'stopped';
         const isRunning = status === 'running';
-        const statusClass = isRunning ? 'status-running' : 'status-stopped';
-        const statusText = isRunning ? 'En ligne' : 'Arrêté';
+        return this._renderNormalCard(service, isRunning);
+    }
 
-        // Special card for restart action
-        if (service.special) {
-            return `
-                <div class="service-card" onclick="window.MediaStack.restartDownloadStack()">
-                    <div class="service-header">
-                        <div class="service-icon" style="background: linear-gradient(135deg, #f59e0b22, #f59e0b44);">
-                            ${service.icon}
-                        </div>
-                        <div class="service-info">
-                            <div class="service-name">${service.name}</div>
-                            <div class="service-description">💡 ${service.description}</div>
-                        </div>
+    /**
+     * Render special action card (e.g. restart stack)
+     */
+    _renderSpecialCard(service) {
+        return `
+            <div class="service-card" onclick="window.MediaStack.restartDownloadStack()">
+                <div class="service-header">
+                    <div class="service-icon" style="background: linear-gradient(135deg, #f59e0b22, #f59e0b44);">
+                        ${service.icon}
                     </div>
-                    <div class="service-footer">
-                        <div class="service-actions">
-                            <button class="action-btn btn-restart">🔄 Redémarrer</button>
-                        </div>
+                    <div class="service-info">
+                        <div class="service-name">${service.name}</div>
+                        <div class="service-description">${service.description}</div>
                     </div>
                 </div>
-            `;
-        }
+                <div class="service-footer">
+                    <div class="service-actions">
+                        <button class="action-btn btn-restart">Redemarrer</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render normal service card with status and controls
+     */
+    _renderNormalCard(service, isRunning) {
+        const statusClass = isRunning ? 'status-running' : 'status-stopped';
+        const statusText = isRunning ? 'En ligne' : 'Arrete';
 
         return `
             <div class="service-card">
                 <div class="service-header">
-                    <div class="service-icon">
-                        ${service.icon}
-                    </div>
+                    <div class="service-icon">${service.icon}</div>
                     <div class="service-info">
                         <div class="service-name">${service.name}</div>
                         <div class="service-description">${service.description}</div>
@@ -126,20 +136,20 @@ class MediaStackModule {
                     <div class="service-actions">
                         ${isRunning && service.url ? `
                             <button class="action-btn btn-open" onclick="window.MediaStack.openService('${service.url}', '${service.name}')">
-                                🌐 Ouvrir
+                                Ouvrir
                             </button>
                         ` : ''}
                         ${isRunning ? `
                             <button class="action-btn btn-stop" onclick="window.MediaStack.controlContainer('${service.container}', 'stop')">
-                                ⏹️ Arrêter
+                                Arreter
                             </button>
                         ` : `
                             <button class="action-btn btn-start" onclick="window.MediaStack.controlContainer('${service.container}', 'start')">
-                                ▶️ Démarrer
+                                Demarrer
                             </button>
                         `}
                         <button class="action-btn btn-restart" onclick="window.MediaStack.controlContainer('${service.container}', 'restart')">
-                            🔄
+                            Restart
                         </button>
                     </div>
                 </div>

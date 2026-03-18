@@ -49,79 +49,43 @@ class MarketsModule {
     }
 
     /**
+     * Get ticker tape symbol definitions
+     * @returns {Array} ticker symbols config
+     */
+    _getTickerSymbols() {
+        return [
+            { "description": "Bitcoin", "proName": "BITSTAMP:BTCUSD" },
+            { "proName": "OANDA:XAUUSD", "title": "Or (XAU/USD)" },
+            { "proName": "OANDA:XAGUSD", "title": "Argent (XAG/USD)" },
+            { "proName": "COMEX:HG1!", "title": "Cuivre" },
+            { "proName": "OANDA:XPTUSD", "title": "Platine (XPT/USD)" },
+            { "description": "EUR/USD", "proName": "FX:EURUSD" },
+            { "description": "NASDAQ", "proName": "NASDAQ:IXIC" },
+            { "description": "S&P 500", "proName": "FOREXCOM:SPXUSD" },
+            { "description": "Ethereum", "proName": "BITSTAMP:ETHUSD" },
+            { "proName": "NASDAQ:MSFT", "title": "Microsoft" },
+            { "proName": "NASDAQ:AMZN", "title": "Amazon" },
+            { "proName": "NASDAQ:GOOGL", "title": "Google" },
+            { "proName": "NASDAQ:TSLA", "title": "Tesla" },
+            { "description": "Pétrole Brut", "proName": "TVC:USOIL" },
+        ];
+    }
+
+    /**
      * Initialize Ticker Tape widget (bande défilante)
      */
     initTickerTape() {
         const container = document.getElementById('tradingview-ticker-tape');
         if (!container) return;
 
-        // Clear container first
         container.innerHTML = '';
 
-        // Create script element for ticker tape
         const script = document.createElement('script');
         script.type = 'text/javascript';
         script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js';
         script.async = true;
         script.innerHTML = JSON.stringify({
-            "symbols": [
-                {
-                    "description": "Bitcoin",
-                    "proName": "BITSTAMP:BTCUSD"
-                },
-                {
-                    "proName": "OANDA:XAUUSD",
-                    "title": "Or (XAU/USD)"
-                },
-                {
-                    "proName": "OANDA:XAGUSD",
-                    "title": "Argent (XAG/USD)"
-                },
-                {
-                    "proName": "COMEX:HG1!",
-                    "title": "Cuivre"
-                },
-                {
-                    "proName": "OANDA:XPTUSD",
-                    "title": "Platine (XPT/USD)"
-                },
-                {
-                    "description": "EUR/USD",
-                    "proName": "FX:EURUSD"
-                },
-                {
-                    "description": "NASDAQ",
-                    "proName": "NASDAQ:IXIC"
-                },
-                {
-                    "description": "S&P 500",
-                    "proName": "FOREXCOM:SPXUSD"
-                },
-                {
-                    "description": "Ethereum",
-                    "proName": "BITSTAMP:ETHUSD"
-                },
-                {
-                    "proName": "NASDAQ:MSFT",
-                    "title": "Microsoft"
-                },
-                {
-                    "proName": "NASDAQ:AMZN",
-                    "title": "Amazon"
-                },
-                {
-                    "proName": "NASDAQ:GOOGL",
-                    "title": "Google"
-                },
-                {
-                    "proName": "NASDAQ:TSLA",
-                    "title": "Tesla"
-                },
-                {
-                    "description": "Pétrole Brut",
-                    "proName": "TVC:USOIL"
-                }
-            ],
+            "symbols": this._getTickerSymbols(),
             "showSymbolLogo": true,
             "colorTheme": this.theme,
             "isTransparent": false,
