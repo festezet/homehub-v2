@@ -52,61 +52,70 @@ class SpecsModule {
             ? this.data
             : this.data.filter(s => s.spec_status === this.filter);
 
-        const total = this.data.length;
-        const complete = this.data.filter(s => s.spec_status === 'complete').length;
-        const draft = this.data.filter(s => s.spec_status === 'draft').length;
-        const missing = this.data.filter(s => s.spec_status === 'missing').length;
-        const outdated = this.data.filter(s => s.spec_status === 'outdated').length;
-
-        const statusColors = {
-            'complete': '#10b981',
-            'draft': '#f59e0b',
-            'missing': '#ef4444',
-            'outdated': '#8b5cf6'
+        const counts = {
+            total: this.data.length,
+            complete: this.data.filter(s => s.spec_status === 'complete').length,
+            draft: this.data.filter(s => s.spec_status === 'draft').length,
+            missing: this.data.filter(s => s.spec_status === 'missing').length,
+            outdated: this.data.filter(s => s.spec_status === 'outdated').length
         };
 
-        const statusLabels = {
-            'complete': 'Complete',
-            'draft': 'Brouillon',
-            'missing': 'Manquante',
-            'outdated': 'Obsolete'
-        };
+        return this._renderSpecsStats(counts)
+             + this._renderSpecsFilters(counts)
+             + this._renderSpecsTable(specs);
+    }
 
+    _renderSpecsStats(counts) {
         return `
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-bottom: 24px;">
                 <div class="sp-stat-card">
-                    <div class="sp-stat-number">${total}</div>
+                    <div class="sp-stat-number">${counts.total}</div>
                     <div class="sp-stat-label">Projets actifs</div>
                 </div>
                 <div class="sp-stat-card" style="border-top: 3px solid #10b981;">
-                    <div class="sp-stat-number" style="color: #10b981;">${complete}</div>
+                    <div class="sp-stat-number" style="color: #10b981;">${counts.complete}</div>
                     <div class="sp-stat-label">Specs completes</div>
                 </div>
                 <div class="sp-stat-card" style="border-top: 3px solid #f59e0b;">
-                    <div class="sp-stat-number" style="color: #f59e0b;">${draft}</div>
+                    <div class="sp-stat-number" style="color: #f59e0b;">${counts.draft}</div>
                     <div class="sp-stat-label">Brouillons</div>
                 </div>
                 <div class="sp-stat-card" style="border-top: 3px solid #ef4444;">
-                    <div class="sp-stat-number" style="color: #ef4444;">${missing}</div>
+                    <div class="sp-stat-number" style="color: #ef4444;">${counts.missing}</div>
                     <div class="sp-stat-label">Manquantes</div>
                 </div>
-                ${outdated > 0 ? `
+                ${counts.outdated > 0 ? `
                 <div class="sp-stat-card" style="border-top: 3px solid #8b5cf6;">
-                    <div class="sp-stat-number" style="color: #8b5cf6;">${outdated}</div>
+                    <div class="sp-stat-number" style="color: #8b5cf6;">${counts.outdated}</div>
                     <div class="sp-stat-label">Obsoletes</div>
                 </div>` : ''}
-            </div>
+            </div>`;
+    }
 
+    _renderSpecsFilters(counts) {
+        return `
             <div style="margin-bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                <button class="sp-filter-btn ${this.filter === 'all' ? 'active' : ''}" onclick="window.SpecsModule.setFilter('all')">Tous (${total})</button>
-                <button class="sp-filter-btn ${this.filter === 'complete' ? 'active' : ''}" onclick="window.SpecsModule.setFilter('complete')">Complete (${complete})</button>
-                <button class="sp-filter-btn ${this.filter === 'draft' ? 'active' : ''}" onclick="window.SpecsModule.setFilter('draft')">Brouillon (${draft})</button>
-                <button class="sp-filter-btn ${this.filter === 'missing' ? 'active' : ''}" onclick="window.SpecsModule.setFilter('missing')">Manquante (${missing})</button>
-                ${outdated > 0 ? `<button class="sp-filter-btn ${this.filter === 'outdated' ? 'active' : ''}" onclick="window.SpecsModule.setFilter('outdated')">Obsolete (${outdated})</button>` : ''}
+                <button class="sp-filter-btn ${this.filter === 'all' ? 'active' : ''}" onclick="window.SpecsModule.setFilter('all')">Tous (${counts.total})</button>
+                <button class="sp-filter-btn ${this.filter === 'complete' ? 'active' : ''}" onclick="window.SpecsModule.setFilter('complete')">Complete (${counts.complete})</button>
+                <button class="sp-filter-btn ${this.filter === 'draft' ? 'active' : ''}" onclick="window.SpecsModule.setFilter('draft')">Brouillon (${counts.draft})</button>
+                <button class="sp-filter-btn ${this.filter === 'missing' ? 'active' : ''}" onclick="window.SpecsModule.setFilter('missing')">Manquante (${counts.missing})</button>
+                ${counts.outdated > 0 ? `<button class="sp-filter-btn ${this.filter === 'outdated' ? 'active' : ''}" onclick="window.SpecsModule.setFilter('outdated')">Obsolete (${counts.outdated})</button>` : ''}
                 <div style="flex: 1;"></div>
                 <button class="sp-filter-btn" style="background: #3b82f6; color: white;" onclick="window.SpecsModule.scanSpecs()">Scanner fichiers</button>
-            </div>
+            </div>`;
+    }
 
+    _renderSpecsTable(specs) {
+        const statusColors = {
+            'complete': '#10b981', 'draft': '#f59e0b',
+            'missing': '#ef4444', 'outdated': '#8b5cf6'
+        };
+        const statusLabels = {
+            'complete': 'Complete', 'draft': 'Brouillon',
+            'missing': 'Manquante', 'outdated': 'Obsolete'
+        };
+
+        return `
             <div class="sp-ports-table">
                 <table>
                     <thead>
@@ -120,97 +129,110 @@ class SpecsModule {
                         </tr>
                     </thead>
                     <tbody>
-                        ${specs.map(s => {
-                            const color = statusColors[s.spec_status] || '#6b7280';
-                            return `
-                            <tr>
-                                <td><strong>${s.name}</strong></td>
-                                <td><code style="font-size: 0.8em; color: #6b7280;">${s.unique_id}</code></td>
-                                <td>
-                                    <select
-                                        data-id="${s.id}" data-field="spec_status"
-                                        onchange="window.SpecsModule.onFieldChange(this)"
-                                        style="padding: 4px 8px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 0.85em; background: white; color: ${color}; font-weight: 600; cursor: pointer;">
-                                        ${['missing', 'draft', 'complete', 'outdated'].map(opt =>
-                                            `<option value="${opt}" ${s.spec_status === opt ? 'selected' : ''} style="color: ${statusColors[opt]};">${statusLabels[opt]}</option>`
-                                        ).join('')}
-                                    </select>
-                                </td>
-                                <td style="color: #6b7280; font-size: 0.85em;">${s.spec_date || '-'}</td>
-                                <td style="text-align: center; color: #6b7280; font-size: 0.85em;">${s.spec_lines || '-'}</td>
-                                <td>
-                                    <span
-                                        contenteditable="true"
-                                        data-id="${s.id}" data-field="spec_notes"
-                                        class="specs-editable-note"
-                                        style="display: inline-block; min-width: 100px; padding: 2px 6px; border: 1px solid transparent; border-radius: 4px; font-size: 0.85em; color: #374151; outline: none;"
-                                        onfocus="this.style.borderColor='#3b82f6'; this.style.background='#f0f7ff';"
-                                        onblur="this.style.borderColor='transparent'; this.style.background='transparent'; window.SpecsModule.onNoteBlur(this);"
-                                    >${s.spec_notes || ''}</span>
-                                </td>
-                            </tr>`;
-                        }).join('')}
+                        ${specs.map(s => this._renderSpecsRow(s, statusColors, statusLabels)).join('')}
                     </tbody>
                 </table>
-            </div>
-        `;
+            </div>`;
+    }
+
+    _renderSpecsRow(s, statusColors, statusLabels) {
+        const color = statusColors[s.spec_status] || '#6b7280';
+        return `
+            <tr>
+                <td><strong>${s.name}</strong></td>
+                <td><code style="font-size: 0.8em; color: #6b7280;">${s.unique_id}</code></td>
+                <td>
+                    <select
+                        data-id="${s.id}" data-field="spec_status"
+                        onchange="window.SpecsModule.onFieldChange(this)"
+                        style="padding: 4px 8px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 0.85em; background: white; color: ${color}; font-weight: 600; cursor: pointer;">
+                        ${['missing', 'draft', 'complete', 'outdated'].map(opt =>
+                            `<option value="${opt}" ${s.spec_status === opt ? 'selected' : ''} style="color: ${statusColors[opt]};">${statusLabels[opt]}</option>`
+                        ).join('')}
+                    </select>
+                </td>
+                <td style="color: #6b7280; font-size: 0.85em;">${s.spec_date || '-'}</td>
+                <td style="text-align: center; color: #6b7280; font-size: 0.85em;">${s.spec_lines || '-'}</td>
+                <td>
+                    <span
+                        contenteditable="true"
+                        data-id="${s.id}" data-field="spec_notes"
+                        class="specs-editable-note"
+                        style="display: inline-block; min-width: 100px; padding: 2px 6px; border: 1px solid transparent; border-radius: 4px; font-size: 0.85em; color: #374151; outline: none;"
+                        onfocus="this.style.borderColor='#3b82f6'; this.style.background='#f0f7ff';"
+                        onblur="this.style.borderColor='transparent'; this.style.background='transparent'; window.SpecsModule.onNoteBlur(this);"
+                    >${s.spec_notes || ''}</span>
+                </td>
+            </tr>`;
     }
 
     // --- HEALTH VIEW ---
 
     renderHealthView() {
         const sorted = this._sortHealthData([...this.data]);
-
-        const avgScore = this.data.length > 0
-            ? Math.round(this.data.reduce((sum, s) => sum + (s.health_score || 0), 0) / this.data.length)
-            : 0;
-        const healthy = this.data.filter(s => (s.health_score || 0) >= 60).length;
-        const critical = this.data.filter(s => (s.health_score || 0) < 40).length;
-        const withTests = this.data.filter(s => s.health_has_tests).length;
-        const portable = this.data.filter(s => (s.health_portability_score || 0) >= 60).length;
-        const servicesUp = this.data.filter(s => s.health_service_up === true).length;
-        const servicesTotal = this.data.filter(s => s.health_service_up !== null).length;
-
         const needsScan = this.data.every(s => !s.health_score);
 
+        const stats = {
+            avgScore: this.data.length > 0
+                ? Math.round(this.data.reduce((sum, s) => sum + (s.health_score || 0), 0) / this.data.length) : 0,
+            healthy: this.data.filter(s => (s.health_score || 0) >= 60).length,
+            critical: this.data.filter(s => (s.health_score || 0) < 40).length,
+            withTests: this.data.filter(s => s.health_has_tests).length,
+            portable: this.data.filter(s => (s.health_portability_score || 0) >= 60).length,
+            servicesUp: this.data.filter(s => s.health_service_up === true).length,
+            servicesTotal: this.data.filter(s => s.health_service_up !== null).length
+        };
+
+        return this._renderHealthStats(stats)
+             + this._renderHealthScanBanner(needsScan)
+             + this._renderHealthSortBar()
+             + this._renderHealthTable(sorted);
+    }
+
+    _renderHealthStats(stats) {
         return `
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-bottom: 24px;">
-                <div class="sp-stat-card" style="border-top: 3px solid ${this._scoreColor(avgScore)};">
-                    <div class="sp-stat-number" style="color: ${this._scoreColor(avgScore)};">${avgScore}</div>
+                <div class="sp-stat-card" style="border-top: 3px solid ${this._scoreColor(stats.avgScore)};">
+                    <div class="sp-stat-number" style="color: ${this._scoreColor(stats.avgScore)};">${stats.avgScore}</div>
                     <div class="sp-stat-label">Score moyen</div>
                 </div>
                 <div class="sp-stat-card" style="border-top: 3px solid #10b981;">
-                    <div class="sp-stat-number" style="color: #10b981;">${healthy}</div>
+                    <div class="sp-stat-number" style="color: #10b981;">${stats.healthy}</div>
                     <div class="sp-stat-label">Projets sains</div>
                 </div>
                 <div class="sp-stat-card" style="border-top: 3px solid #ef4444;">
-                    <div class="sp-stat-number" style="color: #ef4444;">${critical}</div>
+                    <div class="sp-stat-number" style="color: #ef4444;">${stats.critical}</div>
                     <div class="sp-stat-label">Critiques</div>
                 </div>
                 <div class="sp-stat-card" style="border-top: 3px solid #6366f1;">
-                    <div class="sp-stat-number" style="color: #6366f1;">${withTests}</div>
+                    <div class="sp-stat-number" style="color: #6366f1;">${stats.withTests}</div>
                     <div class="sp-stat-label">Avec tests</div>
                 </div>
                 <div class="sp-stat-card" style="border-top: 3px solid #8b5cf6;">
-                    <div class="sp-stat-number" style="color: #8b5cf6;">${portable}/${this.data.length}</div>
+                    <div class="sp-stat-number" style="color: #8b5cf6;">${stats.portable}/${this.data.length}</div>
                     <div class="sp-stat-label">Portables</div>
                 </div>
                 <div class="sp-stat-card" style="border-top: 3px solid #0ea5e9;">
-                    <div class="sp-stat-number" style="color: #0ea5e9;">${servicesUp}/${servicesTotal}</div>
+                    <div class="sp-stat-number" style="color: #0ea5e9;">${stats.servicesUp}/${stats.servicesTotal}</div>
                     <div class="sp-stat-label">Services up</div>
                 </div>
-            </div>
+            </div>`;
+    }
 
-            ${needsScan ? `
+    _renderHealthScanBanner(needsScan) {
+        if (!needsScan) return '';
+        return `
             <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
                 <span style="font-size: 1.4em;">!</span>
                 <div>
                     <strong>Aucune donnee de sante.</strong> Lancez un scan pour analyser vos projets.
                 </div>
                 <button class="sp-filter-btn" style="background: #f59e0b; color: white; margin-left: auto;" onclick="window.SpecsModule.scanHealth()">Scanner maintenant</button>
-            </div>
-            ` : ''}
+            </div>`;
+    }
 
+    _renderHealthSortBar() {
+        return `
             <div style="margin-bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
                 <span style="font-size: 0.85em; color: #6b7280;">Trier par :</span>
                 <button class="sp-filter-btn ${this.healthSort === 'score-desc' ? 'active' : ''}" onclick="window.SpecsModule.setHealthSort('score-desc')">Score</button>
@@ -220,8 +242,11 @@ class SpecsModule {
                 <button class="sp-filter-btn ${this.healthSort === 'portability-desc' ? 'active' : ''}" onclick="window.SpecsModule.setHealthSort('portability-desc')">Portabilite</button>
                 <div style="flex: 1;"></div>
                 <button class="sp-filter-btn" style="background: #6366f1; color: white;" onclick="window.SpecsModule.scanHealth()">Scanner sante</button>
-            </div>
+            </div>`;
+    }
 
+    _renderHealthTable(sorted) {
+        return `
             <div class="sp-ports-table">
                 <table>
                     <thead>
@@ -243,8 +268,7 @@ class SpecsModule {
                         ${sorted.map(s => this._renderHealthRow(s)).join('')}
                     </tbody>
                 </table>
-            </div>
-        `;
+            </div>`;
     }
 
     _renderHealthRow(s) {
