@@ -4,6 +4,7 @@
  */
 
 import API from './api.js';
+import { initDockerMixin, DOCKER_STACKS } from './local-apps-docker.js';
 
 const CATEGORY_ICONS = {
     'frequent-use': '\u2B50',
@@ -14,23 +15,6 @@ const CATEGORY_ICONS = {
     'infrastructure': '\uD83C\uDFD7\uFE0F',
     'data': '\uD83D\uDCCA',
     'integration': '\uD83D\uDD17'
-};
-
-const DOCKER_STACKS = {
-    'llm': {
-        statusUrl: '/api/docker/llm/status',
-        startUrl: '/api/docker/llm/start',
-        stopUrl: '/api/docker/llm/stop',
-        startDelay: 30000,
-        label: 'Ollama + Open WebUI'
-    },
-    'stable-diffusion': {
-        statusUrl: '/api/docker/stable-diffusion/status',
-        startUrl: '/api/docker/stable-diffusion/start',
-        stopUrl: '/api/docker/stable-diffusion/stop',
-        startDelay: 180000,
-        label: 'Stable Diffusion'
-    }
 };
 
 class LocalAppsModule {
@@ -93,44 +77,37 @@ class LocalAppsModule {
 
         for (const cat of categories) {
             if (cat.apps.length === 0 && !this.editMode) continue;
-
-            const icon = CATEGORY_ICONS[cat.slug] || '';
-            const isFrequent = cat.slug === 'frequent-use';
-            const sectionClass = isFrequent ? 'la-category la-category-frequent-use' : 'la-category';
-
-            html += `
-            <div class="${sectionClass}" data-category="${this.esc(cat.slug)}">
-                <h2 class="la-category-header">
-                    <span class="la-category-icon">${icon}</span> ${this.esc(cat.name)}
-                </h2>
-                <div class="la-grid">`;
-
-            for (const app of cat.apps) {
-                if (app.app_type === 'docker') {
-                    html += this.renderDockerCard(app);
-                } else {
-                    html += this.renderAppCard(app);
-                }
-            }
-
-            // Add card (visible in edit mode only, not for frequent-use)
-            if (!isFrequent) {
-                html += `
-                    <div class="la-add-card" data-category-slug="${this.esc(cat.slug)}">
-                        <div class="la-add-content">
-                            <span class="la-add-icon">+</span>
-                            <span class="la-add-text">Ajouter</span>
-                        </div>
-                    </div>`;
-            }
-
-            html += `
-                </div>
-            </div>`;
+            html += this._renderCategorySection(cat);
         }
 
         container.innerHTML = html;
         this.bindEvents(container);
+    }
+
+    _renderCategorySection(cat) {
+        const icon = CATEGORY_ICONS[cat.slug] || '';
+        const isFrequent = cat.slug === 'frequent-use';
+        const sectionClass = isFrequent ? 'la-category la-category-frequent-use' : 'la-category';
+
+        const appsHtml = cat.apps.map(app =>
+            app.app_type === 'docker' ? this.renderDockerCard(app) : this.renderAppCard(app)
+        ).join('');
+
+        const addCardHtml = !isFrequent ? `
+            <div class="la-add-card" data-category-slug="${this.esc(cat.slug)}">
+                <div class="la-add-content">
+                    <span class="la-add-icon">+</span>
+                    <span class="la-add-text">Ajouter</span>
+                </div>
+            </div>` : '';
+
+        return `
+            <div class="${sectionClass}" data-category="${this.esc(cat.slug)}">
+                <h2 class="la-category-header">
+                    <span class="la-category-icon">${icon}</span> ${this.esc(cat.name)}
+                </h2>
+                <div class="la-grid">${appsHtml}${addCardHtml}</div>
+            </div>`;
     }
 
     renderAppCard(app) {
@@ -342,7 +319,18 @@ class LocalAppsModule {
         const modal = document.createElement('div');
         modal.id = 'la-add-modal';
         modal.className = 'modal-overlay';
-        modal.innerHTML = `
+        modal.innerHTML = this._buildAddModalHtml(catName, categorySlug, categories);
+
+        document.body.appendChild(modal);
+        this._bindAddModalEvents(modal);
+    }
+
+    _buildAddModalHtml(catName, categorySlug, categories) {
+        const options = categories.map(c =>
+            `<option value="${this.esc(c.slug)}" ${c.slug === categorySlug ? 'selected' : ''}>${this.esc(c.name)}</option>`
+        ).join('');
+
+        return `
             <div class="modal-content">
                 <div class="modal-header">
                     <h3>Ajouter une app dans "${this.esc(catName)}"</h3>
@@ -359,9 +347,7 @@ class LocalAppsModule {
                     </div>
                     <div class="form-group">
                         <label for="la-app-category">Categorie</label>
-                        <select id="la-app-category">
-                            ${categories.map(c => `<option value="${this.esc(c.slug)}" ${c.slug === categorySlug ? 'selected' : ''}>${this.esc(c.name)}</option>`).join('')}
-                        </select>
+                        <select id="la-app-category">${options}</select>
                     </div>
                     <div class="form-group">
                         <label for="la-app-type">Type</label>
@@ -385,9 +371,9 @@ class LocalAppsModule {
                     </div>
                 </form>
             </div>`;
+    }
 
-        document.body.appendChild(modal);
-
+    _bindAddModalEvents(modal) {
         const removeModal = () => {
             modal.remove();
             document.removeEventListener('keydown', handleEscape);
@@ -442,113 +428,6 @@ class LocalAppsModule {
         }
     }
 
-    // Docker status polling
-    async pollDockerStatus() {
-        await this.updateDockerStatuses();
-        if (this._pollInterval) clearInterval(this._pollInterval);
-        this._pollInterval = setInterval(() => this.updateDockerStatuses(), 30000);
-    }
-
-    async updateDockerStatuses() {
-        for (const [stack, config] of Object.entries(DOCKER_STACKS)) {
-            try {
-                const resp = await fetch(config.statusUrl);
-                const data = await resp.json();
-                this.updateDockerUI(stack, data.running);
-            } catch {
-                this.updateDockerUI(stack, false);
-            }
-        }
-    }
-
-    updateDockerUI(stack, running) {
-        const badge = document.getElementById(`docker-status-${stack}`);
-        const startBtn = document.getElementById(`docker-start-${stack}`);
-        const stopBtn = document.getElementById(`docker-stop-${stack}`);
-        const openBtn = document.getElementById(`docker-open-${stack}`);
-
-        if (badge) {
-            badge.textContent = running ? 'En ligne' : 'Arrete';
-            badge.className = `la-docker-status ${running ? 'online' : 'offline'}`;
-        }
-        if (startBtn) {
-            startBtn.disabled = running;
-            startBtn.textContent = running ? 'Demarre' : 'Demarrer';
-        }
-        if (stopBtn) stopBtn.disabled = !running;
-        if (openBtn) openBtn.disabled = !running;
-    }
-
-    async startDockerApp(stack) {
-        const config = DOCKER_STACKS[stack];
-        if (!config) return;
-
-        this.showToast(`Demarrage de ${config.label}...`, 'info');
-        const startBtn = document.getElementById(`docker-start-${stack}`);
-        if (startBtn) { startBtn.disabled = true; startBtn.textContent = 'Demarrage...'; }
-
-        // Record launch via local apps API
-        const app = this.findDockerApp(stack);
-        if (app) {
-            try { await API.localApps.launchApp(app.id); } catch { /* ignore */ }
-        }
-
-        try {
-            const resp = await fetch(config.startUrl, { method: 'POST' });
-            const data = await resp.json();
-
-            if (data.status === 'success') {
-                if (data.stopped && data.stopped.length > 0) {
-                    this.showToast(`Autre stack GPU arrete pour liberer VRAM`, 'info');
-                }
-                this.showToast(`${data.message}`, 'success');
-                setTimeout(() => this.updateDockerStatuses(), config.startDelay);
-            } else {
-                this.showToast(`Erreur: ${data.message}`, 'error');
-                if (startBtn) { startBtn.disabled = false; startBtn.textContent = 'Demarrer'; }
-            }
-        } catch (error) {
-            console.error(`Error starting ${stack}:`, error);
-            this.showToast(`Erreur demarrage ${config.label}`, 'error');
-            if (startBtn) { startBtn.disabled = false; startBtn.textContent = 'Demarrer'; }
-        }
-    }
-
-    async stopDockerApp(stack) {
-        const config = DOCKER_STACKS[stack];
-        if (!config) return;
-
-        this.showToast(`Arret de ${config.label}...`, 'info');
-        const stopBtn = document.getElementById(`docker-stop-${stack}`);
-        if (stopBtn) { stopBtn.disabled = true; stopBtn.textContent = 'Arret...'; }
-
-        try {
-            const resp = await fetch(config.stopUrl, { method: 'POST' });
-            const data = await resp.json();
-
-            if (data.status === 'success') {
-                this.showToast(`${data.message} - VRAM liberee`, 'success');
-                this.updateDockerStatuses();
-            } else {
-                this.showToast(`Erreur: ${data.message}`, 'error');
-            }
-        } catch (error) {
-            console.error(`Error stopping ${stack}:`, error);
-            this.showToast(`Erreur arret ${config.label}`, 'error');
-        } finally {
-            if (stopBtn) { stopBtn.disabled = false; stopBtn.textContent = 'Arreter'; }
-        }
-    }
-
-    findDockerApp(stack) {
-        if (!this.data) return null;
-        for (const cat of this.data) {
-            const found = cat.apps.find(a => a.docker_stack === stack);
-            if (found) return found;
-        }
-        return null;
-    }
-
     showToast(message, type = 'info') {
         if (window.Utils && window.Utils.showToast) {
             window.Utils.showToast(message, type);
@@ -581,6 +460,7 @@ class LocalAppsModule {
 }
 
 const localAppsModule = new LocalAppsModule();
+initDockerMixin(localAppsModule);
 window.localAppsModule = localAppsModule;
 
 export default localAppsModule;
