@@ -160,12 +160,13 @@ class ScheduleService:
         preferred = mapping.get(todo.get('category', 'Admin'), ['dev', 'prospection'])
         days_to_check = self._sort_days_by_deadline(todo, week_schedule)
 
-        result = self._find_preferred_slot(
-            days_to_check, week_schedule, google_events, used_slots, preferred, todo_time)
+        ctx = {'days': days_to_check, 'week_schedule': week_schedule,
+               'google_events': google_events, 'used_slots': used_slots,
+               'preferred_cats': preferred, 'min_time': todo_time}
+        result = self._find_preferred_slot(ctx)
         if result:
             return result
-        return self._find_fallback_slot(
-            days_to_check, week_schedule, google_events, used_slots, todo_time)
+        return self._find_fallback_slot(ctx)
 
     def _sort_days_by_deadline(self, todo, week_schedule):
         """Sort week days by deadline proximity"""
@@ -183,32 +184,34 @@ class ScheduleService:
         except Exception:
             return days
 
-    def _find_preferred_slot(self, days, week_schedule, google_events,
-                             used_slots, preferred_cats, min_time):
-        """Find slot matching preferred categories"""
-        for day_name in days:
-            day_data = week_schedule[day_name]
+    def _find_preferred_slot(self, ctx):
+        """Find slot matching preferred categories.
+        Args: ctx dict with keys: days, week_schedule, google_events, used_slots, preferred_cats, min_time
+        """
+        for day_name in ctx['days']:
+            day_data = ctx['week_schedule'][day_name]
             available = calendar_service.get_available_slots(
-                day_name, google_events.get(day_name, []))
+                day_name, ctx['google_events'].get(day_name, []))
             for slot in available:
-                if (day_name, slot['start']) in used_slots:
+                if (day_name, slot['start']) in ctx['used_slots']:
                     continue
-                if slot['category'] in preferred_cats:
-                    if self._get_slot_duration(slot) >= min_time:
+                if slot['category'] in ctx['preferred_cats']:
+                    if self._get_slot_duration(slot) >= ctx['min_time']:
                         return self._make_slot_result(day_name, day_data, slot)
         return None
 
-    def _find_fallback_slot(self, days, week_schedule, google_events,
-                            used_slots, min_time):
-        """Find any available slot with sufficient time"""
-        for day_name in days:
-            day_data = week_schedule[day_name]
+    def _find_fallback_slot(self, ctx):
+        """Find any available slot with sufficient time.
+        Args: ctx dict with keys: days, week_schedule, google_events, used_slots, min_time
+        """
+        for day_name in ctx['days']:
+            day_data = ctx['week_schedule'][day_name]
             available = calendar_service.get_available_slots(
-                day_name, google_events.get(day_name, []))
+                day_name, ctx['google_events'].get(day_name, []))
             for slot in available:
-                if (day_name, slot['start']) in used_slots:
+                if (day_name, slot['start']) in ctx['used_slots']:
                     continue
-                if self._get_slot_duration(slot) >= min_time:
+                if self._get_slot_duration(slot) >= ctx['min_time']:
                     return self._make_slot_result(day_name, day_data, slot)
         return None
 

@@ -231,68 +231,57 @@ def extract_description_from_readme(project_path):
     return None
 
 @app.route('/api/projects')
-def get_projects():
-    """Get list of projects from projects.db"""
+def _row_to_project(row):
+    """Convert a DB row to a project dict"""
+    return {
+        'id': row['unique_id'], 'name': row['name'],
+        'category': row['category'], 'status': row['status'],
+        'path': row['path'], 'description': row['description'] or row['name'],
+        'tags': row['features'] or '', 'launcher_path': row['launcher_path'],
+        'launcher_type': row['launcher_type'], 'web_url': row['web_url']
+    }
+
+
+def _fetch_projects_from_db():
+    """Fetch active projects from projects.db"""
     import sqlite3
-
     db_path = '/data/projects/project-management/data/projects.db'
-    projects = []
-
     try:
         conn = sqlite3.connect(db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-
         cursor.execute('''
-            SELECT unique_id, name, category, status, path, description, features, launcher_path, launcher_type, web_url
-            FROM projects
-            WHERE status != 'archived'
-            ORDER BY name
+            SELECT unique_id, name, category, status, path, description,
+                   features, launcher_path, launcher_type, web_url
+            FROM projects WHERE status != 'archived' ORDER BY name
         ''')
-
-        for row in cursor.fetchall():
-            # Utiliser la description de la base de données
-            description = row['description'] or row['name']
-
-            projects.append({
-                'id': row['unique_id'],
-                'name': row['name'],
-                'category': row['category'],
-                'status': row['status'],
-                'path': row['path'],
-                'description': description,
-                'tags': row['features'] or '',
-                'launcher_path': row['launcher_path'],
-                'launcher_type': row['launcher_type'],
-                'web_url': row['web_url']
-            })
-
+        projects = [_row_to_project(row) for row in cursor.fetchall()]
         conn.close()
-
+        return projects
     except Exception as e:
         logger.error(f"Error fetching projects: {e}")
-        # Return empty list on error
+        return []
 
-    # Ajouter les applications additionnelles (non dans projects.db)
-    additional_apps = [
-        {
-            'id': 'APP-005',
-            'name': 'Claude Voice Input',
-            'category': 'development',
-            'status': 'active',
-            'path': '/data/projects/voice-dictation',
-            'description': 'Entrée vocale pour Claude Code - Transcription Whisper GPU',
-            'tags': 'voice,whisper,claude,transcription',
-            'launcher_path': '/data/projects/voice-dictation/scripts/start_claude_voice_input.sh',
-            'launcher_type': 'bash'
-        },
-    ]
-    projects.extend(additional_apps)
 
+ADDITIONAL_APPS = [
+    {
+        'id': 'APP-005', 'name': 'Claude Voice Input',
+        'category': 'development', 'status': 'active',
+        'path': '/data/projects/voice-dictation',
+        'description': 'Entree vocale pour Claude Code - Transcription Whisper GPU',
+        'tags': 'voice,whisper,claude,transcription',
+        'launcher_path': '/data/projects/voice-dictation/scripts/start_claude_voice_input.sh',
+        'launcher_type': 'bash'
+    },
+]
+
+
+def get_projects():
+    """Get list of projects from projects.db"""
+    projects = _fetch_projects_from_db()
+    projects.extend(ADDITIONAL_APPS)
     return jsonify({
-        'status': 'ok',
-        'projects': projects,
-        'count': len(projects)
+        'status': 'ok', 'projects': projects, 'count': len(projects)
     })
 
 @app.route('/api/system/storage')

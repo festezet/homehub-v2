@@ -11,6 +11,66 @@ from datetime import datetime
 DB_PATH = '/data/projects/homehub-v2/data/formation.db'
 
 
+def _build_livrables_action():
+    """Action 1: Recuperer livrables S1-S2"""
+    return {
+        "title": "Recuperer les livrables S1-S2",
+        "description": "Fabrice partage ses livrables, Claude sauvegarde localement",
+        "who": "Fabrice + Claude", "priority": 1, "position": 1,
+        "children": [
+            {"title": "Canvas Micro-SaaS - Remplir les 12 sections", "description": "Dupliquer le template Notion, remplir : Segment client, Proposition valeur, Source trafic, CTA, Workflow, Stack technique, Livraison, Business modele, Prix, Tunnel de vente, Engagement, Criteres de reussite. Exporter en Markdown ou copier-coller.", "who": "Fabrice", "priority": 1},
+            {"title": "Resultats des 5 GPTs Semaine 1", "description": "Recuperer les conversations ChatGPT : Gold Digger (opportunite marche), Solution Architect (proposition valeur), Ikigai Micro-SaaS (positionnement), Score Canvas (evaluation + feedback), Stack Technique Helper (stack validee). Copier-coller les resultats finaux de chaque GPT.", "who": "Fabrice", "priority": 2},
+            {"title": "Workflow Whimsical - Schema fonctionnel DeepSignal", "description": "Schema Whimsical du fonctionnement DeepSignal etape par etape (rectangles = actions user, fleches = redirections, fleches + texte = automatisations). Partager le lien Whimsical ou exporter en PNG/PDF.", "who": "Fabrice", "priority": 1},
+            {"title": "Tunnel de vente Whimsical - Parcours prospect a client", "description": "Schema du tunnel : Trafic (acquisition) -> Conversion prospect (landing/CTA) -> Conversion achat (pricing/checkout) -> Onboarding. Partager le lien Whimsical ou exporter en PNG/PDF.", "who": "Fabrice", "priority": 3},
+            {"title": "Prototype Gemini - Maquette visuelle de reference", "description": "Prototype visuel cree avec Google AI Studio (aistudio.google.com). C'est la reference graphique pour le frontend DeepSignal. Partager le lien Google AI Studio, des screenshots, ou le code HTML/CSS genere.", "who": "Fabrice", "priority": 2},
+            {"title": "Resultats des 2 GPTs Semaine 2", "description": "Recuperer les conversations ChatGPT : Vibe Code ta Maquette (instructions pour le prototype Gemini) et Kodefast Assistant (aide Kodefast, aide continue). Copier-coller les resultats.", "who": "Fabrice", "priority": 3},
+        ]
+    }
+
+
+def _build_features_action():
+    """Action 2: Definir features V1"""
+    return {
+        "title": "Definir les features V1 avec types",
+        "description": "A partir du Canvas et du workflow, definir chaque feature avec son type Kodefast (Sync/Queue/Webhook/Scheduled)",
+        "who": "Claude + Fabrice", "priority": 2, "position": 2, "prerequisite_ids": [1],
+        "children": [
+            {"title": "Lister les features depuis Canvas + workflow", "description": "Extraire les fonctionnalites necessaires", "who": "Claude"},
+            {"title": "Typer chaque feature (Sync/Queue/Webhook/Scheduled)", "description": "Attribuer le bon type Kodefast a chaque feature", "who": "Claude"},
+            {"title": "Validation par Fabrice", "description": "Fabrice valide la liste avant implementation", "who": "Fabrice"},
+        ]
+    }
+
+
+def _build_edge_functions_action():
+    """Action 3: Configurer Edge Functions"""
+    return {
+        "title": "Configurer les Edge Functions",
+        "description": "Configurer les fonctions existantes puis ajouter les features DeepSignal",
+        "who": "Claude", "priority": 3, "position": 3, "prerequisite_ids": [2],
+        "children": [
+            {"title": "Configurer fonctions existantes (S3-V10)", "description": "Mega-prompt: analyser Edge Functions existantes, croiser avec workflow/DB/auth", "who": "Claude"},
+            {"title": "Ajouter features DeepSignal (S3-V11)", "description": "Creer les Edge Functions pour chaque feature definie", "who": "Claude"},
+            {"title": "Tester en mode demo (sans JWT)", "description": "Verifier que tout fonctionne en local avec npm run dev", "who": "Claude"},
+        ]
+    }
+
+
+def _build_checklists_action():
+    """Action 4: Checklists pre-deploiement"""
+    return {
+        "title": "Checklists pre-deploiement",
+        "description": "Executer les 3 mega-prompts d'audit (Supabase, Securite, UX)",
+        "who": "Claude", "priority": 4, "position": 4, "prerequisite_ids": [3],
+        "children": [
+            {"title": "Audit Supabase (14 points)", "description": "demo mode, RLS, auth, CORS, SERVICE_ROLE_KEY", "who": "Claude"},
+            {"title": "Audit Securite (8 points)", "description": ".env.local, secrets, NEXT_PUBLIC_, validation, console.log", "who": "Claude"},
+            {"title": "Audit UX & Responsive (14 points)", "description": "landing, pricing, legales, 404, responsive, meta, favicon", "who": "Claude"},
+            {"title": "Corriger les points identifies", "description": "Appliquer les corrections pour chaque audit", "who": "Claude"},
+        ]
+    }
+
+
 class FormationService:
     def __init__(self, db_path=DB_PATH):
         self.db_path = os.path.abspath(db_path)
@@ -84,65 +144,10 @@ class FormationService:
     def _build_seed_actions():
         """Build the list of seed actions with children"""
         return [
-            # Action 1: Recuperer livrables S1-S2
-            {
-                "title": "Recuperer les livrables S1-S2",
-                "description": "Fabrice partage ses livrables, Claude sauvegarde localement",
-                "who": "Fabrice + Claude",
-                "priority": 1,
-                "position": 1,
-                "children": [
-                    {"title": "Canvas Micro-SaaS - Remplir les 12 sections", "description": "Dupliquer le template Notion, remplir : Segment client, Proposition valeur, Source trafic, CTA, Workflow, Stack technique, Livraison, Business modele, Prix, Tunnel de vente, Engagement, Criteres de reussite. Exporter en Markdown ou copier-coller.", "who": "Fabrice", "priority": 1},
-                    {"title": "Resultats des 5 GPTs Semaine 1", "description": "Recuperer les conversations ChatGPT : Gold Digger (opportunite marche), Solution Architect (proposition valeur), Ikigai Micro-SaaS (positionnement), Score Canvas (evaluation + feedback), Stack Technique Helper (stack validee). Copier-coller les resultats finaux de chaque GPT.", "who": "Fabrice", "priority": 2},
-                    {"title": "Workflow Whimsical - Schema fonctionnel DeepSignal", "description": "Schema Whimsical du fonctionnement DeepSignal etape par etape (rectangles = actions user, fleches = redirections, fleches + texte = automatisations). Partager le lien Whimsical ou exporter en PNG/PDF.", "who": "Fabrice", "priority": 1},
-                    {"title": "Tunnel de vente Whimsical - Parcours prospect a client", "description": "Schema du tunnel : Trafic (acquisition) -> Conversion prospect (landing/CTA) -> Conversion achat (pricing/checkout) -> Onboarding. Partager le lien Whimsical ou exporter en PNG/PDF.", "who": "Fabrice", "priority": 3},
-                    {"title": "Prototype Gemini - Maquette visuelle de reference", "description": "Prototype visuel cree avec Google AI Studio (aistudio.google.com). C'est la reference graphique pour le frontend DeepSignal. Partager le lien Google AI Studio, des screenshots, ou le code HTML/CSS genere.", "who": "Fabrice", "priority": 2},
-                    {"title": "Resultats des 2 GPTs Semaine 2", "description": "Recuperer les conversations ChatGPT : Vibe Code ta Maquette (instructions pour le prototype Gemini) et Kodefast Assistant (aide Kodefast, aide continue). Copier-coller les resultats.", "who": "Fabrice", "priority": 3},
-                ]
-            },
-            # Action 2: Definir features V1
-            {
-                "title": "Definir les features V1 avec types",
-                "description": "A partir du Canvas et du workflow, definir chaque feature avec son type Kodefast (Sync/Queue/Webhook/Scheduled)",
-                "who": "Claude + Fabrice",
-                "priority": 2,
-                "position": 2,
-                "prerequisite_ids": [1],
-                "children": [
-                    {"title": "Lister les features depuis Canvas + workflow", "description": "Extraire les fonctionnalites necessaires", "who": "Claude"},
-                    {"title": "Typer chaque feature (Sync/Queue/Webhook/Scheduled)", "description": "Attribuer le bon type Kodefast a chaque feature", "who": "Claude"},
-                    {"title": "Validation par Fabrice", "description": "Fabrice valide la liste avant implementation", "who": "Fabrice"},
-                ]
-            },
-            # Action 3: Configurer Edge Functions
-            {
-                "title": "Configurer les Edge Functions",
-                "description": "Configurer les fonctions existantes puis ajouter les features DeepSignal",
-                "who": "Claude",
-                "priority": 3,
-                "position": 3,
-                "prerequisite_ids": [2],
-                "children": [
-                    {"title": "Configurer fonctions existantes (S3-V10)", "description": "Mega-prompt: analyser Edge Functions existantes, croiser avec workflow/DB/auth", "who": "Claude"},
-                    {"title": "Ajouter features DeepSignal (S3-V11)", "description": "Creer les Edge Functions pour chaque feature definie", "who": "Claude"},
-                    {"title": "Tester en mode demo (sans JWT)", "description": "Verifier que tout fonctionne en local avec npm run dev", "who": "Claude"},
-                ]
-            },
-            # Action 4: Checklists pre-deploiement
-            {
-                "title": "Checklists pre-deploiement",
-                "description": "Executer les 3 mega-prompts d'audit (Supabase, Securite, UX)",
-                "who": "Claude",
-                "priority": 4,
-                "position": 4,
-                "prerequisite_ids": [3],
-                "children": [
-                    {"title": "Audit Supabase (14 points)", "description": "demo mode, RLS, auth, CORS, SERVICE_ROLE_KEY", "who": "Claude"},
-                    {"title": "Audit Securite (8 points)", "description": ".env.local, secrets, NEXT_PUBLIC_, validation, console.log", "who": "Claude"},
-                    {"title": "Audit UX & Responsive (14 points)", "description": "landing, pricing, legales, 404, responsive, meta, favicon", "who": "Claude"},
-                    {"title": "Corriger les points identifies", "description": "Appliquer les corrections pour chaque audit", "who": "Claude"},
-                ]
-            },
+            _build_livrables_action(),
+            _build_features_action(),
+            _build_edge_functions_action(),
+            _build_checklists_action(),
             # Action 5: Deployer
             {
                 "title": "Deployer",
