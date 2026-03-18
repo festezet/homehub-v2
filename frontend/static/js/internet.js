@@ -87,52 +87,57 @@ class InternetModule {
 
         for (const cat of categories) {
             if (cat.links.length === 0 && !this.editMode) continue;
-
-            const icon = CATEGORY_ICONS[cat.slug] || '';
-
-            html += `
-            <div class="category ${cat.slug}" data-category="${cat.slug}" style="margin-bottom: 40px;">
-                <h2 style="font-size: 1.5rem; margin-bottom: 20px; color: var(--text-primary, #f8fafc); display: flex; align-items: center; gap: 12px;">
-                    <span class="icon">${icon}</span> ${this.escapeHtml(cat.name)}
-                </h2>
-                <div class="sites-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;">`;
-
-            for (const link of cat.links) {
-                const domain = this.extractDomain(link.url);
-                const faviconDomain = domain.includes('/') ? domain.split('/')[0] : domain;
-
-                html += `
-                    <a href="${this.escapeHtml(link.url)}" class="site-card" target="_blank"
-                       data-link-id="${link.id}" data-link-name="${this.escapeHtml(link.name)}">
-                        <div class="site-preview">
-                            <div class="site-favicon">
-                                <img src="https://www.google.com/s2/favicons?domain=${faviconDomain}&sz=64"
-                                     alt="${this.escapeHtml(link.favicon_alt || link.name.substring(0, 2).toUpperCase())}"
-                                     onerror="this.style.display='none'; this.parentNode.textContent='${this.escapeHtml(link.favicon_alt || link.name.substring(0, 2).toUpperCase())}';">
-                            </div>
-                        </div>
-                        <div class="site-info">
-                            <div class="site-name">${this.escapeHtml(link.name)}</div>
-                            <div class="site-url">${this.escapeHtml(domain)}</div>
-                        </div>
-                    </a>`;
-            }
-
-            html += `
-                    <div class="site-card add-link-card" data-category-slug="${this.escapeHtml(cat.slug)}">
-                        <div class="add-link-content">
-                            <span class="add-link-icon">+</span>
-                            <span class="add-link-text">Ajouter</span>
-                        </div>
-                    </div>`;
-
-            html += `
-                </div>
-            </div>`;
+            html += this._renderCategory(cat);
         }
 
         container.innerHTML = html;
         this.bindEvents(container);
+    }
+
+    _renderCategory(cat) {
+        const icon = CATEGORY_ICONS[cat.slug] || '';
+        let html = `
+        <div class="category ${cat.slug}" data-category="${cat.slug}" style="margin-bottom: 40px;">
+            <h2 style="font-size: 1.5rem; margin-bottom: 20px; color: var(--text-primary, #f8fafc); display: flex; align-items: center; gap: 12px;">
+                <span class="icon">${icon}</span> ${this.escapeHtml(cat.name)}
+            </h2>
+            <div class="sites-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;">`;
+
+        for (const link of cat.links) {
+            html += this._renderLinkCard(link);
+        }
+
+        html += `
+                <div class="site-card add-link-card" data-category-slug="${this.escapeHtml(cat.slug)}">
+                    <div class="add-link-content">
+                        <span class="add-link-icon">+</span>
+                        <span class="add-link-text">Ajouter</span>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        return html;
+    }
+
+    _renderLinkCard(link) {
+        const domain = this.extractDomain(link.url);
+        const faviconDomain = domain.includes('/') ? domain.split('/')[0] : domain;
+        const fallback = this.escapeHtml(link.favicon_alt || link.name.substring(0, 2).toUpperCase());
+        return `
+            <a href="${this.escapeHtml(link.url)}" class="site-card" target="_blank"
+               data-link-id="${link.id}" data-link-name="${this.escapeHtml(link.name)}">
+                <div class="site-preview">
+                    <div class="site-favicon">
+                        <img src="https://www.google.com/s2/favicons?domain=${faviconDomain}&sz=64"
+                             alt="${fallback}"
+                             onerror="this.style.display='none'; this.parentNode.textContent='${fallback}';">
+                    </div>
+                </div>
+                <div class="site-info">
+                    <div class="site-name">${this.escapeHtml(link.name)}</div>
+                    <div class="site-url">${this.escapeHtml(domain)}</div>
+                </div>
+            </a>`;
     }
 
     bindEvents(container) {
@@ -190,11 +195,21 @@ class InternetModule {
         if (existing) existing.remove();
 
         const catName = this.data.find(c => c.slug === categorySlug)?.name || categorySlug;
-
         const modal = document.createElement('div');
         modal.id = 'add-link-modal';
         modal.className = 'modal-overlay';
-        modal.innerHTML = `
+        modal.innerHTML = this._buildAddModalHtml(catName, categorySlug);
+
+        document.body.appendChild(modal);
+        this._bindAddModalEvents(modal);
+    }
+
+    _buildAddModalHtml(catName, categorySlug) {
+        const options = this.data.map(c =>
+            `<option value="${this.escapeHtml(c.slug)}" ${c.slug === categorySlug ? 'selected' : ''}>${this.escapeHtml(c.name)}</option>`
+        ).join('');
+
+        return `
             <div class="modal-content">
                 <div class="modal-header">
                     <h3>Ajouter un lien dans "${this.escapeHtml(catName)}"</h3>
@@ -211,9 +226,7 @@ class InternetModule {
                     </div>
                     <div class="form-group">
                         <label for="link-category">Categorie</label>
-                        <select id="link-category">
-                            ${this.data.map(c => `<option value="${this.escapeHtml(c.slug)}" ${c.slug === categorySlug ? 'selected' : ''}>${this.escapeHtml(c.name)}</option>`).join('')}
-                        </select>
+                        <select id="link-category">${options}</select>
                     </div>
                     <div class="form-actions">
                         <button type="button" class="btn-cancel">Annuler</button>
@@ -221,22 +234,17 @@ class InternetModule {
                     </div>
                 </form>
             </div>`;
+    }
 
-        document.body.appendChild(modal);
-
+    _bindAddModalEvents(modal) {
         const removeModal = () => {
             modal.remove();
             document.removeEventListener('keydown', handleEscape);
         };
+        const handleEscape = (e) => { if (e.key === 'Escape') removeModal(); };
 
-        const handleEscape = (e) => {
-            if (e.key === 'Escape') removeModal();
-        };
         document.addEventListener('keydown', handleEscape);
-
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) removeModal();
-        });
+        modal.addEventListener('click', (e) => { if (e.target === modal) removeModal(); });
         modal.querySelector('.modal-close').addEventListener('click', removeModal);
         modal.querySelector('.btn-cancel').addEventListener('click', removeModal);
 
