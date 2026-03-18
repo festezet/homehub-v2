@@ -94,8 +94,15 @@ class ProjectStatusModule {
 
         const thisWeek = stats.by_week.length > 0 ? stats.by_week[0].count : 0;
 
-        content.innerHTML = `
-            <!-- Stats cards -->
+        content.innerHTML = this._renderOverviewStats(stats, thisWeek)
+                          + this._renderOverviewProjectsTable()
+                          + this._renderOverviewRecentActivity(recentActivity);
+
+        await projectsListModule.load();
+    }
+
+    _renderOverviewStats(stats, thisWeek) {
+        return `
             <div class="ps-stats-grid">
                 <div class="ps-stat-card">
                     <div class="ps-stat-number">${stats.total}</div>
@@ -113,9 +120,11 @@ class ProjectStatusModule {
                     <div class="ps-stat-number" style="font-size: 1rem;">${stats.last_date || '-'}</div>
                     <div class="ps-stat-label">Derniere activite</div>
                 </div>
-            </div>
+            </div>`;
+    }
 
-            <!-- Projects Table (reuse projects-list module) -->
+    _renderOverviewProjectsTable() {
+        return `
             <div class="projects-list-container">
                 <div class="section-header">
                     <h3>Projets Infrastructure et Applications</h3>
@@ -130,12 +139,10 @@ class ProjectStatusModule {
                         <button id="btn-refresh-projects" class="btn btn-primary">Rafraichir</button>
                     </div>
                 </div>
-
                 <div id="projects-loading" class="loading-indicator">
                     <span class="spinner"></span>
                     <span>Chargement des projets...</span>
                 </div>
-
                 <div id="projects-table-container" class="table-container">
                     <table id="projects-table" class="projects-table">
                         <thead>
@@ -151,24 +158,26 @@ class ProjectStatusModule {
                         <tbody id="projects-tbody"></tbody>
                     </table>
                 </div>
-
                 <div id="projects-stats" class="stats-section">
                     <div class="stat-item">
                         <span class="stat-label">Statistiques :</span>
                         <span id="projects-stats-content">Chargement...</span>
                     </div>
                 </div>
-            </div>
+            </div>`;
+    }
 
-            <!-- Recent Activity -->
-            ${recentActivity.length > 0 ? `
+    _renderOverviewRecentActivity(recentActivity) {
+        if (recentActivity.length === 0) return '';
+        const typeColors = {
+            'feature': '#3b82f6', 'fix': '#ef4444', 'optimization': '#10b981',
+            'creation': '#8b5cf6', 'refactoring': '#f59e0b', 'deployment': '#0ea5e9'
+        };
+
+        return `
             <div class="ps-recent-activity">
                 <div class="ps-recent-title">Activite recente</div>
                 ${recentActivity.map(item => {
-                    const typeColors = {
-                        'feature': '#3b82f6', 'fix': '#ef4444', 'optimization': '#10b981',
-                        'creation': '#8b5cf6', 'refactoring': '#f59e0b', 'deployment': '#0ea5e9'
-                    };
                     const color = typeColors[item.type] || '#667eea';
                     return `
                     <div class="ps-recent-item" style="border-left-color: ${color};">
@@ -177,12 +186,7 @@ class ProjectStatusModule {
                         <div class="ps-recent-item-date">${item.date ? Utils.formatRelativeTime(item.date) : ''}</div>
                     </div>`;
                 }).join('')}
-            </div>
-            ` : ''}
-        `;
-
-        // Delegate table rendering to projectsListModule
-        await projectsListModule.load();
+            </div>`;
     }
 
     // --- HEALTH & SPECS SUB-TAB ---
@@ -211,12 +215,9 @@ class ProjectStatusModule {
         if (!content) return;
 
         const data = this.activityData || [];
-
-        // Build filter options from data
         const projects = [...new Set(data.filter(d => d.project_name).map(d => d.project_name))].sort();
         const types = [...new Set(data.filter(d => d.type).map(d => d.type))].sort();
 
-        // Apply filters
         let filtered = data;
         if (this.activityFilter.project !== 'all') {
             filtered = filtered.filter(d => d.project_name === this.activityFilter.project);
@@ -225,18 +226,12 @@ class ProjectStatusModule {
             filtered = filtered.filter(d => d.type === this.activityFilter.type);
         }
 
-        const typeColors = {
-            'feature': '#3b82f6',
-            'fix': '#ef4444',
-            'optimization': '#10b981',
-            'creation': '#8b5cf6',
-            'refactoring': '#f59e0b',
-            'documentation': '#6b7280',
-            'deployment': '#0ea5e9'
-        };
+        content.innerHTML = this._renderActivityFilters(projects, types, filtered.length)
+                          + this._renderActivityTimeline(filtered);
+    }
 
-        content.innerHTML = `
-            <!-- Filters -->
+    _renderActivityFilters(projects, types, count) {
+        return `
             <div class="ps-activity-filters">
                 <select class="ps-filter-select" onchange="window.ProjectStatusModule.filterActivity('project', this.value)">
                     <option value="all">Tous les projets</option>
@@ -246,14 +241,24 @@ class ProjectStatusModule {
                     <option value="all">Tous les types</option>
                     ${types.map(t => `<option value="${this.escapeAttr(t)}" ${this.activityFilter.type === t ? 'selected' : ''}>${this.escapeHtml(t)}</option>`).join('')}
                 </select>
-                <span class="ps-filter-count">${filtered.length} entree${filtered.length !== 1 ? 's' : ''}</span>
-            </div>
+                <span class="ps-filter-count">${count} entree${count !== 1 ? 's' : ''}</span>
+            </div>`;
+    }
 
-            <!-- Timeline -->
+    _renderActivityTimeline(filtered) {
+        const typeColors = {
+            'feature': '#3b82f6', 'fix': '#ef4444', 'optimization': '#10b981',
+            'creation': '#8b5cf6', 'refactoring': '#f59e0b', 'documentation': '#6b7280',
+            'deployment': '#0ea5e9'
+        };
+
+        if (filtered.length === 0) {
+            return '<div class="ps-timeline"><div class="ps-empty">Aucune activite trouvee.</div></div>';
+        }
+
+        return `
             <div class="ps-timeline">
-                ${filtered.length === 0 ? `
-                    <div class="ps-empty">Aucune activite trouvee.</div>
-                ` : filtered.map(item => {
+                ${filtered.map(item => {
                     const color = typeColors[item.type] || '#6b7280';
                     return `
                     <div class="ps-timeline-item" style="border-left-color: ${color};">
@@ -269,8 +274,7 @@ class ProjectStatusModule {
                         </div>
                     </div>`;
                 }).join('')}
-            </div>
-        `;
+            </div>`;
     }
 
     // --- RECENT SESSIONS SUB-TAB ---
@@ -284,56 +288,57 @@ class ProjectStatusModule {
             console.error('Failed to load recent sessions:', e);
         }
 
+        if (sessions.length === 0) {
+            content.innerHTML = '<div class="ps-recent-sessions"><div class="ps-empty">Aucun projet avec activite recente.</div></div>';
+            return;
+        }
+
+        content.innerHTML = `
+            <div class="ps-recent-sessions">
+                <div class="ps-sessions-list">
+                    ${sessions.map(s => this._renderSessionCard(s)).join('')}
+                </div>
+            </div>`;
+    }
+
+    _renderSessionCard(s) {
         const typeColors = {
             'feature': '#3b82f6', 'fix': '#ef4444', 'optimization': '#10b981',
             'creation': '#8b5cf6', 'refactoring': '#f59e0b', 'documentation': '#6b7280',
             'deployment': '#0ea5e9', 'other': '#9ca3af'
         };
-
         const typeLabels = {
             'feature': 'Feature', 'fix': 'Fix', 'optimization': 'Optim',
             'creation': 'Creation', 'refactoring': 'Refactor', 'documentation': 'Docs',
             'deployment': 'Deploy', 'other': 'Autre'
         };
 
-        content.innerHTML = `
-            <div class="ps-recent-sessions">
-                ${sessions.length === 0 ? `
-                    <div class="ps-empty">Aucun projet avec activite recente.</div>
-                ` : `
-                <div class="ps-sessions-list">
-                    ${sessions.map(s => {
-                        const m = s.milestone;
-                        const mType = m.type || 'other';
-                        const color = typeColors[mType] || '#9ca3af';
-                        const label = typeLabels[mType] || mType;
-                        const desc = m.description || '';
-                        const dateStr = m.date ? Utils.formatSessionDate(m.date) : '-';
-                        // Clean title: remove "SESSION YYYY-MM-DD - " prefix
-                        let title = m.title || '';
-                        title = title.replace(/^SESSION\s+\d{4}-\d{2}-\d{2}\s*[-:]\s*/i, '');
-                        title = title.replace(/^Session\s+\d{4}-\d{2}-\d{2}\s*[-:]\s*/i, '');
-                        return `
-                        <div class="ps-session-card" style="border-left: 3px solid ${color};">
-                            <div class="ps-session-header">
-                                <div class="ps-session-project">
-                                    <span class="ps-session-name">${this.escapeHtml(s.name)}</span>
-                                    <span class="ps-session-id">${this.escapeHtml(s.unique_id)}</span>
-                                </div>
-                                <div class="ps-session-meta">
-                                    <span class="ps-timeline-type" style="background: ${color}15; color: ${color};">${label}</span>
-                                    <span class="ps-session-date">${dateStr}</span>
-                                </div>
-                            </div>
-                            <div class="ps-session-title">${this.escapeHtml(title)}</div>
-                            ${desc ? `<div class="ps-session-desc">${this.escapeHtml(desc)}</div>` : ''}
-                            ${m.session_doc ? `<div class="ps-session-doc">${this.escapeHtml(m.session_doc)}</div>` : ''}
-                        </div>`;
-                    }).join('')}
+        const m = s.milestone;
+        const mType = m.type || 'other';
+        const color = typeColors[mType] || '#9ca3af';
+        const label = typeLabels[mType] || mType;
+        const desc = m.description || '';
+        const dateStr = m.date ? Utils.formatSessionDate(m.date) : '-';
+        let title = m.title || '';
+        title = title.replace(/^SESSION\s+\d{4}-\d{2}-\d{2}\s*[-:]\s*/i, '');
+        title = title.replace(/^Session\s+\d{4}-\d{2}-\d{2}\s*[-:]\s*/i, '');
+
+        return `
+            <div class="ps-session-card" style="border-left: 3px solid ${color};">
+                <div class="ps-session-header">
+                    <div class="ps-session-project">
+                        <span class="ps-session-name">${this.escapeHtml(s.name)}</span>
+                        <span class="ps-session-id">${this.escapeHtml(s.unique_id)}</span>
+                    </div>
+                    <div class="ps-session-meta">
+                        <span class="ps-timeline-type" style="background: ${color}15; color: ${color};">${label}</span>
+                        <span class="ps-session-date">${dateStr}</span>
+                    </div>
                 </div>
-                `}
-            </div>
-        `;
+                <div class="ps-session-title">${this.escapeHtml(title)}</div>
+                ${desc ? `<div class="ps-session-desc">${this.escapeHtml(desc)}</div>` : ''}
+                ${m.session_doc ? `<div class="ps-session-doc">${this.escapeHtml(m.session_doc)}</div>` : ''}
+            </div>`;
     }
 
     filterActivity(key, value) {
