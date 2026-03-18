@@ -105,63 +105,62 @@ class FormationModule {
         const week = this.skoolData.weeks[weekIndex];
         if (!week) return;
 
+        el.innerHTML = week.videos.map((video, vIdx) =>
+            this._renderVideoCard(video, vIdx, weekIndex)
+        ).join('');
+    }
+
+    _renderVideoCard(video, vIdx, weekIndex) {
         const statusLabels = {
-            text_saved: 'Texte sauve',
-            transcribed: 'Transcrit',
-            identified: 'Identifie',
-            not_downloaded: 'Non DL',
-            not_started: 'Non commence'
+            text_saved: 'Texte sauve', transcribed: 'Transcrit',
+            identified: 'Identifie', not_downloaded: 'Non DL', not_started: 'Non commence'
         };
+        const isExpanded = this.expandedVideos.has(`${weekIndex}-${vIdx}`);
+        const loomUrl = video.loom_id ? `https://www.loom.com/share/${video.loom_id}` : null;
+        const hasDetails = video.description || loomUrl || (video.resources && video.resources.length > 0);
+        const detailsHtml = hasDetails ? this._renderVideoDetails(video, loomUrl, isExpanded, weekIndex, vIdx) : '';
+        const statusClass = (video.status || 'not_started').replace(/\s/g, '_');
+        const statusText = statusLabels[statusClass] || video.status || '';
 
-        el.innerHTML = week.videos.map((video, vIdx) => {
-            const isExpanded = this.expandedVideos.has(`${weekIndex}-${vIdx}`);
-            const loomUrl = video.loom_id ? `https://www.loom.com/share/${video.loom_id}` : null;
-            const hasDetails = video.description || loomUrl || (video.resources && video.resources.length > 0);
-
-            let detailsHtml = '';
-            if (hasDetails) {
-                const descHtml = video.description
-                    ? `<div class="skool-video-desc">${video.description}</div>`
-                    : '';
-                let linksHtml = '';
-                if (loomUrl || (video.resources && video.resources.length > 0)) {
-                    const links = [];
-                    if (loomUrl) {
-                        links.push(`<a href="${loomUrl}" target="_blank" class="skool-link loom">Loom</a>`);
-                    }
-                    if (video.resources) {
-                        video.resources.forEach((url, rIdx) => {
-                            const label = this._resourceLabel(url);
-                            links.push(`<a href="${url}" target="_blank" class="skool-link">${label}</a>`);
-                        });
-                    }
-                    linksHtml = `<div class="skool-video-links">${links.join('')}</div>`;
-                }
-                detailsHtml = `
-                    <div class="skool-video-details ${isExpanded ? 'visible' : ''}" id="skool-detail-${weekIndex}-${vIdx}">
-                        ${descHtml}${linksHtml}
+        return `
+            <div class="skool-video-card ${video.type || ''}">
+                <div class="skool-video-header" onclick="window.formationModule.toggleVideoExpand(${weekIndex}, ${vIdx})">
+                    <div class="skool-video-order">${video.order || vIdx + 1}</div>
+                    <div class="skool-video-info">
+                        <div class="skool-video-title">${video.title}</div>
                     </div>
-                `;
-            }
-
-            const statusClass = (video.status || 'not_started').replace(/\s/g, '_');
-            const statusText = statusLabels[statusClass] || video.status || '';
-
-            return `
-                <div class="skool-video-card ${video.type || ''}">
-                    <div class="skool-video-header" onclick="window.formationModule.toggleVideoExpand(${weekIndex}, ${vIdx})">
-                        <div class="skool-video-order">${video.order || vIdx + 1}</div>
-                        <div class="skool-video-info">
-                            <div class="skool-video-title">${video.title}</div>
-                        </div>
-                        <span class="skool-video-type ${video.type || ''}">${video.type || ''}</span>
-                        ${statusText ? `<span class="skool-video-status ${statusClass}">${statusText}</span>` : ''}
-                        ${hasDetails ? `<span class="skool-expand-icon ${isExpanded ? 'expanded' : ''}">&#9654;</span>` : ''}
-                    </div>
-                    ${detailsHtml}
+                    <span class="skool-video-type ${video.type || ''}">${video.type || ''}</span>
+                    ${statusText ? `<span class="skool-video-status ${statusClass}">${statusText}</span>` : ''}
+                    ${hasDetails ? `<span class="skool-expand-icon ${isExpanded ? 'expanded' : ''}">&#9654;</span>` : ''}
                 </div>
-            `;
-        }).join('');
+                ${detailsHtml}
+            </div>
+        `;
+    }
+
+    _renderVideoDetails(video, loomUrl, isExpanded, weekIndex, vIdx) {
+        const descHtml = video.description
+            ? `<div class="skool-video-desc">${video.description}</div>`
+            : '';
+        let linksHtml = '';
+        if (loomUrl || (video.resources && video.resources.length > 0)) {
+            const links = [];
+            if (loomUrl) {
+                links.push(`<a href="${loomUrl}" target="_blank" class="skool-link loom">Loom</a>`);
+            }
+            if (video.resources) {
+                video.resources.forEach((url) => {
+                    const label = this._resourceLabel(url);
+                    links.push(`<a href="${url}" target="_blank" class="skool-link">${label}</a>`);
+                });
+            }
+            linksHtml = `<div class="skool-video-links">${links.join('')}</div>`;
+        }
+        return `
+            <div class="skool-video-details ${isExpanded ? 'visible' : ''}" id="skool-detail-${weekIndex}-${vIdx}">
+                ${descHtml}${linksHtml}
+            </div>
+        `;
     }
 
     toggleVideoExpand(weekIdx, videoIdx) {
@@ -217,82 +216,87 @@ class FormationModule {
         const container = document.getElementById('formation-actions');
         if (!container) return;
 
-        const html = this.actions.map((action, index) => {
-            const isExpanded = this.expandedActions.has(action.id);
-            const hasChildren = action.children && action.children.length > 0;
-            const doneChildren = hasChildren ? action.children.filter(c => c.status === 'done').length : 0;
-            const totalChildren = hasChildren ? action.children.length : 0;
-            const prereqs = JSON.parse(action.prerequisite_ids || '[]');
-            const isBlocked = prereqs.length > 0 && prereqs.some(pid => {
-                const parent = this.actions.find(a => a.id === pid);
-                return parent && parent.status !== 'done';
-            });
+        const html = this.actions.map((action, index) =>
+            this._renderActionCard(action, index)
+        ).join('');
 
-            const statusClass = isBlocked ? 'blocked' : action.status;
-            const statusIcon = action.status === 'done' ? '&#10003;' :
-                              action.status === 'in_progress' ? '&#9679;' : '';
-            const btnClass = action.status;
+        container.innerHTML = html + this._renderActionsLegend();
+    }
 
-            let childrenHtml = '';
-            if (hasChildren) {
-                const subItems = action.children.map(child => {
-                    const childIcon = child.status === 'done' ? '&#10003;' :
-                                     child.status === 'in_progress' ? '&#9679;' : '';
-                    const descHtml = child.description
-                        ? `<div class="formation-sub-desc">${child.description}</div>`
-                        : '';
-                    return `
-                        <div class="formation-sub-item ${child.status}">
-                            <button class="formation-sub-btn ${child.status}"
-                                    onclick="window.formationModule.toggleAction(${child.id}, event)"
-                                    title="Changer le statut">${childIcon}</button>
-                            <div class="formation-sub-content">
-                                <div class="formation-sub-title-row">
-                                    <span class="formation-sub-title">${child.title}</span>
-                                    <span class="formation-sub-who">${child.who}</span>
-                                </div>
-                                ${descHtml}
-                            </div>
+    _renderActionCard(action, index) {
+        const isExpanded = this.expandedActions.has(action.id);
+        const hasChildren = action.children && action.children.length > 0;
+        const doneChildren = hasChildren ? action.children.filter(c => c.status === 'done').length : 0;
+        const totalChildren = hasChildren ? action.children.length : 0;
+        const prereqs = JSON.parse(action.prerequisite_ids || '[]');
+        const isBlocked = prereqs.length > 0 && prereqs.some(pid => {
+            const parent = this.actions.find(a => a.id === pid);
+            return parent && parent.status !== 'done';
+        });
+
+        const statusClass = isBlocked ? 'blocked' : action.status;
+        const statusIcon = action.status === 'done' ? '&#10003;' :
+                          action.status === 'in_progress' ? '&#9679;' : '';
+        const childrenHtml = hasChildren ? this._renderActionChildren(action.children, action.id, isExpanded) : '';
+        const prereqHtml = prereqs.length > 0
+            ? `<span class="formation-action-prereq">Prerequis: Action ${prereqs.join(', ')}</span>`
+            : '';
+        const childProgress = hasChildren ? `<span>${doneChildren}/${totalChildren}</span>` : '';
+
+        return `
+            <div class="formation-action-card ${statusClass}" data-id="${action.id}">
+                <div class="formation-action-header" onclick="window.formationModule.toggleExpand(${action.id})">
+                    <div class="formation-action-number">${index + 1}</div>
+                    <div class="formation-action-info">
+                        <div class="formation-action-title">${action.title}</div>
+                        <div class="formation-action-meta">
+                            <span class="formation-action-who">${action.who}</span>
+                            ${prereqHtml}
+                            ${childProgress}
                         </div>
-                    `;
-                }).join('');
-
-                childrenHtml = `
-                    <div class="formation-sub-actions ${isExpanded ? 'visible' : ''}" id="sub-${action.id}">
-                        ${subItems}
                     </div>
-                `;
-            }
+                    <button class="formation-status-btn ${action.status}"
+                            onclick="window.formationModule.toggleAction(${action.id}, event)"
+                            title="Changer le statut">${statusIcon}</button>
+                    ${hasChildren ? `<span class="formation-expand-icon ${isExpanded ? 'expanded' : ''}">&#9654;</span>` : ''}
+                </div>
+                ${childrenHtml}
+            </div>
+        `;
+    }
 
-            const prereqHtml = prereqs.length > 0
-                ? `<span class="formation-action-prereq">Prerequis: Action ${prereqs.join(', ')}</span>`
+    _renderActionChildren(children, actionId, isExpanded) {
+        const subItems = children.map(child => {
+            const childIcon = child.status === 'done' ? '&#10003;' :
+                             child.status === 'in_progress' ? '&#9679;' : '';
+            const descHtml = child.description
+                ? `<div class="formation-sub-desc">${child.description}</div>`
                 : '';
-
-            const childProgress = hasChildren ? `<span>${doneChildren}/${totalChildren}</span>` : '';
-
             return `
-                <div class="formation-action-card ${statusClass}" data-id="${action.id}">
-                    <div class="formation-action-header" onclick="window.formationModule.toggleExpand(${action.id})">
-                        <div class="formation-action-number">${index + 1}</div>
-                        <div class="formation-action-info">
-                            <div class="formation-action-title">${action.title}</div>
-                            <div class="formation-action-meta">
-                                <span class="formation-action-who">${action.who}</span>
-                                ${prereqHtml}
-                                ${childProgress}
-                            </div>
+                <div class="formation-sub-item ${child.status}">
+                    <button class="formation-sub-btn ${child.status}"
+                            onclick="window.formationModule.toggleAction(${child.id}, event)"
+                            title="Changer le statut">${childIcon}</button>
+                    <div class="formation-sub-content">
+                        <div class="formation-sub-title-row">
+                            <span class="formation-sub-title">${child.title}</span>
+                            <span class="formation-sub-who">${child.who}</span>
                         </div>
-                        <button class="formation-status-btn ${btnClass}"
-                                onclick="window.formationModule.toggleAction(${action.id}, event)"
-                                title="Changer le statut">${statusIcon}</button>
-                        ${hasChildren ? `<span class="formation-expand-icon ${isExpanded ? 'expanded' : ''}">&#9654;</span>` : ''}
+                        ${descHtml}
                     </div>
-                    ${childrenHtml}
                 </div>
             `;
         }).join('');
 
-        const legend = `
+        return `
+            <div class="formation-sub-actions ${isExpanded ? 'visible' : ''}" id="sub-${actionId}">
+                ${subItems}
+            </div>
+        `;
+    }
+
+    _renderActionsLegend() {
+        return `
             <div class="formation-legend">
                 <div class="formation-legend-item">
                     <div class="formation-legend-dot pending"></div>
@@ -308,8 +312,6 @@ class FormationModule {
                 </div>
             </div>
         `;
-
-        container.innerHTML = html + legend;
     }
 
     toggleExpand(actionId) {
