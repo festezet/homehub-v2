@@ -110,91 +110,90 @@ const threadDigestModule = {
     renderCard(thread, status, index, total) {
         const d = thread.digest;
         const needsClass = (status && status.needs_analysis) ? ' needs-analysis' : '';
-
-        let badgeHtml = '';
-        if (status) {
-            if (status.needs_analysis) {
-                const label = status.new_messages > 0 ? `${status.new_messages} nouveaux` : 'A analyser';
-                badgeHtml = `<span class="td-card-badge new-msgs">${label}</span>`;
-            } else {
-                badgeHtml = '<span class="td-card-badge up-to-date">A jour</span>';
-            }
-        }
-
-        let bodyHtml = '';
-        if (d) {
-            // Summary
-            bodyHtml += `<div class="td-summary">
-                <div class="td-summary-text">${this.escapeHtml(d.summary)}</div>
-                <div class="td-summary-date">${this.formatRelativeDate(d.created_at)} — ${d.message_count} messages</div>
-            </div>`;
-
-            // Action items
-            const actions = d.action_items || [];
-            if (actions.length > 0) {
-                bodyHtml += '<div class="td-section-title">Actions</div><ul class="td-actions-list">';
-                actions.forEach(a => {
-                    const urgency = a.urgency || 'medium';
-                    bodyHtml += `<li class="td-action-item">
-                        <span class="td-action-bullet">&#9656;</span>
-                        <span>${this.escapeHtml(a.text)}</span>
-                        <span class="td-action-urgency ${urgency}">${urgency}</span>
-                    </li>`;
-                });
-                bodyHtml += '</ul>';
-            }
-
-            // Links
-            const links = d.extracted_links || [];
-            if (links.length > 0) {
-                bodyHtml += '<div class="td-section-title">Liens</div><ul class="td-links-list">';
-                links.forEach(l => {
-                    const title = l.title || l.url;
-                    const ctx = l.context ? ` <span class="td-link-context">— ${this.escapeHtml(l.context)}</span>` : '';
-                    bodyHtml += `<li class="td-link-item"><a href="${this.escapeHtml(l.url)}" target="_blank">${this.escapeHtml(title)}</a>${ctx}</li>`;
-                });
-                bodyHtml += '</ul>';
-            }
-
-            // Topics
-            const topics = d.key_topics || [];
-            if (topics.length > 0) {
-                bodyHtml += '<div class="td-topics">';
-                topics.forEach(t => {
-                    bodyHtml += `<span class="td-topic-tag">${this.escapeHtml(t)}</span>`;
-                });
-                bodyHtml += '</div>';
-            }
-        } else {
-            bodyHtml = '<div class="td-card-no-digest">Pas encore de digest. Demandez a Claude d\'analyser ce fil.</div>';
-        }
+        const badgeHtml = this._renderCardBadge(status);
+        const bodyHtml = d ? this._renderDigestBody(d) : '<div class="td-card-no-digest">Pas encore de digest. Demandez a Claude d\'analyser ce fil.</div>';
+        const headerHtml = this._renderCardHeader(thread, index, total, badgeHtml);
 
         const footerDate = d ? this.formatRelativeDate(d.created_at) : 'Jamais analyse';
         const period = d && d.date_from && d.date_to ? `${d.date_from} → ${d.date_to}` : '';
 
-        const upDisabled = index === 0 ? ' disabled' : '';
-        const downDisabled = index === total - 1 ? ' disabled' : '';
-
         return `<div class="td-card${needsClass}">
-            <div class="td-card-header">
-                <div class="td-card-reorder">
-                    <button class="td-move-btn" data-id="${thread.thread_id}" data-dir="up"${upDisabled} title="Monter">&#9650;</button>
-                    <button class="td-move-btn" data-id="${thread.thread_id}" data-dir="down"${downDisabled} title="Descendre">&#9660;</button>
-                </div>
-                <div class="td-card-title">
-                    <span class="td-card-name">${this.escapeHtml(thread.name)}</span>
-                    <span class="td-card-platform">${thread.platform}</span>
-                </div>
-                <div class="td-card-meta">
-                    ${badgeHtml}
-                </div>
-            </div>
+            ${headerHtml}
             <div class="td-card-body">${bodyHtml}</div>
             <div class="td-card-footer">
                 <span>${footerDate}</span>
                 <span>${period}</span>
             </div>
         </div>`;
+    },
+
+    _renderCardBadge(status) {
+        if (!status) return '';
+        if (status.needs_analysis) {
+            const label = status.new_messages > 0 ? `${status.new_messages} nouveaux` : 'A analyser';
+            return `<span class="td-card-badge new-msgs">${label}</span>`;
+        }
+        return '<span class="td-card-badge up-to-date">A jour</span>';
+    },
+
+    _renderCardHeader(thread, index, total, badgeHtml) {
+        const upDisabled = index === 0 ? ' disabled' : '';
+        const downDisabled = index === total - 1 ? ' disabled' : '';
+        return `<div class="td-card-header">
+            <div class="td-card-reorder">
+                <button class="td-move-btn" data-id="${thread.thread_id}" data-dir="up"${upDisabled} title="Monter">&#9650;</button>
+                <button class="td-move-btn" data-id="${thread.thread_id}" data-dir="down"${downDisabled} title="Descendre">&#9660;</button>
+            </div>
+            <div class="td-card-title">
+                <span class="td-card-name">${this.escapeHtml(thread.name)}</span>
+                <span class="td-card-platform">${thread.platform}</span>
+            </div>
+            <div class="td-card-meta">${badgeHtml}</div>
+        </div>`;
+    },
+
+    _renderDigestBody(d) {
+        let html = `<div class="td-summary">
+            <div class="td-summary-text">${this.escapeHtml(d.summary)}</div>
+            <div class="td-summary-date">${this.formatRelativeDate(d.created_at)} — ${d.message_count} messages</div>
+        </div>`;
+
+        html += this._renderActionItems(d.action_items || []);
+        html += this._renderLinks(d.extracted_links || []);
+        html += this._renderTopics(d.key_topics || []);
+        return html;
+    },
+
+    _renderActionItems(actions) {
+        if (actions.length === 0) return '';
+        let html = '<div class="td-section-title">Actions</div><ul class="td-actions-list">';
+        actions.forEach(a => {
+            const urgency = a.urgency || 'medium';
+            html += `<li class="td-action-item">
+                <span class="td-action-bullet">&#9656;</span>
+                <span>${this.escapeHtml(a.text)}</span>
+                <span class="td-action-urgency ${urgency}">${urgency}</span>
+            </li>`;
+        });
+        return html + '</ul>';
+    },
+
+    _renderLinks(links) {
+        if (links.length === 0) return '';
+        let html = '<div class="td-section-title">Liens</div><ul class="td-links-list">';
+        links.forEach(l => {
+            const title = l.title || l.url;
+            const ctx = l.context ? ` <span class="td-link-context">— ${this.escapeHtml(l.context)}</span>` : '';
+            html += `<li class="td-link-item"><a href="${this.escapeHtml(l.url)}" target="_blank">${this.escapeHtml(title)}</a>${ctx}</li>`;
+        });
+        return html + '</ul>';
+    },
+
+    _renderTopics(topics) {
+        if (topics.length === 0) return '';
+        return '<div class="td-topics">' +
+            topics.map(t => `<span class="td-topic-tag">${this.escapeHtml(t)}</span>`).join('') +
+            '</div>';
     },
 
     // --- Config Modal ---
