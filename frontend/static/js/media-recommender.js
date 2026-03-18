@@ -113,46 +113,55 @@ class MediaRecommenderModule {
     }
 
     _renderCard(item, mode) {
-        const poster = item.poster_url || item.poster;
         const mediaType = this._mediaType(item);
-        const genres = this._parseGenres(item.genres);
-        const rating = item.rating_imdb || item.rating;
-        const hasFile = item.has_file ?? item.hasFile;
-
-        const posterHtml = poster
-            ? `<img class="media-reco-card-poster" src="${poster}" alt="${item.title}" loading="lazy">`
-            : `<div class="media-reco-card-placeholder">${item.title.charAt(0)}</div>`;
-        const genresHtml = genres.slice(0, 3)
+        const posterHtml = this._renderCardPoster(item);
+        const genresHtml = this._parseGenres(item.genres).slice(0, 3)
             .map(g => `<span class="media-reco-genre-badge">${g}</span>`).join('');
-        const ratingHtml = rating ? `<div class="media-reco-card-rating">IMDB ${rating}</div>` : '';
-        const statusClass = hasFile ? 'available' : 'monitored';
-        const statusText = hasFile ? 'Disponible' : 'En attente';
         const trailerUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(item.title + ' ' + (item.year || '') + ' trailer')}`;
 
         if (mode === 'recommendation') {
-            const overview = item.overview
-                ? `<div class="media-reco-card-overview">${item.overview}</div>` : '';
-            const reason = item.reason
-                ? `<div class="media-reco-card-reason">${item.reason}</div>` : '';
-            let actions = `<a href="${trailerUrl}" target="_blank" class="media-reco-btn media-reco-btn-trailer">Trailer</a>`;
-            actions += `<button class="media-reco-btn media-reco-btn-add" onclick="window.mediaRecommenderModule.acceptRecommendation(${item.id}, '${this._esc(item.title)}', ${item.year || 0}, '${mediaType}')">Ajouter</button>`;
-            actions += `<button class="media-reco-btn media-reco-btn-reject" onclick="window.mediaRecommenderModule.rejectRecommendation(${item.id})">Pas interesse</button>`;
-            return `<div class="media-reco-card">
-                <div class="media-reco-card-poster-wrap">
-                    ${posterHtml}
-                    <span class="media-reco-type-badge ${mediaType}">${mediaType}</span>
-                </div>
-                <div class="media-reco-card-body">
-                    <div class="media-reco-card-title">${item.title}</div>
-                    <div class="media-reco-card-year">${item.year || ''}</div>
-                    ${overview}
-                    <div class="media-reco-card-genres">${genresHtml}</div>
-                    ${reason}
-                    <div class="media-reco-card-actions">${actions}</div>
-                </div>
-            </div>`;
+            return this._renderRecommendationCard(item, mediaType, posterHtml, genresHtml, trailerUrl);
         }
+        return this._renderLibraryCard(item, mediaType, posterHtml, genresHtml, trailerUrl);
+    }
 
+    _renderCardPoster(item) {
+        const poster = item.poster_url || item.poster;
+        return poster
+            ? `<img class="media-reco-card-poster" src="${poster}" alt="${item.title}" loading="lazy">`
+            : `<div class="media-reco-card-placeholder">${item.title.charAt(0)}</div>`;
+    }
+
+    _renderRecommendationCard(item, mediaType, posterHtml, genresHtml, trailerUrl) {
+        const overview = item.overview
+            ? `<div class="media-reco-card-overview">${item.overview}</div>` : '';
+        const reason = item.reason
+            ? `<div class="media-reco-card-reason">${item.reason}</div>` : '';
+        let actions = `<a href="${trailerUrl}" target="_blank" class="media-reco-btn media-reco-btn-trailer">Trailer</a>`;
+        actions += `<button class="media-reco-btn media-reco-btn-add" onclick="window.mediaRecommenderModule.acceptRecommendation(${item.id}, '${this._esc(item.title)}', ${item.year || 0}, '${mediaType}')">Ajouter</button>`;
+        actions += `<button class="media-reco-btn media-reco-btn-reject" onclick="window.mediaRecommenderModule.rejectRecommendation(${item.id})">Pas interesse</button>`;
+        return `<div class="media-reco-card">
+            <div class="media-reco-card-poster-wrap">
+                ${posterHtml}
+                <span class="media-reco-type-badge ${mediaType}">${mediaType}</span>
+            </div>
+            <div class="media-reco-card-body">
+                <div class="media-reco-card-title">${item.title}</div>
+                <div class="media-reco-card-year">${item.year || ''}</div>
+                ${overview}
+                <div class="media-reco-card-genres">${genresHtml}</div>
+                ${reason}
+                <div class="media-reco-card-actions">${actions}</div>
+            </div>
+        </div>`;
+    }
+
+    _renderLibraryCard(item, mediaType, posterHtml, genresHtml, trailerUrl) {
+        const rating = item.rating_imdb || item.rating;
+        const hasFile = item.has_file ?? item.hasFile;
+        const ratingHtml = rating ? `<div class="media-reco-card-rating">IMDB ${rating}</div>` : '';
+        const statusClass = hasFile ? 'available' : 'monitored';
+        const statusText = hasFile ? 'Disponible' : 'En attente';
         let actions = `<a href="${trailerUrl}" target="_blank" class="media-reco-btn media-reco-btn-trailer">Trailer</a>`;
         actions += `<button class="media-reco-btn media-reco-btn-seen" onclick="window.mediaRecommenderModule.markSeen('${this._esc(item.title)}', '${mediaType}')">Vu</button>`;
 
@@ -279,67 +288,74 @@ class MediaRecommenderModule {
     renderTaste() {
         const container = document.getElementById('media-reco-taste');
         if (!container) return;
+
         let html = '';
-
-        if (this.stats) {
-            const s = this.stats;
-            html += `<div class="media-reco-stats-grid">
-                <div class="media-reco-stat-card"><div class="media-reco-stat-value">${s.media_items || 0}</div><div class="media-reco-stat-label">Titres en bibliotheque</div></div>
-                <div class="media-reco-stat-card"><div class="media-reco-stat-value">${s.interactions || 0}</div><div class="media-reco-stat-label">Interactions</div></div>
-                <div class="media-reco-stat-card"><div class="media-reco-stat-value">${s.recommendations || 0}</div><div class="media-reco-stat-label">Recommandations</div></div>
-                <div class="media-reco-stat-card"><div class="media-reco-stat-value">${s.taste_dimensions || 0}</div><div class="media-reco-stat-label">Dimensions gout</div></div>
-            </div>`;
-        }
-
-        if (this.taste) {
-            const dimensions = [
-                { key: 'genre', label: 'Genres' },
-                { key: 'decade', label: 'Decades' },
-                { key: 'media_type', label: 'Type de media' },
-                { key: 'runtime_range', label: 'Duree' }
-            ];
-            for (const dim of dimensions) {
-                const entries = this.taste[dim.key];
-                if (!entries || !entries.length) continue;
-                const sorted = [...entries].sort((a, b) => b.score - a.score);
-                const maxAbs = Math.max(...sorted.map(e => Math.abs(e.score)), 1);
-                html += `<div class="media-reco-taste-section"><h4>${dim.label}</h4><div class="media-reco-taste-bars">`;
-                for (const e of sorted) {
-                    const pct = Math.round((Math.abs(e.score) / maxAbs) * 100);
-                    const cls = e.score >= 0 ? 'positive' : 'negative';
-                    html += `<div class="media-reco-taste-bar-row">
-                        <span class="media-reco-taste-label">${e.value}</span>
-                        <div class="media-reco-taste-bar-track"><div class="media-reco-taste-bar ${cls}" style="width:${pct}%"></div></div>
-                        <span class="media-reco-taste-score ${cls}">${e.score > 0 ? '+' : ''}${e.score}</span>
-                    </div>`;
-                }
-                html += `</div></div>`;
-            }
-        }
-
-        if (this.interactions.length) {
-            const recent = this.interactions.slice(0, 15);
-            const actionLabels = { watched: 'Vu', rated: 'Note', rejected: 'Rejete', added: 'Ajoute', abandoned: 'Abandonne', interested: 'Interesse' };
-            const actionCls = { watched: 'positive', rated: 'neutral', rejected: 'negative', added: 'positive', abandoned: 'negative', interested: 'neutral' };
-            html += `<div class="media-reco-taste-section"><h4>Dernieres interactions</h4><div class="media-reco-interactions-list">`;
-            for (const i of recent) {
-                const label = actionLabels[i.action] || i.action;
-                const cls = actionCls[i.action] || 'neutral';
-                const ratingStr = i.rating ? ` (${i.rating}/10)` : '';
-                const date = i.created_at ? new Date(i.created_at).toLocaleDateString('fr-FR') : '';
-                html += `<div class="media-reco-interaction-item">
-                    <span class="media-reco-interaction-title">${i.title}</span>
-                    <span class="media-reco-interaction-action ${cls}">${label}${ratingStr}</span>
-                    <span class="media-reco-interaction-date">${date}</span>
-                </div>`;
-            }
-            html += `</div></div>`;
-        }
+        if (this.stats) html += this._renderTasteStats();
+        if (this.taste) html += this._renderTasteDimensions();
+        if (this.interactions.length) html += this._renderTasteInteractions();
 
         if (!html) {
             html = '<div class="media-reco-empty"><p>Aucune donnee de profil. Interagissez avec votre bibliotheque pour construire votre profil de gout.</p></div>';
         }
         container.innerHTML = html;
+    }
+
+    _renderTasteStats() {
+        const s = this.stats;
+        return `<div class="media-reco-stats-grid">
+            <div class="media-reco-stat-card"><div class="media-reco-stat-value">${s.media_items || 0}</div><div class="media-reco-stat-label">Titres en bibliotheque</div></div>
+            <div class="media-reco-stat-card"><div class="media-reco-stat-value">${s.interactions || 0}</div><div class="media-reco-stat-label">Interactions</div></div>
+            <div class="media-reco-stat-card"><div class="media-reco-stat-value">${s.recommendations || 0}</div><div class="media-reco-stat-label">Recommandations</div></div>
+            <div class="media-reco-stat-card"><div class="media-reco-stat-value">${s.taste_dimensions || 0}</div><div class="media-reco-stat-label">Dimensions gout</div></div>
+        </div>`;
+    }
+
+    _renderTasteDimensions() {
+        const dimensions = [
+            { key: 'genre', label: 'Genres' },
+            { key: 'decade', label: 'Decades' },
+            { key: 'media_type', label: 'Type de media' },
+            { key: 'runtime_range', label: 'Duree' }
+        ];
+        let html = '';
+        for (const dim of dimensions) {
+            const entries = this.taste[dim.key];
+            if (!entries || !entries.length) continue;
+            const sorted = [...entries].sort((a, b) => b.score - a.score);
+            const maxAbs = Math.max(...sorted.map(e => Math.abs(e.score)), 1);
+            html += `<div class="media-reco-taste-section"><h4>${dim.label}</h4><div class="media-reco-taste-bars">`;
+            for (const e of sorted) {
+                const pct = Math.round((Math.abs(e.score) / maxAbs) * 100);
+                const cls = e.score >= 0 ? 'positive' : 'negative';
+                html += `<div class="media-reco-taste-bar-row">
+                    <span class="media-reco-taste-label">${e.value}</span>
+                    <div class="media-reco-taste-bar-track"><div class="media-reco-taste-bar ${cls}" style="width:${pct}%"></div></div>
+                    <span class="media-reco-taste-score ${cls}">${e.score > 0 ? '+' : ''}${e.score}</span>
+                </div>`;
+            }
+            html += `</div></div>`;
+        }
+        return html;
+    }
+
+    _renderTasteInteractions() {
+        const recent = this.interactions.slice(0, 15);
+        const actionLabels = { watched: 'Vu', rated: 'Note', rejected: 'Rejete', added: 'Ajoute', abandoned: 'Abandonne', interested: 'Interesse' };
+        const actionCls = { watched: 'positive', rated: 'neutral', rejected: 'negative', added: 'positive', abandoned: 'negative', interested: 'neutral' };
+        let html = `<div class="media-reco-taste-section"><h4>Dernieres interactions</h4><div class="media-reco-interactions-list">`;
+        for (const i of recent) {
+            const label = actionLabels[i.action] || i.action;
+            const cls = actionCls[i.action] || 'neutral';
+            const ratingStr = i.rating ? ` (${i.rating}/10)` : '';
+            const date = i.created_at ? new Date(i.created_at).toLocaleDateString('fr-FR') : '';
+            html += `<div class="media-reco-interaction-item">
+                <span class="media-reco-interaction-title">${i.title}</span>
+                <span class="media-reco-interaction-action ${cls}">${label}${ratingStr}</span>
+                <span class="media-reco-interaction-date">${date}</span>
+            </div>`;
+        }
+        html += `</div></div>`;
+        return html;
     }
 
     // -- Sync --
