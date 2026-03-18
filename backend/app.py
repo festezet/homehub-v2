@@ -230,7 +230,6 @@ def extract_description_from_readme(project_path):
 
     return None
 
-@app.route('/api/projects')
 def _row_to_project(row):
     """Convert a DB row to a project dict"""
     return {
@@ -276,6 +275,7 @@ ADDITIONAL_APPS = [
 ]
 
 
+@app.route('/api/projects')
 def get_projects():
     """Get list of projects from projects.db"""
     projects = _fetch_projects_from_db()
