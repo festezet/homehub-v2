@@ -751,35 +751,28 @@ class CalendarModule {
         `;
     }
 
+    _getFormPrefill(ev) {
+        const data = { summary: ev?.summary || '', description: ev?.description || '',
+            location: ev?.location || '', startDate: '', startTime: '', endDate: '', endTime: '', allDay: false };
+        if (!ev) return data;
+        if (ev.start?.dateTime) {
+            const sd = new Date(ev.start.dateTime);
+            data.startDate = this.formatDate(sd);
+            data.startTime = `${sd.getHours().toString().padStart(2,'0')}:${sd.getMinutes().toString().padStart(2,'0')}`;
+        } else if (ev.start?.date) { data.startDate = ev.start.date; data.allDay = true; }
+        if (ev.end?.dateTime) {
+            const ed = new Date(ev.end.dateTime);
+            data.endDate = this.formatDate(ed);
+            data.endTime = `${ed.getHours().toString().padStart(2,'0')}:${ed.getMinutes().toString().padStart(2,'0')}`;
+        } else if (ev.end?.date) { data.endDate = ev.end.date; }
+        return data;
+    }
+
     renderEventFormModal() {
         const ev = this.editingEvent;
         const isEdit = !!ev;
         const title = isEdit ? 'Modifier evenement' : 'Nouvel evenement';
-
-        // Pre-fill for edit
-        const summary = ev?.summary || '';
-        const description = ev?.description || '';
-        const location = ev?.location || '';
-        let startDate = '', startTime = '', endDate = '', endTime = '';
-        let allDay = false;
-
-        if (ev) {
-            if (ev.start?.dateTime) {
-                const sd = new Date(ev.start.dateTime);
-                startDate = this.formatDate(sd);
-                startTime = `${sd.getHours().toString().padStart(2,'0')}:${sd.getMinutes().toString().padStart(2,'0')}`;
-            } else if (ev.start?.date) {
-                startDate = ev.start.date;
-                allDay = true;
-            }
-            if (ev.end?.dateTime) {
-                const ed = new Date(ev.end.dateTime);
-                endDate = this.formatDate(ed);
-                endTime = `${ed.getHours().toString().padStart(2,'0')}:${ed.getMinutes().toString().padStart(2,'0')}`;
-            } else if (ev.end?.date) {
-                endDate = ev.end.date;
-            }
-        }
+        const { summary, description, location, startDate, startTime, endDate, endTime, allDay } = this._getFormPrefill(ev);
 
         return `
             <div id="gcal-event-modal" class="modal ${this.editingEvent !== null ? '' : 'hidden'}">
@@ -899,72 +892,64 @@ class CalendarModule {
         this.render();
     }
 
-    async saveEvent() {
-        const summary = document.getElementById('gcal-form-summary')?.value?.trim();
-        const startDate = document.getElementById('gcal-form-start-date')?.value;
-        const startTime = document.getElementById('gcal-form-start-time')?.value;
-        const endDate = document.getElementById('gcal-form-end-date')?.value || startDate;
-        const endTime = document.getElementById('gcal-form-end-time')?.value;
-        const allDay = document.getElementById('gcal-form-allday')?.checked;
-        const location = document.getElementById('gcal-form-location')?.value?.trim() || '';
-        const description = document.getElementById('gcal-form-description')?.value?.trim() || '';
+    _collectFormData() {
+        return {
+            summary: document.getElementById('gcal-form-summary')?.value?.trim(),
+            startDate: document.getElementById('gcal-form-start-date')?.value,
+            startTime: document.getElementById('gcal-form-start-time')?.value,
+            endDate: document.getElementById('gcal-form-end-date')?.value,
+            endTime: document.getElementById('gcal-form-end-time')?.value,
+            allDay: document.getElementById('gcal-form-allday')?.checked,
+            location: document.getElementById('gcal-form-location')?.value?.trim() || '',
+            description: document.getElementById('gcal-form-description')?.value?.trim() || ''
+        };
+    }
 
-        if (!summary) {
-            this.showToast('Le titre est obligatoire');
-            return;
-        }
-        if (!startDate) {
-            this.showToast('La date de debut est obligatoire');
-            return;
-        }
-
-        let startStr, endStr;
-        if (allDay) {
-            startStr = startDate;
-            endStr = endDate || startDate;
+    _buildEventDatetime(fd) {
+        const endDate = fd.endDate || fd.startDate;
+        if (fd.allDay) return { start: fd.startDate, end: endDate || fd.startDate };
+        const startStr = `${fd.startDate}T${fd.startTime || '09:00'}:00`;
+        let endStr;
+        if (endDate && fd.endTime) {
+            endStr = `${endDate}T${fd.endTime}:00`;
+        } else if (fd.startTime) {
+            const [h, m] = fd.startTime.split(':').map(Number);
+            endStr = `${fd.startDate}T${(h+1).toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:00`;
         } else {
-            startStr = `${startDate}T${startTime || '09:00'}:00`;
-            if (endDate && endTime) {
-                endStr = `${endDate}T${endTime}:00`;
-            } else if (startTime) {
-                // Default 1h duration
-                const [h, m] = startTime.split(':').map(Number);
-                const eh = h + 1;
-                endStr = `${startDate}T${eh.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:00`;
-            } else {
-                endStr = `${startDate}T10:00:00`;
-            }
+            endStr = `${fd.startDate}T10:00:00`;
         }
+        return { start: startStr, end: endStr };
+    }
 
-        const body = { summary, start: startStr, end: endStr, description, location, all_day: allDay };
+    async _submitEvent(body, isEdit) {
+        const url = isEdit
+            ? `/api/calendar/google/events/${this.editingEvent.id}`
+            : '/api/calendar/google/events';
+        const method = isEdit ? 'PUT' : 'POST';
+        const response = await fetch(url, {
+            method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+        });
+        const data = await response.json();
+        if (data.status === 'ok') {
+            this.showToast(isEdit ? 'Evenement modifie' : 'Evenement cree');
+            this.editingEvent = null;
+            await this.gcalLoadEvents();
+            this.render();
+        } else {
+            this.showToast('Erreur: ' + (data.message || 'echec'));
+        }
+    }
 
+    async saveEvent() {
+        const fd = this._collectFormData();
+        if (!fd.summary) { this.showToast('Le titre est obligatoire'); return; }
+        if (!fd.startDate) { this.showToast('La date de debut est obligatoire'); return; }
+        const dt = this._buildEventDatetime(fd);
+        const body = { summary: fd.summary, start: dt.start, end: dt.end,
+            description: fd.description, location: fd.location, all_day: fd.allDay };
         try {
-            let response;
             const isEdit = this.editingEvent && this.editingEvent !== 'new' && this.editingEvent.id;
-
-            if (isEdit) {
-                response = await fetch(`/api/calendar/google/events/${this.editingEvent.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
-                });
-            } else {
-                response = await fetch('/api/calendar/google/events', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
-                });
-            }
-
-            const data = await response.json();
-            if (data.status === 'ok') {
-                this.showToast(isEdit ? 'Evenement modifie' : 'Evenement cree');
-                this.editingEvent = null;
-                await this.gcalLoadEvents();
-                this.render();
-            } else {
-                this.showToast('Erreur: ' + (data.message || 'echec'));
-            }
+            await this._submitEvent(body, isEdit);
         } catch (error) {
             console.error('[Calendar] Error saving event:', error);
             this.showToast('Erreur reseau');
