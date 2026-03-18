@@ -406,41 +406,35 @@ class MediaRecommenderModule {
         ];
         container.innerHTML = sections.map(s => {
             const chips = (p[s.key] || []).map(v =>
-                `<span class="media-reco-chip ${s.cls}">${v} <span class="remove" onclick="window.mediaRecommenderModule.removePref('${s.key}', '${this._esc(v)}')">&times;</span></span>`
+                `<span class="media-reco-chip ${s.cls}">${v} <span class="remove" onclick="window.mediaRecommenderModule.updatePref('${s.key}', 'remove', '${this._esc(v)}')">&times;</span></span>`
             ).join('');
             return `<div class="media-reco-pref-section">
                 <h4>${s.label}</h4>
                 <div class="media-reco-chips">${chips}</div>
                 <div class="media-reco-add-input">
                     <input type="text" id="pref-input-${s.key}" placeholder="Ajouter...">
-                    <button onclick="window.mediaRecommenderModule.addPref('${s.key}')">+</button>
+                    <button onclick="window.mediaRecommenderModule.updatePref('${s.key}', 'add')">+</button>
                 </div>
             </div>`;
         }).join('');
     }
 
-    async addPref(category) {
-        const input = document.getElementById(`pref-input-${category}`);
-        const value = input?.value?.trim();
-        if (!value) return;
-        try {
-            await API.mediaReco.updatePreference({ action: 'add', category, value });
-            input.value = '';
-            this.preferences = null;
-            await this.loadPreferences();
-        } catch (err) {
-            // silent
+    async updatePref(category, action, value) {
+        if (action === 'add') {
+            const input = document.getElementById(`pref-input-${category}`);
+            value = input?.value?.trim();
+            if (!value) return;
+            try {
+                await API.mediaReco.updatePreference({ action: 'add', category, value });
+                input.value = '';
+            } catch (err) { return; }
+        } else {
+            try {
+                await API.mediaReco.updatePreference({ action: 'remove', category, value });
+            } catch (err) { return; }
         }
-    }
-
-    async removePref(category, value) {
-        try {
-            await API.mediaReco.updatePreference({ action: 'remove', category, value });
-            this.preferences = null;
-            await this.loadPreferences();
-        } catch (err) {
-            // silent
-        }
+        this.preferences = null;
+        await this.loadPreferences();
     }
 }
 

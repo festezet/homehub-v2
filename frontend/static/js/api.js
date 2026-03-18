@@ -198,6 +198,35 @@ const API = {
         async getPorts() {
             return await API.fetch(`${API.BASE_URL}/services/ports`);
         }
+    },
+
+    /**
+     * Specs API methods
+     */
+    specs: {
+        async getAll() {
+            return await API.fetch(`${API.BASE_URL}/specs`);
+        },
+
+        async update(id, field, value) {
+            return await API.fetch(`${API.BASE_URL}/specs/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ field, value })
+            });
+        },
+
+        async scan() {
+            return await API.fetch(`${API.BASE_URL}/specs/scan`, {
+                method: 'POST'
+            });
+        },
+
+        async healthScan() {
+            return await API.fetch(`${API.BASE_URL}/specs/health-scan`, {
+                method: 'POST'
+            });
+        }
     }
 };
 
