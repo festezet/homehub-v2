@@ -103,6 +103,51 @@
             Dis simplement "genere les drafts en attente".
         </p>
     </div>
+
+    <!-- Draft Generator Vision -->
+    <div class="ai-profile-map-explanation">
+        <h3>Vision : messagerie unifiee multi-canaux</h3>
+
+        <p>Le Draft Generator est concu pour devenir un <strong>point d'envoi unique</strong> pour tous tes messages,
+        quel que soit le canal. L'objectif : rediger un message dans ton style, puis l'envoyer directement
+        depuis cette interface vers la bonne plateforme.</p>
+
+        <h4>Multi boites mail (en cours)</h4>
+        <p>Aujourd'hui, le systeme connait deja tes deux comptes email :</p>
+        <div class="explanation-example">
+            <strong>Gmail</strong> (fabrice.estezet@gmail.com) — ~1 610 emails indexes, style personnel<br>
+            <strong>Hostinger</strong> (fabrice@estezet.com) — ~362 emails indexes, style pro/BV Germany
+        </div>
+        <p>Le Draft Generator adapte automatiquement le style selon le compte d'envoi :
+        plus decontracte sur Gmail, plus formel sur Hostinger. A terme, l'envoi direct (sans passer par Gmail/webmail)
+        sera possible depuis cette interface.</p>
+
+        <h4>Multi reseaux sociaux (a venir)</h4>
+        <p>La meme logique s'appliquera aux reseaux sociaux. Au lieu de rediger uniquement des emails,
+        le Draft Generator pourra generer des messages adaptes a chaque plateforme :</p>
+        <div class="explanation-example">
+            <strong>WhatsApp</strong> — Messages courts, ton informel, emojis naturels.
+            L'API Evolution est deja connectee (envoi + reception).<br>
+            <strong>LinkedIn</strong> — Messages professionnels, ton reseau-compatible.
+            L'API est integree (en attente de retablissement des endpoints messaging cote LinkedIn).<br>
+            <strong>Autres</strong> — Telegram, SMS, ou tout nouveau canal pourra etre ajoute
+            avec le meme principe : style adapte + envoi direct.
+        </div>
+
+        <h4>Comment ca fonctionnera</h4>
+        <div class="explanation-flow">
+            <span class="flow-step">Choix du contact</span>
+            <span class="flow-arrow">&rarr;</span>
+            <span class="flow-step">Choix du canal (email, WhatsApp, LinkedIn...)</span>
+            <span class="flow-arrow">&rarr;</span>
+            <span class="flow-step">Draft genere dans le bon style</span>
+            <span class="flow-arrow">&rarr;</span>
+            <span class="flow-step">Envoi direct</span>
+        </div>
+
+        <p>Le CRM connait les coordonnees de chaque contact (email, telephone, profil LinkedIn).
+        A terme, le systeme proposera automatiquement les canaux disponibles pour chaque destinataire.</p>
+    </div>
 </div>
 
 <!-- Notifications Sub-tab -->
@@ -145,6 +190,7 @@
             <span class="ai-profile-map-legend-item" data-type="tech"><span class="ai-profile-map-dot" style="background:#8b5cf6;"></span>Tech</span>
         </div>
         <div class="ai-profile-map-actions">
+            <button class="ai-profile-btn-secondary" onclick="window.aiProfileModule.refreshProjectMap()">Rafraichir</button>
             <button class="ai-profile-btn-secondary" onclick="window.aiProfileModule.resetMapZoom()">Reset vue</button>
         </div>
     </div>
@@ -152,6 +198,14 @@
         <svg id="ai-profile-map-svg"></svg>
     </div>
     <div id="ai-profile-map-tooltip" class="ai-profile-map-tooltip"></div>
+    <div id="ai-profile-map-detail" class="ai-profile-map-detail" style="display:none;">
+        <div class="ai-profile-map-detail-header">
+            <span id="ai-profile-map-detail-type" class="ai-profile-map-detail-badge"></span>
+            <span id="ai-profile-map-detail-title"></span>
+            <button class="ai-profile-map-detail-close" onclick="window.aiProfileModule.unpinProjectMapNode()">&times;</button>
+        </div>
+        <div id="ai-profile-map-detail-desc"></div>
+    </div>
 
     <!-- Project Map Explanation -->
     <div class="ai-profile-map-explanation">
@@ -257,6 +311,7 @@
             <span class="ai-profile-map-legend-item"><span class="ai-profile-map-dot" style="background:#8b5cf6;"></span>Vector Store</span>
         </div>
         <div class="ai-profile-map-actions">
+            <button class="ai-profile-btn-secondary" onclick="window.aiProfileModule.refreshDbMap()">Rafraichir</button>
             <button class="ai-profile-btn-secondary" onclick="window.aiProfileModule.resetDbMapZoom()">Reset vue</button>
         </div>
     </div>
@@ -264,6 +319,14 @@
         <svg id="ai-profile-dbmap-svg"></svg>
     </div>
     <div id="ai-profile-dbmap-tooltip" class="ai-profile-map-tooltip"></div>
+    <div id="ai-profile-dbmap-detail" class="ai-profile-map-detail" style="display:none;">
+        <div class="ai-profile-map-detail-header">
+            <span id="ai-profile-dbmap-detail-type" class="ai-profile-map-detail-badge"></span>
+            <span id="ai-profile-dbmap-detail-title"></span>
+            <button class="ai-profile-map-detail-close" onclick="window.aiProfileModule.unpinDbMapNode()">&times;</button>
+        </div>
+        <div id="ai-profile-dbmap-detail-desc"></div>
+    </div>
 
     <!-- Database Map Explanation -->
     <div class="ai-profile-map-explanation">

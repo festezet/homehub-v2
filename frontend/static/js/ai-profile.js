@@ -409,138 +409,84 @@ const aiProfileModule = {
 
     _mapSimulation: null,
     _mapZoom: null,
+    _mapApiData: null,
+    _pinnedMapNode: null,
+    _pinnedDbMapNode: null,
 
-    _getProjectMapData() {
-        const nodes = [
-            // Core purpose
-            { id: 'purpose', label: 'AI Profile', type: 'core', r: 32,
-              desc: 'Rendre le profil de consultant offshore wind visible et parsable par les agents AI. Architecture agent-first.' },
+    async _fetchMapData() {
+        if (this._mapApiData) return this._mapApiData;
+        try {
+            const resp = await API.aiProfile.getMapData();
+            if (resp && resp.ok) {
+                this._mapApiData = resp.data;
+                return this._mapApiData;
+            }
+        } catch (e) {
+            console.warn('Map API unavailable, using fallback data');
+        }
+        return null;
+    },
 
-            // Feature groups
-            { id: 'discovery', label: 'Discovery', type: 'feature', r: 22,
-              desc: 'Profil structure JSON-LD schema.org, decouvrable par les agents AI et moteurs de recherche.' },
-            { id: 'notifications', label: 'Notifications', type: 'feature', r: 22,
-              desc: 'Scan periodique des boites mail pour detecter les emails de contacts professionnels cibles.' },
-            { id: 'messaging', label: 'Messaging', type: 'feature', r: 22,
-              desc: 'Communication multi-canal : WhatsApp et LinkedIn depuis une interface unifiee.' },
-            { id: 'email-style', label: 'Email Style\nLearning', type: 'feature', r: 22,
-              desc: 'Apprentissage du style d\'ecriture par correspondant pour generation de brouillons personnalises.' },
-            { id: 'documents', label: 'Documents', type: 'feature', r: 22,
-              desc: 'Base de donnees de documents et pieces jointes Gmail, triees et indexees.' },
-            { id: 'crm', label: 'CRM', type: 'feature', r: 22,
-              desc: 'Base de donnees unifiee des contacts professionnels, partagee entre les modules.' },
-            { id: 'references', label: 'Personal\nReferences', type: 'feature', r: 20,
-              desc: 'Base de references personnelles retrouvables par Claude (docs, liens, rappels).' },
+    _convertProjectMapData(json) {
+        const nodes = [];
+        const links = [];
 
-            // Discovery components
-            { id: 'jsonld', label: 'JSON-LD', type: 'component', r: 14,
-              desc: 'Profil schema.org/Person avec CV, skills, projets en format structure.' },
-            { id: 'openapi', label: 'OpenAPI', type: 'component', r: 14,
-              desc: 'Specification OpenAPI pour les endpoints API du profil.' },
-            { id: 'llmstxt', label: 'llms.txt', type: 'component', r: 14,
-              desc: 'Fichier convention pour decouverte par agents LLM.' },
-            { id: 'portfolio', label: '19 Projets', type: 'component', r: 14,
-              desc: '19 projets en 5 categories : Offshore Wind, AI, Business, Infrastructure, Creative.' },
-            { id: 'skills', label: 'Skills', type: 'component', r: 14,
-              desc: '7 categories de competences avec preuves verifiables (repos GitHub, credentials).' },
-            { id: 'festezet', label: 'festezet.dev', type: 'tech', r: 12,
-              desc: 'Site deploye sur Hostinger, build statique genere par build_static.py.' },
+        // Core node
+        nodes.push({
+            id: json.core.id, label: json.core.label,
+            type: 'core', r: 32, desc: json.core.details
+        });
 
-            // Notifications components
-            { id: 'gmail-scan', label: 'Gmail', type: 'component', r: 14,
-              desc: 'Scan Gmail via API OAuth2, reutilise token gmail-cleaner.' },
-            { id: 'hostinger-scan', label: 'Hostinger', type: 'component', r: 14,
-              desc: 'Scan Hostinger via IMAP (imaplib stdlib).' },
-            { id: 'ntfy', label: 'ntfy Push', type: 'tech', r: 12,
-              desc: 'Push notifications via ntfy Docker (port 8090).' },
-            { id: 'scheduler', label: 'APScheduler', type: 'tech', r: 12,
-              desc: 'Scan automatique toutes les 5 minutes.' },
+        // Feature nodes + auto-links from core
+        for (const f of json.features) {
+            nodes.push({
+                id: f.id, label: f.label,
+                type: 'feature', r: 22, desc: f.details
+            });
+            links.push({ source: json.core.id, target: f.id });
+        }
 
-            // Messaging components
-            { id: 'whatsapp', label: 'WhatsApp', type: 'component', r: 14,
-              desc: 'CLI + scanner + endpoint envoi via Evolution API (port 8084).' },
-            { id: 'linkedin', label: 'LinkedIn', type: 'component', r: 14,
-              desc: 'CLI + scanner + auth cookie. Messaging API cassee cote LinkedIn.' },
+        // Component nodes + auto-links to parent
+        for (const c of json.components) {
+            nodes.push({
+                id: c.id, label: c.label,
+                type: 'component', r: 14, desc: c.details
+            });
+            if (c.parent) {
+                links.push({ source: c.parent, target: c.id });
+            }
+        }
 
-            // Email Style components
-            { id: 'chromadb', label: 'ChromaDB', type: 'tech', r: 12,
-              desc: '1139 emails indexes, embeddings MiniLM-L6-v2, recherche similaire.' },
-            { id: 'draft-gen', label: 'Draft\nGenerator', type: 'component', r: 14,
-              desc: 'Generation brouillons few-shot (5 exemples) via Claude Sonnet API.' },
-            { id: 'corpus', label: '1972 Emails', type: 'component', r: 14,
-              desc: 'Corpus complet : 1610 Gmail + 362 Hostinger, 345 correspondants.' },
+        // Tech nodes
+        for (const t of json.tech) {
+            nodes.push({
+                id: t.id, label: t.label,
+                type: 'tech', r: 12, desc: t.details
+            });
+        }
 
-            // Documents components
-            { id: 'attachments', label: '268 PJ', type: 'component', r: 14,
-              desc: '268 pieces jointes telechargees, triees via interface custom, 52 importees en DB.' },
-            { id: 'documents-db', label: 'documents.db', type: 'tech', r: 12,
-              desc: '102 documents indexes (50 manuels + 52 importes).' },
-
-            // Tech stack
-            { id: 'flask', label: 'Flask', type: 'tech', r: 12,
-              desc: 'Backend Flask sur port 5100, blueprints, auth Bearer token.' },
-            { id: 'sqlite', label: 'SQLite', type: 'tech', r: 12,
-              desc: 'notifications.db, documents.db, ai_profile.db, crm.db.' },
-            { id: 'claude-api', label: 'Claude API', type: 'tech', r: 12,
-              desc: 'Anthropic Claude Sonnet pour generation de brouillons.' },
-        ];
-
-        const links = [
-            // Purpose -> Features
-            { source: 'purpose', target: 'discovery' },
-            { source: 'purpose', target: 'notifications' },
-            { source: 'purpose', target: 'messaging' },
-            { source: 'purpose', target: 'email-style' },
-            { source: 'purpose', target: 'documents' },
-            { source: 'purpose', target: 'crm' },
-            { source: 'purpose', target: 'references' },
-
-            // Discovery -> Components
-            { source: 'discovery', target: 'jsonld' },
-            { source: 'discovery', target: 'openapi' },
-            { source: 'discovery', target: 'llmstxt' },
-            { source: 'discovery', target: 'portfolio' },
-            { source: 'discovery', target: 'skills' },
-            { source: 'discovery', target: 'festezet' },
-
-            // Notifications -> Components
-            { source: 'notifications', target: 'gmail-scan' },
-            { source: 'notifications', target: 'hostinger-scan' },
-            { source: 'notifications', target: 'ntfy' },
-            { source: 'notifications', target: 'scheduler' },
-
-            // Messaging -> Components
-            { source: 'messaging', target: 'whatsapp' },
-            { source: 'messaging', target: 'linkedin' },
-
-            // Email Style -> Components
-            { source: 'email-style', target: 'chromadb' },
-            { source: 'email-style', target: 'draft-gen' },
-            { source: 'email-style', target: 'corpus' },
-            { source: 'draft-gen', target: 'claude-api' },
-
-            // Documents -> Components
-            { source: 'documents', target: 'attachments' },
-            { source: 'documents', target: 'documents-db' },
-
-            // Cross-links
-            { source: 'crm', target: 'whatsapp' },
-            { source: 'crm', target: 'linkedin' },
-            { source: 'crm', target: 'gmail-scan' },
-            { source: 'crm', target: 'corpus' },
-
-            // Tech shared
-            { source: 'notifications', target: 'flask' },
-            { source: 'email-style', target: 'flask' },
-            { source: 'notifications', target: 'sqlite' },
-            { source: 'documents', target: 'sqlite' },
-            { source: 'references', target: 'sqlite' },
-        ];
+        // Explicit cross-links and tech connections
+        if (json.links) {
+            for (const l of json.links) {
+                links.push({ source: l.source, target: l.target });
+            }
+        }
 
         return { nodes, links };
     },
 
-    renderProjectMap() {
+    _getProjectMapData() {
+        // Minimal fallback when API is unavailable
+        return {
+            nodes: [
+                { id: 'offline', label: 'API indisponible', type: 'core', r: 32,
+                  desc: 'Le backend ai-profile (port 5100) ne repond pas. Cliquez Rafraichir apres l\'avoir relance.' }
+            ],
+            links: []
+        };
+    },
+
+    async renderProjectMap() {
         if (typeof d3 === 'undefined') return;
 
         const container = document.getElementById('ai-profile-map-container');
@@ -555,7 +501,15 @@ const aiProfileModule = {
 
         svg.attr('viewBox', [0, 0, width, height]);
 
-        const { nodes, links } = this._getProjectMapData();
+        // Fetch from API with fallback to hardcoded data
+        let mapData;
+        const apiData = await this._fetchMapData();
+        if (apiData && apiData.project_map) {
+            mapData = this._convertProjectMapData(apiData.project_map);
+        } else {
+            mapData = this._getProjectMapData();
+        }
+        const { nodes, links } = mapData;
 
         const colorMap = {
             core: '#f59e0b',
@@ -705,6 +659,15 @@ const aiProfileModule = {
                 });
         });
 
+        // Click to pin detail panel
+        node.on('click.pin', (event, d) => {
+            if (this._pinnedMapNode === d.id) {
+                this.unpinProjectMapNode();
+            } else {
+                this._showProjectMapDetail(d, colorMap);
+            }
+        });
+
         // Force simulation
         this._mapSimulation = d3.forceSimulation(nodes)
             .force('link', d3.forceLink(links).id(d => d.id).distance(d => {
@@ -737,97 +700,52 @@ const aiProfileModule = {
         }
     },
 
+    async refreshProjectMap() {
+        this._mapApiData = null;
+        this._pinnedMapNode = null;
+        const detail = document.getElementById('ai-profile-map-detail');
+        if (detail) detail.style.display = 'none';
+        await this.renderProjectMap();
+    },
+
+    _showProjectMapDetail(d, colorMap) {
+        const panel = document.getElementById('ai-profile-map-detail');
+        const badge = document.getElementById('ai-profile-map-detail-type');
+        const title = document.getElementById('ai-profile-map-detail-title');
+        const desc = document.getElementById('ai-profile-map-detail-desc');
+        badge.textContent = d.type;
+        badge.style.background = colorMap[d.type] + '33';
+        badge.style.color = colorMap[d.type];
+        title.textContent = d.label.replace('\n', ' ');
+        desc.textContent = d.desc;
+        panel.style.display = 'block';
+        panel.style.borderLeftColor = colorMap[d.type];
+        this._pinnedMapNode = d.id;
+    },
+
+    unpinProjectMapNode() {
+        this._pinnedMapNode = null;
+        const panel = document.getElementById('ai-profile-map-detail');
+        if (panel) panel.style.display = 'none';
+    },
+
     // --- Database Map (D3 Force-directed graph) ---
 
     _dbMapSimulation: null,
     _dbMapZoom: null,
 
     _getDbMapData() {
-        const nodes = [
-            // Databases (orange, large)
-            { id: 'notifications-db', label: 'notifications.db', type: 'database', r: 26,
-              desc: 'Scan emails & push notifications. 2 tables.' },
-            { id: 'ai-profile-db', label: 'ai_profile.db', type: 'database', r: 22,
-              desc: 'References personnelles retrouvables par Claude. 1 table.' },
-            { id: 'documents-db', label: 'documents.db', type: 'database', r: 26,
-              desc: 'Pieces jointes Gmail indexees avec BLOBs. 79 MB. 1 table.' },
-            { id: 'email-context-db', label: 'email_context.db', type: 'database', r: 28,
-              desc: 'Corpus emails pour apprentissage de style. 3 tables, 3200+ rows.' },
-            { id: 'chroma-db', label: 'ChromaDB', type: 'vector', r: 26,
-              desc: 'Vector store pour recherche semantique emails. 1139 embeddings MiniLM-L6-v2.' },
-            { id: 'crm-db', label: 'crm.db', type: 'database', r: 30,
-              desc: 'CRM contacts + email archives + campaigns. 12 tables, 750+ rows.' },
-
-            // notifications.db tables
-            { id: 'tbl-notifications', label: 'notifications', type: 'table', r: 14, rows: 12,
-              desc: 'id, source, contact_id, contact_name, subject, preview, status, created_at, read_at' },
-            { id: 'tbl-scan-log', label: 'scan_log', type: 'table', r: 14, rows: 92,
-              desc: 'Historique des scans periodiques (APScheduler 5min)' },
-
-            // ai_profile.db tables
-            { id: 'tbl-personal-refs', label: 'personal_references', type: 'table', r: 12, rows: 1,
-              desc: 'id, topic, keywords, description, file_path, urls, notes, reminder_date' },
-
-            // documents.db tables
-            { id: 'tbl-documents', label: 'documents', type: 'table', r: 16, rows: 102,
-              desc: 'id, title, source, category, subcategory, format, size_bytes, content_blob, tags, file_path' },
-
-            // email_context.db tables
-            { id: 'tbl-emails', label: 'emails', type: 'table', r: 18, rows: 1974,
-              desc: 'Corpus complet : 1610 Gmail + 362 Hostinger. contact_id, subject, body, account, date' },
-            { id: 'tbl-threads', label: 'threads', type: 'table', r: 16, rows: 1233,
-              desc: 'Threads de conversation regroupes. thread_id, contact_id, subject, last_date' },
-            { id: 'tbl-draft-queue', label: 'draft_queue', type: 'table', r: 12, rows: 0,
-              desc: 'File d\'attente brouillons mode Session. contact_id, subject, context, status' },
-
-            // ChromaDB tables (simplified)
-            { id: 'tbl-embeddings', label: 'embeddings', type: 'table', r: 16, rows: 1139,
-              desc: '1139 vecteurs MiniLM-L6-v2 pour recherche similaire few-shot' },
-
-            // crm.db tables
-            { id: 'tbl-contacts', label: 'contacts', type: 'table', r: 16, rows: 34,
-              desc: 'contact_id, first_name, last_name, company, position, email, phone, language' },
-            { id: 'tbl-templates', label: 'templates', type: 'table', r: 12, rows: 12,
-              desc: 'Templates email par type (follow-up, intro, proposal...)' },
-            { id: 'tbl-signals', label: 'signals', type: 'table', r: 12, rows: 11,
-              desc: 'Signaux CRM : interactions detectees automatiquement' },
-            { id: 'tbl-email-archives', label: 'email_archives', type: 'table', r: 16, rows: 637,
-              desc: 'Archives emails CRM avec metadata et categorisation' },
-            { id: 'tbl-campaigns', label: 'campaigns', type: 'table', r: 12, rows: 0,
-              desc: 'Campagnes outreach (contacts groupes, templates, suivi)' },
-            { id: 'tbl-contact-notes', label: 'contact_notes', type: 'table', r: 12, rows: 0,
-              desc: 'Notes manuelles sur les contacts' },
-        ];
-
-        const links = [
-            // DB -> Tables
-            { source: 'notifications-db', target: 'tbl-notifications' },
-            { source: 'notifications-db', target: 'tbl-scan-log' },
-            { source: 'ai-profile-db', target: 'tbl-personal-refs' },
-            { source: 'documents-db', target: 'tbl-documents' },
-            { source: 'email-context-db', target: 'tbl-emails' },
-            { source: 'email-context-db', target: 'tbl-threads' },
-            { source: 'email-context-db', target: 'tbl-draft-queue' },
-            { source: 'chroma-db', target: 'tbl-embeddings' },
-            { source: 'crm-db', target: 'tbl-contacts' },
-            { source: 'crm-db', target: 'tbl-templates' },
-            { source: 'crm-db', target: 'tbl-signals' },
-            { source: 'crm-db', target: 'tbl-email-archives' },
-            { source: 'crm-db', target: 'tbl-campaigns' },
-            { source: 'crm-db', target: 'tbl-contact-notes' },
-
-            // Cross-database relationships
-            { source: 'tbl-emails', target: 'tbl-embeddings', cross: true },
-            { source: 'tbl-emails', target: 'tbl-contacts', cross: true },
-            { source: 'tbl-email-archives', target: 'tbl-contacts', cross: true },
-            { source: 'tbl-notifications', target: 'tbl-contacts', cross: true },
-            { source: 'tbl-threads', target: 'tbl-emails', cross: true },
-        ];
-
-        return { nodes, links };
+        // Minimal fallback when API is unavailable
+        return {
+            nodes: [
+                { id: 'offline', label: 'API indisponible', type: 'database', r: 30,
+                  desc: 'Le backend ai-profile (port 5100) ne repond pas. Cliquez Rafraichir apres l\'avoir relance.' }
+            ],
+            links: []
+        };
     },
 
-    renderDbMap() {
+    async renderDbMap() {
         if (typeof d3 === 'undefined') return;
 
         const container = document.getElementById('ai-profile-dbmap-container');
@@ -840,7 +758,15 @@ const aiProfileModule = {
         const height = container.clientHeight;
         svg.attr('viewBox', [0, 0, width, height]);
 
-        const { nodes, links } = this._getDbMapData();
+        // Fetch from API with fallback to hardcoded data
+        let mapData;
+        const apiData = await this._fetchMapData();
+        if (apiData && apiData.db_map) {
+            mapData = apiData.db_map;
+        } else {
+            mapData = this._getDbMapData();
+        }
+        const { nodes, links } = mapData;
 
         const colorMap = {
             database: '#f59e0b',
@@ -984,6 +910,15 @@ const aiProfileModule = {
                 .attr('stroke-width', d => d.cross ? 1.5 : 1.2);
         });
 
+        // Click to pin detail panel
+        node.on('click.pin', (event, d) => {
+            if (this._pinnedDbMapNode === d.id) {
+                this.unpinDbMapNode();
+            } else {
+                this._showDbMapDetail(d, colorMap);
+            }
+        });
+
         // Force simulation
         this._dbMapSimulation = d3.forceSimulation(nodes)
             .force('link', d3.forceLink(links).id(d => d.id).distance(d => {
@@ -1009,6 +944,36 @@ const aiProfileModule = {
         if (this._dbMapZoom) {
             svg.transition().duration(500).call(this._dbMapZoom.transform, d3.zoomIdentity);
         }
+    },
+
+    async refreshDbMap() {
+        this._mapApiData = null;
+        this._pinnedDbMapNode = null;
+        const detail = document.getElementById('ai-profile-dbmap-detail');
+        if (detail) detail.style.display = 'none';
+        await this.renderDbMap();
+    },
+
+    _showDbMapDetail(d, colorMap) {
+        const panel = document.getElementById('ai-profile-dbmap-detail');
+        const badge = document.getElementById('ai-profile-dbmap-detail-type');
+        const title = document.getElementById('ai-profile-dbmap-detail-title');
+        const desc = document.getElementById('ai-profile-dbmap-detail-desc');
+        badge.textContent = d.type;
+        badge.style.background = colorMap[d.type] + '33';
+        badge.style.color = colorMap[d.type];
+        title.textContent = d.label;
+        const rowInfo = d.rows !== undefined ? ` (${d.rows} rows)` : '';
+        desc.textContent = d.desc + rowInfo;
+        panel.style.display = 'block';
+        panel.style.borderLeftColor = colorMap[d.type];
+        this._pinnedDbMapNode = d.id;
+    },
+
+    unpinDbMapNode() {
+        this._pinnedDbMapNode = null;
+        const panel = document.getElementById('ai-profile-dbmap-detail');
+        if (panel) panel.style.display = 'none';
     },
 
     _escapeHtml(str) {

@@ -615,6 +615,65 @@
     opacity: 1;
 }
 
+/* Map Detail Panel (click-to-pin) */
+.ai-profile-map-detail {
+    margin-top: 10px;
+    padding: 14px 18px;
+    background: var(--bg-card, #1e293b);
+    border: 1px solid var(--border-color, #334155);
+    border-left: 3px solid var(--primary, #3b82f6);
+    border-radius: 8px;
+    animation: mapDetailSlide 0.2s ease-out;
+}
+
+@keyframes mapDetailSlide {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.ai-profile-map-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.ai-profile-map-detail-header span:nth-child(2) {
+    flex: 1;
+    font-weight: 600;
+    color: var(--text-primary, #f8fafc);
+    font-size: 0.95rem;
+}
+
+.ai-profile-map-detail-badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.ai-profile-map-detail-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary, #94a3b8);
+    font-size: 1.3rem;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+}
+
+.ai-profile-map-detail-close:hover {
+    color: var(--text-primary, #f8fafc);
+}
+
+.ai-profile-map-detail > div:last-child {
+    color: var(--text-secondary, #94a3b8);
+    font-size: 0.85rem;
+    line-height: 1.6;
+}
+
 /* Map Explanation Sections */
 .ai-profile-map-explanation {
     margin-top: 24px;
