@@ -210,6 +210,10 @@ API.claude = {
  * AI Profile API methods (drafts + notifications)
  */
 API.aiProfile = {
+    async getChannels() {
+        return await API.fetch(`${API.BASE_URL}/ai-profile/drafts/channels`);
+    },
+
     async getContacts() {
         return await API.fetch(`${API.BASE_URL}/ai-profile/drafts/contacts`);
     },

@@ -37,6 +37,11 @@ def _proxy(path, method="GET", data=None, timeout=60):
 
 # --- Draft Generation ---
 
+@ai_profile_bp.route('/drafts/channels')
+def drafts_channels():
+    return _proxy("drafts/channels")
+
+
 @ai_profile_bp.route('/drafts/contacts')
 def drafts_contacts():
     return _proxy("drafts/contacts")
