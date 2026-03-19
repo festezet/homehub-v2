@@ -203,6 +203,7 @@ class ProjectStatusModule {
                 <div class="section-header">
                     <h3>Projets Infrastructure et Applications</h3>
                     <div class="header-actions">
+                        <input type="text" id="projects-search" class="search-input" placeholder="Rechercher..." autocomplete="off">
                         <select id="projects-category-filter" class="filter-select">
                             <option value="all">Toutes categories</option>
                             <option value="infrastructure">Infrastructure</option>

@@ -463,11 +463,42 @@
     gap: 8px;
 }
 
+.ps-content .search-input {
+    padding: 6px 12px;
+    border: 1px solid var(--border-color, #374151);
+    border-radius: 6px;
+    background: var(--bg-secondary, #1f2937);
+    color: var(--text-primary, #e5e7eb);
+    font-size: 0.85rem;
+    width: 180px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.ps-content .search-input:focus {
+    border-color: #667eea;
+}
+.ps-content .search-input::placeholder {
+    color: #6b7280;
+}
+
 .ps-content .desc-text {
     flex: 1;
     font-size: 0.85rem;
     color: #d1d5db;
     line-height: 1.4;
+}
+
+.ps-content .projects-table tr.search-highlight {
+    background: rgba(102, 126, 234, 0.15) !important;
+}
+.ps-content .projects-table tr.search-highlight td {
+    position: relative;
+}
+.ps-content .projects-table mark {
+    background: #667eea;
+    color: #fff;
+    border-radius: 2px;
+    padding: 0 2px;
 }
 
 .ps-content .detail-btn {

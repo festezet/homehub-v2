@@ -217,6 +217,25 @@ API.aiProfile = {
         });
     },
 
+    async getQueue(status) {
+        const params = status ? `?status=${status}` : '';
+        return await API.fetch(`${API.BASE_URL}/ai-profile/drafts/queue${params}`);
+    },
+
+    async addToQueue(data) {
+        return await API.fetch(`${API.BASE_URL}/ai-profile/drafts/queue`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    },
+
+    async deleteFromQueue(id) {
+        return await API.fetch(`${API.BASE_URL}/ai-profile/drafts/queue/${id}`, {
+            method: 'DELETE'
+        });
+    },
+
     async getNotifications(params = '') {
         const url = params
             ? `${API.BASE_URL}/ai-profile/notifications?${params}`

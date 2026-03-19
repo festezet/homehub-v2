@@ -391,7 +391,6 @@ class ProjectsListModule {
     setupEventListeners() {
         const filterSelect = document.getElementById('projects-category-filter');
         if (filterSelect) {
-            // Remove old listeners by replacing element
             const newSelect = filterSelect.cloneNode(true);
             filterSelect.parentNode.replaceChild(newSelect, filterSelect);
             newSelect.addEventListener('change', (e) => this.filterProjects(e.target.value));
@@ -403,6 +402,86 @@ class ProjectsListModule {
             refreshBtn.parentNode.replaceChild(newBtn, refreshBtn);
             newBtn.addEventListener('click', () => this.load());
         }
+
+        this._bindSearch();
+    }
+
+    _bindSearch() {
+        const input = document.getElementById('projects-search');
+        if (!input) return;
+        // Use a fresh handler — the input is recreated on each Overview load
+        const handler = (e) => this.search(e.target.value);
+        input.removeEventListener('input', this._searchHandler);
+        this._searchHandler = handler;
+        input.addEventListener('input', handler);
+    }
+
+    search(query) {
+        const tbody = document.getElementById('projects-tbody');
+        if (!tbody) return;
+
+        const q = query.trim().toLowerCase();
+
+        // Re-render to clear any previous <mark> tags
+        this.render();
+
+        if (!q) return;
+
+        const rows = tbody.querySelectorAll('tr');
+        let firstMatch = null;
+
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length < 5) return;
+
+            // Search in name (col 2) and description (col 4), match on all text
+            const rowText = row.textContent.toLowerCase();
+            if (rowText.indexOf(q) === -1) return;
+
+            row.classList.add('search-highlight');
+            if (!firstMatch) firstMatch = row;
+
+            // Highlight in name cell (index 2) and description cell (index 4)
+            [2, 4].forEach(colIdx => {
+                this._highlightInCell(cells[colIdx], q);
+            });
+        });
+
+        if (firstMatch) {
+            firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    _highlightInCell(cell, query) {
+        const textNodes = this._getTextNodes(cell);
+        textNodes.forEach(node => {
+            const text = node.textContent;
+            const idx = text.toLowerCase().indexOf(query);
+            if (idx === -1) return;
+
+            const before = text.substring(0, idx);
+            const match = text.substring(idx, idx + query.length);
+            const after = text.substring(idx + query.length);
+
+            const fragment = document.createDocumentFragment();
+            if (before) fragment.appendChild(document.createTextNode(before));
+            const mark = document.createElement('mark');
+            mark.textContent = match;
+            fragment.appendChild(mark);
+            if (after) fragment.appendChild(document.createTextNode(after));
+
+            node.parentNode.replaceChild(fragment, node);
+        });
+    }
+
+    _getTextNodes(element) {
+        const nodes = [];
+        const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+        let node;
+        while ((node = walker.nextNode())) {
+            if (node.textContent.trim()) nodes.push(node);
+        }
+        return nodes;
     }
 
     filterProjects(category) {

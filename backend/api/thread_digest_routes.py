@@ -1,6 +1,6 @@
 """
-Thread Digest API Routes - WhatsApp thread monitoring and digest storage
-Replaces the old Communications page with Claude-driven analysis
+Thread Digest API Routes - Multi-platform thread monitoring and digest storage
+Supports WhatsApp (Evolution API), Signal (signal-cli), and SMS (XML import)
 """
 
 from flask import Blueprint, jsonify, request
@@ -11,13 +11,18 @@ logger = logging.getLogger(__name__)
 thread_digest_bp = Blueprint('thread_digest', __name__)
 
 _digest_service = None
-_whatsapp_proxy = None
+_platform_proxies = {}
 
 
-def init_thread_digest_routes(digest_service, whatsapp_proxy):
-    global _digest_service, _whatsapp_proxy
+def init_thread_digest_routes(digest_service, platform_proxies):
+    global _digest_service, _platform_proxies
     _digest_service = digest_service
-    _whatsapp_proxy = whatsapp_proxy
+    _platform_proxies = platform_proxies
+
+
+def _get_proxy(platform):
+    """Get the proxy service for a given platform"""
+    return _platform_proxies.get(platform)
 
 
 # ------------------------------------------------------------------
@@ -140,12 +145,12 @@ def move_thread(thread_id):
 
 
 # ------------------------------------------------------------------
-# Messages proxy (Evolution API)
+# Messages proxy (multi-platform)
 # ------------------------------------------------------------------
 
 @thread_digest_bp.route('/api/threads/<int:thread_id>/messages')
 def get_messages(thread_id):
-    """Proxy to Evolution API for fetching messages"""
+    """Fetch messages via the appropriate platform proxy"""
     try:
         thread = _digest_service.get_thread(thread_id)
         if not thread:
@@ -154,10 +159,17 @@ def get_messages(thread_id):
                 'message': f'Thread {thread_id} not found'
             }), 404
 
+        proxy = _get_proxy(thread['platform'])
+        if not proxy:
+            return jsonify({
+                'status': 'error',
+                'message': f"Unsupported platform: {thread['platform']}"
+            }), 400
+
         limit = request.args.get('limit', 50, type=int)
         since = request.args.get('since')
 
-        messages = _whatsapp_proxy.find_messages(
+        messages = proxy.find_messages(
             thread['jid'], limit=limit, since=since
         )
 
@@ -166,6 +178,7 @@ def get_messages(thread_id):
             'thread_id': thread_id,
             'jid': thread['jid'],
             'name': thread['name'],
+            'platform': thread['platform'],
             'messages': messages,
             'count': len(messages)
         })
@@ -245,14 +258,15 @@ def get_latest_digests():
 
 
 # ------------------------------------------------------------------
-# Status (hybrid trigger)
+# Status (hybrid trigger, multi-platform)
 # ------------------------------------------------------------------
 
 @thread_digest_bp.route('/api/threads/status')
 def get_status():
     """Calculate which threads need analysis (hybrid trigger)"""
     try:
-        results = _digest_service.get_status(whatsapp_proxy=_whatsapp_proxy)
+        results = _digest_service.get_status(
+            platform_proxies=_platform_proxies)
         needs_count = sum(1 for r in results if r['needs_analysis'])
 
         return jsonify({
@@ -267,19 +281,90 @@ def get_status():
 
 
 # ------------------------------------------------------------------
-# WhatsApp chats discovery
+# Chat discovery (multi-platform)
 # ------------------------------------------------------------------
 
 @thread_digest_bp.route('/api/threads/chats')
 def discover_chats():
-    """List available WhatsApp chats from Evolution API (for adding new threads)"""
+    """List available chats from platform API (for adding new threads)"""
     try:
-        chats = _whatsapp_proxy.find_chats()
+        platform = request.args.get('platform', 'whatsapp')
+        proxy = _get_proxy(platform)
+        if not proxy:
+            return jsonify({
+                'status': 'error',
+                'message': f'Unsupported platform: {platform}'
+            }), 400
+
+        chats = proxy.find_chats()
         return jsonify({
             'status': 'ok',
+            'platform': platform,
             'chats': chats,
             'count': len(chats)
         })
     except Exception as e:
         logger.error(f"Error discovering chats: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+# ------------------------------------------------------------------
+# Signal polling
+# ------------------------------------------------------------------
+
+@thread_digest_bp.route('/api/threads/signal/poll', methods=['POST'])
+def poll_signal():
+    """Poll Signal API for new messages and store locally"""
+    try:
+        proxy = _get_proxy('signal')
+        if not proxy:
+            return jsonify({
+                'status': 'error',
+                'message': 'Signal proxy not configured'
+            }), 500
+
+        count = proxy.poll_messages()
+        return jsonify({
+            'status': 'ok',
+            'new_messages': count,
+            'message': f'{count} new Signal messages stored'
+        })
+    except Exception as e:
+        logger.error(f"Error polling Signal: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+# ------------------------------------------------------------------
+# SMS import
+# ------------------------------------------------------------------
+
+@thread_digest_bp.route('/api/threads/sms/import', methods=['POST'])
+def import_sms():
+    """Import SMS from Android XML backup file"""
+    try:
+        data = request.get_json()
+        if not data or not data.get('path'):
+            return jsonify({
+                'status': 'error',
+                'message': 'JSON body with "path" field required'
+            }), 400
+
+        proxy = _get_proxy('sms')
+        if not proxy:
+            return jsonify({
+                'status': 'error',
+                'message': 'SMS proxy not configured'
+            }), 500
+
+        imported, error = proxy.import_backup(data['path'])
+        if error:
+            return jsonify({'status': 'error', 'message': error}), 400
+
+        return jsonify({
+            'status': 'ok',
+            'imported': imported,
+            'message': f'{imported} SMS imported'
+        })
+    except Exception as e:
+        logger.error(f"Error importing SMS: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500

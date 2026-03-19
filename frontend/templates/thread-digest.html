@@ -22,7 +22,7 @@
     <!-- Empty State -->
     <div id="td-empty" class="td-empty" style="display:none;">
         <p>Aucun fil configure.</p>
-        <p class="td-empty-hint">Ajoutez un fil WhatsApp a surveiller via le bouton Config.</p>
+        <p class="td-empty-hint">Ajoutez un fil (WhatsApp, Signal, SMS) a surveiller via le bouton Config.</p>
     </div>
 
     <!-- Config Modal -->
@@ -38,11 +38,19 @@
                 <div class="td-config-add">
                     <h4>Ajouter un fil</h4>
                     <div class="td-form-row">
+                        <select id="td-add-platform" class="td-input td-select">
+                            <option value="whatsapp">WhatsApp</option>
+                            <option value="signal">Signal</option>
+                            <option value="sms">SMS</option>
+                        </select>
                         <input type="text" id="td-add-name" placeholder="Nom du fil" class="td-input">
-                        <input type="text" id="td-add-jid" placeholder="JID WhatsApp" class="td-input">
+                        <input type="text" id="td-add-jid" placeholder="JID / Group ID / Numero" class="td-input">
                         <button class="btn btn-sm td-add-btn" id="td-add-btn">Ajouter</button>
                     </div>
-                    <button class="btn btn-sm td-discover-btn" id="td-discover-btn">Decouvrir chats WhatsApp</button>
+                    <div class="td-form-actions">
+                        <button class="btn btn-sm td-discover-btn" id="td-discover-btn">Decouvrir chats</button>
+                        <button class="btn btn-sm td-import-sms-btn" id="td-import-sms-btn" style="display:none;">Importer SMS (XML)</button>
+                    </div>
                     <div id="td-discover-list" class="td-discover-list" style="display:none;"></div>
                 </div>
             </div>
@@ -183,8 +191,21 @@
     font-size: 0.75rem;
     padding: 2px 8px;
     border-radius: 10px;
+}
+
+.td-card-platform[data-platform="whatsapp"] {
     background: rgba(37, 211, 102, 0.15);
     color: #25d366;
+}
+
+.td-card-platform[data-platform="signal"] {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+}
+
+.td-card-platform[data-platform="sms"] {
+    background: rgba(168, 85, 247, 0.15);
+    color: #a855f7;
 }
 
 .td-card-meta {
@@ -533,10 +554,30 @@
     white-space: nowrap;
 }
 
-.td-discover-btn {
+.td-select {
+    flex: 0 0 auto;
+    width: 120px;
+    min-width: 120px;
+}
+
+.td-form-actions {
+    display: flex;
+    gap: 8px;
     margin-bottom: 10px;
+}
+
+.td-discover-btn, .td-import-sms-btn {
     border-radius: 8px;
     font-size: 0.85rem;
+}
+
+.td-import-sms-btn {
+    border-color: rgba(168, 85, 247, 0.4);
+    color: #a855f7;
+}
+
+.td-import-sms-btn:hover {
+    background: rgba(168, 85, 247, 0.1);
 }
 
 /* Discover List */

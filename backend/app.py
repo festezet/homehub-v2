@@ -30,6 +30,8 @@ from services.local_apps_service import local_apps_service
 from services.specs_service import specs_service
 from services.thread_digest_service import thread_digest_service
 from services.whatsapp_proxy_service import whatsapp_proxy_service
+from services.signal_proxy_service import signal_proxy_service
+from services.sms_proxy_service import sms_proxy_service
 from services.modularity_service import modularity_service
 # media_recommender_service removed — proxied to standalone project (port 5056)
 
@@ -70,7 +72,12 @@ init_formation_routes(formation_service)
 init_local_apps_routes(local_apps_service)
 init_specs_routes(specs_service)
 init_activity_routes(activity_service)
-init_thread_digest_routes(thread_digest_service, whatsapp_proxy_service)
+platform_proxies = {
+    'whatsapp': whatsapp_proxy_service,
+    'signal': signal_proxy_service,
+    'sms': sms_proxy_service,
+}
+init_thread_digest_routes(thread_digest_service, platform_proxies)
 init_modularity_routes(modularity_service)
 # media_reco routes are now a proxy — no init needed
 

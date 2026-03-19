@@ -390,11 +390,11 @@ class ThreadDigestService:
     # Status (hybrid trigger)
     # ------------------------------------------------------------------
 
-    def get_status(self, whatsapp_proxy=None):
+    def get_status(self, platform_proxies=None):
         """Calculate which threads need analysis
 
         Args:
-            whatsapp_proxy: WhatsAppProxyService instance for live counts
+            platform_proxies: dict of platform -> proxy service instances
         """
         conn = self._get_conn()
         threads = conn.execute(
@@ -403,14 +403,14 @@ class ThreadDigestService:
 
         now = datetime.now()
         results = [
-            self._compute_thread_status(conn, t, now, whatsapp_proxy)
+            self._compute_thread_status(conn, t, now, platform_proxies)
             for t in threads
         ]
 
         conn.close()
         return results
 
-    def _compute_thread_status(self, conn, t, now, whatsapp_proxy):
+    def _compute_thread_status(self, conn, t, now, platform_proxies):
         """Compute status for a single thread"""
         thread_id = t['id']
 
@@ -426,10 +426,12 @@ class ThreadDigestService:
         last_date, days_elapsed = self._parse_last_analysis(last_log, now)
 
         current_count = last_count
-        if whatsapp_proxy and t['platform'] == 'whatsapp':
-            live_count = whatsapp_proxy.get_message_count(t['jid'])
-            if live_count > 0:
-                current_count = live_count
+        if platform_proxies:
+            proxy = platform_proxies.get(t['platform'])
+            if proxy:
+                live_count = proxy.get_message_count(t['jid'])
+                if live_count > 0:
+                    current_count = live_count
 
         new_messages = max(0, current_count - last_count)
         threshold_msgs = t['threshold_messages']

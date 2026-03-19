@@ -9,16 +9,40 @@
         Notifications
         <span id="ai-profile-notif-badge" class="ai-profile-badge" style="display:none;">0</span>
     </button>
+    <button class="ai-profile-subtab" data-subtab="projectmap"
+            onclick="window.aiProfileModule.switchSubTab('projectmap')">
+        Project Map
+    </button>
+    <button class="ai-profile-subtab" data-subtab="dbmap"
+            onclick="window.aiProfileModule.switchSubTab('dbmap')">
+        Database Map
+    </button>
 </div>
 
 <!-- Draft Generator Sub-tab -->
 <div class="ai-profile-subtab-content active" id="ai-profile-tab-drafts">
+    <!-- Mode Toggle -->
+    <div class="ai-profile-mode-toggle">
+        <button class="ai-profile-mode-btn active" data-mode="api"
+                onclick="window.aiProfileModule.switchMode('api')">
+            Mode API
+            <span class="ai-profile-mode-hint">Appel Claude API (payant)</span>
+        </button>
+        <button class="ai-profile-mode-btn" data-mode="queue"
+                onclick="window.aiProfileModule.switchMode('queue')">
+            Mode Session
+            <span class="ai-profile-mode-hint">File d'attente (gratuit via Claude Code)</span>
+        </button>
+    </div>
+
     <div class="ai-profile-draft-form">
-        <div class="ai-profile-form-row">
-            <label for="ai-profile-contact">Destinataire</label>
-            <select id="ai-profile-contact">
-                <option value="">Chargement...</option>
-            </select>
+        <div class="ai-profile-form-row ai-profile-search-wrapper">
+            <label for="ai-profile-contact-search">Destinataire</label>
+            <input type="text" id="ai-profile-contact-search"
+                   placeholder="Rechercher un contact..."
+                   autocomplete="off">
+            <input type="hidden" id="ai-profile-contact" value="">
+            <div id="ai-profile-contact-dropdown" class="ai-profile-search-dropdown"></div>
         </div>
         <div id="ai-profile-contact-info" class="ai-profile-contact-info" style="display:none;">
             <span id="ai-profile-contact-lang" class="ai-profile-tag"></span>
@@ -36,12 +60,13 @@
         </div>
         <div class="ai-profile-form-actions">
             <button id="ai-profile-btn-generate" class="ai-profile-btn-primary"
-                    onclick="window.aiProfileModule.generateDraft()">
+                    onclick="window.aiProfileModule.submitDraft()">
                 Generer le brouillon
             </button>
         </div>
     </div>
 
+    <!-- API mode: result -->
     <div id="ai-profile-draft-result" class="ai-profile-draft-result" style="display:none;">
         <div class="ai-profile-draft-header">
             <h3>Brouillon genere</h3>
@@ -58,10 +83,25 @@
                 Copier
             </button>
             <button class="ai-profile-btn-secondary"
-                    onclick="window.aiProfileModule.generateDraft()">
+                    onclick="window.aiProfileModule.submitDraft()">
                 Regenerer
             </button>
         </div>
+    </div>
+
+    <!-- Queue mode: pending list -->
+    <div id="ai-profile-queue-section" class="ai-profile-queue-section" style="display:none;">
+        <div class="ai-profile-queue-header">
+            <h3>File d'attente</h3>
+            <span id="ai-profile-queue-count" class="ai-profile-tag">0 en attente</span>
+        </div>
+        <div id="ai-profile-queue-list" class="ai-profile-queue-list">
+            <div class="ai-profile-empty">Aucun brouillon en attente</div>
+        </div>
+        <p class="ai-profile-queue-hint">
+            Les brouillons en attente seront generes lors de la prochaine session Claude Code.
+            Dis simplement "genere les drafts en attente".
+        </p>
     </div>
 </div>
 
@@ -92,5 +132,254 @@
     </div>
     <div id="ai-profile-notif-list" class="ai-profile-notif-list">
         <div class="ai-profile-loading">Chargement des notifications...</div>
+    </div>
+</div>
+
+<!-- Project Map Sub-tab -->
+<div class="ai-profile-subtab-content" id="ai-profile-tab-projectmap">
+    <div class="ai-profile-map-toolbar">
+        <div class="ai-profile-map-legend">
+            <span class="ai-profile-map-legend-item" data-type="core"><span class="ai-profile-map-dot" style="background:#f59e0b;"></span>Purpose</span>
+            <span class="ai-profile-map-legend-item" data-type="feature"><span class="ai-profile-map-dot" style="background:#3b82f6;"></span>Feature</span>
+            <span class="ai-profile-map-legend-item" data-type="component"><span class="ai-profile-map-dot" style="background:#10b981;"></span>Component</span>
+            <span class="ai-profile-map-legend-item" data-type="tech"><span class="ai-profile-map-dot" style="background:#8b5cf6;"></span>Tech</span>
+        </div>
+        <div class="ai-profile-map-actions">
+            <button class="ai-profile-btn-secondary" onclick="window.aiProfileModule.resetMapZoom()">Reset vue</button>
+        </div>
+    </div>
+    <div id="ai-profile-map-container" class="ai-profile-map-container">
+        <svg id="ai-profile-map-svg"></svg>
+    </div>
+    <div id="ai-profile-map-tooltip" class="ai-profile-map-tooltip"></div>
+
+    <!-- Project Map Explanation -->
+    <div class="ai-profile-map-explanation">
+        <h3>Comment fonctionne AI Profile ?</h3>
+
+        <p>AI Profile, c'est comme un <strong>assistant personnel numerique</strong> qui te connait bien.
+        Il sait comment tu ecris tes emails, il garde en memoire tes contacts, et il peut rediger des messages
+        a ta place en imitant ton style. Imagine un secretaire qui aurait lu tous tes emails et qui saurait
+        exactement comment tu t'adresses a chaque personne.</p>
+
+        <h4>Le coeur du projet : Discovery (Decouverte)</h4>
+        <p>C'est ta <strong>carte de visite en ligne</strong>, mais lisible aussi bien par des humains que par
+        des intelligences artificielles. Quand un agent IA (comme ChatGPT ou un recruteur automatise) cherche
+        des infos sur toi, il peut lire ton profil grace a des formats standardises.</p>
+        <div class="explanation-example">
+            <strong>Exemple concret :</strong> Un recruteur utilise un outil IA pour chercher des consultants
+            en ingenierie eolienne. L'IA tombe sur ton fichier <em>llms.txt</em> (un fichier texte special
+            que les IA savent lire), decouvre tes competences, et te propose dans les resultats. Sans ce fichier,
+            l'IA ne t'aurait jamais trouve.
+        </div>
+
+        <h4>Notifications : ton radar multi-plateformes</h4>
+        <p>Au lieu de verifier WhatsApp, LinkedIn, Gmail et Hostinger un par un, le systeme <strong>scanne
+        automatiquement</strong> toutes ces sources et te montre les messages importants au meme endroit.</p>
+        <div class="explanation-example">
+            <strong>Exemple :</strong> Tu recois un message LinkedIn d'un ancien collegue + un email de BV Germany
+            + un WhatsApp d'un ami. Au lieu de jongler entre 3 applis, tout apparait ici, classe par importance.
+        </div>
+
+        <h4>Email Style Learning : l'IA apprend ton style</h4>
+        <p>Le systeme a analyse <strong>~1 970 de tes anciens emails</strong> pour comprendre comment tu ecris.
+        Il sait que tu es plus formel avec un client allemand, plus decontracte avec un collegue francais,
+        et que tu utilises certaines formules de politesse specifiques.</p>
+        <div class="explanation-example">
+            <strong>Comment ca marche :</strong> Tes emails sont decoupes en petits morceaux et transformes en
+            "vecteurs" (des suites de chiffres que l'IA comprend). Quand tu demandes de rediger un email pour
+            Marc, le systeme cherche tes anciens emails a Marc, retrouve ton style avec lui, et genere un
+            nouveau message qui te ressemble.
+        </div>
+        <div class="explanation-flow">
+            <span class="flow-step">Tes anciens emails</span>
+            <span class="flow-arrow">&rarr;</span>
+            <span class="flow-step">Analyse du style</span>
+            <span class="flow-arrow">&rarr;</span>
+            <span class="flow-step">Vecteurs (ChromaDB)</span>
+            <span class="flow-arrow">&rarr;</span>
+            <span class="flow-step">Brouillon personnalise</span>
+        </div>
+
+        <h4>Draft Generator : rediger des emails en un clic</h4>
+        <p>C'est l'outil principal. Tu choisis un contact, tu donnes le sujet et l'intention,
+        et l'IA redige un brouillon <strong>dans ton style personnel</strong>. Deux modes existent :</p>
+        <div class="explanation-example">
+            <strong>Mode API :</strong> L'IA redige instantanement (mais ca coute quelques centimes par email).<br>
+            <strong>Mode Session :</strong> Tu mets les demandes en file d'attente, et Claude Code les traite
+            gratuitement lors de la prochaine session de travail.
+        </div>
+
+        <h4>CRM : ton carnet de contacts intelligent</h4>
+        <p>Comme un carnet d'adresses, mais en mieux. Pour chaque contact, le systeme garde :
+        la langue preferee, l'historique des echanges, des notes, et des "signaux" (par exemple :
+        "cette personne a change de poste" ou "anniversaire bientot").</p>
+
+        <h4>Documents : ta bibliotheque de fichiers</h4>
+        <p>Tous les fichiers importants (CV, pieces d'identite, attestations) sont stockes et organises.
+        Le systeme peut les retrouver quand tu en as besoin pour un email ou une candidature.</p>
+
+        <hr class="explanation-separator">
+
+        <h4>Comment tout s'interconnecte ?</h4>
+        <p>Les differentes briques ne fonctionnent pas en isolation. Elles se parlent entre elles :</p>
+        <div class="explanation-flow">
+            <span class="flow-step">Notification recue</span>
+            <span class="flow-arrow">&rarr;</span>
+            <span class="flow-step">Contact identifie (CRM)</span>
+            <span class="flow-arrow">&rarr;</span>
+            <span class="flow-step">Style retrouve (Emails)</span>
+            <span class="flow-arrow">&rarr;</span>
+            <span class="flow-step">Brouillon genere</span>
+        </div>
+        <div class="explanation-example">
+            <strong>Scenario complet :</strong> Tu recois une notification LinkedIn de Marc (Notifications).
+            Le systeme reconnait Marc dans le CRM, sait qu'il parle anglais, retrouve tes 15 derniers
+            emails avec lui (Email Style), et peut te proposer un brouillon de reponse qui sonne comme
+            toi, en anglais, avec le bon niveau de formalite.
+        </div>
+
+        <h4>La technologie sous le capot</h4>
+        <p><strong>Flask</strong> = le moteur du serveur (comme le moteur d'une voiture, il fait tourner tout).
+        <strong>SQLite</strong> = les bases de donnees (comme des classeurs bien organises).
+        <strong>Claude API</strong> = l'intelligence artificielle qui redige les textes (le cerveau qui ecrit).
+        <strong>ChromaDB</strong> = la memoire intelligente qui retrouve les bons exemples d'emails
+        (comme un bibliothecaire qui sait exactement quel livre chercher).</p>
+    </div>
+</div>
+
+<!-- Database Map Sub-tab -->
+<div class="ai-profile-subtab-content" id="ai-profile-tab-dbmap">
+    <div class="ai-profile-map-toolbar">
+        <div class="ai-profile-map-legend">
+            <span class="ai-profile-map-legend-item"><span class="ai-profile-map-dot" style="background:#f59e0b;"></span>Database</span>
+            <span class="ai-profile-map-legend-item"><span class="ai-profile-map-dot" style="background:#3b82f6;"></span>Table</span>
+            <span class="ai-profile-map-legend-item"><span class="ai-profile-map-dot" style="background:#8b5cf6;"></span>Vector Store</span>
+        </div>
+        <div class="ai-profile-map-actions">
+            <button class="ai-profile-btn-secondary" onclick="window.aiProfileModule.resetDbMapZoom()">Reset vue</button>
+        </div>
+    </div>
+    <div id="ai-profile-dbmap-container" class="ai-profile-map-container">
+        <svg id="ai-profile-dbmap-svg"></svg>
+    </div>
+    <div id="ai-profile-dbmap-tooltip" class="ai-profile-map-tooltip"></div>
+
+    <!-- Database Map Explanation -->
+    <div class="ai-profile-map-explanation">
+        <h3>Les bases de donnees, comment ca marche ?</h3>
+
+        <p>Une base de donnees, c'est comme un <strong>classeur avec des tiroirs</strong>.
+        Chaque tiroir (= une "table") contient des fiches organisees en colonnes.
+        Par exemple, un tiroir "contacts" aurait des colonnes : nom, email, telephone, langue.
+        AI Profile utilise <strong>6 classeurs differents</strong>, chacun specialise dans un domaine.</p>
+
+        <hr class="explanation-separator">
+
+        <h4>notifications.db &mdash; Le journal des alertes</h4>
+        <p>Ce classeur garde la trace de toutes les notifications recues (WhatsApp, LinkedIn, Gmail, Hostinger).</p>
+        <div class="explanation-example">
+            <strong>Table <em>notifications</em> (~12 fiches) :</strong> Chaque fiche = une alerte recue.
+            On y trouve : la source (WhatsApp, Gmail...), l'expediteur, le contenu, si c'est lu ou non, la date.<br>
+            <strong>Table <em>scan_log</em> (~92 fiches) :</strong> L'historique des scans.
+            A chaque fois que le systeme va verifier s'il y a de nouveaux messages, il note ici :
+            quand, quelle source, combien de nouveaux messages trouves.
+        </div>
+
+        <h4>email_context.db &mdash; La memoire des emails</h4>
+        <p>Le plus gros classeur. Il contient tous tes emails importes, organises pour que l'IA puisse
+        apprendre ton style d'ecriture.</p>
+        <div class="explanation-example">
+            <strong>Table <em>emails</em> (~1 974 fiches) :</strong> Chaque fiche = un email.
+            Sujet, expediteur, destinataire, contenu, date, langue detectee.
+            C'est la matiere premiere pour l'apprentissage du style.<br>
+            <strong>Table <em>threads</em> (~1 233 fiches) :</strong> Les conversations.
+            Un thread regroupe les emails qui se repondent entre eux
+            (comme quand tu fais "Repondre" dans Gmail, ca reste dans le meme fil).<br>
+            <strong>Table <em>draft_queue</em> :</strong> La file d'attente des brouillons a generer
+            en mode Session (gratuit).
+        </div>
+
+        <h4>ChromaDB &mdash; La memoire intelligente (vecteurs)</h4>
+        <p>Celui-la est special. Ce n'est pas un classeur normal, c'est une <strong>memoire a recherche
+        par similarite</strong>. Au lieu de chercher un mot exact, il comprend le <em>sens</em> de ta question.</p>
+        <div class="explanation-example">
+            <strong>~1 139 vecteurs</strong> stockes. Chaque email a ete transforme en une suite de chiffres
+            (un "vecteur") par un petit modele d'IA appele MiniLM-L6-v2.
+            Ces chiffres representent le <em>sens</em> du texte.<br><br>
+            <strong>Exemple :</strong> Tu veux ecrire un email pour "proposer une reunion".
+            ChromaDB ne cherche pas le mot "reunion" — il cherche tous tes anciens emails
+            dont le <em>sens</em> ressemble a "proposer une reunion", meme si tu avais ecrit
+            "on pourrait se voir" ou "I suggest we schedule a call". Il retrouve les bons exemples
+            parce qu'il comprend que c'est la meme idee.
+        </div>
+
+        <h4>crm.db &mdash; Le carnet de contacts</h4>
+        <p>Tout ce qui concerne tes relations professionnelles et personnelles.</p>
+        <div class="explanation-example">
+            <strong>Table <em>contacts</em> (~34 fiches) :</strong> Nom, email, entreprise, langue,
+            relation (client, collegue, ami...). C'est le coeur du CRM.<br>
+            <strong>Table <em>templates</em> (~12 fiches) :</strong> Des modeles d'emails pre-faits
+            (remerciement, relance, introduction...).<br>
+            <strong>Table <em>email_archives</em> (~637 fiches) :</strong> Les emails envoyes,
+            lies aux contacts. Permet de voir l'historique avec chaque personne.<br>
+            <strong>Table <em>signals</em> (~11 fiches) :</strong> Des evenements importants detectes
+            (changement de poste, anniversaire, opportunite).
+        </div>
+
+        <h4>ai_profile.db &mdash; Les references personnelles</h4>
+        <p>Un petit classeur pour stocker tes documents et liens importants
+        (forfait ski, liens administratifs, etc.).</p>
+
+        <h4>documents.db &mdash; La bibliotheque de fichiers</h4>
+        <p>Stocke les fichiers directement dans la base (~79 Mo). CV, pieces d'identite,
+        attestations — tout est la, pret a etre retrouve et utilise.</p>
+
+        <hr class="explanation-separator">
+
+        <h3>Comment les bases de donnees se parlent entre elles ?</h3>
+
+        <p>Les 6 classeurs ne sont pas isoles. Ils partagent des informations grace aux
+        <strong>liens croises</strong> (les traits sur la carte). Voici les principaux :</p>
+
+        <h4>Emails &harr; ChromaDB (vecteurs)</h4>
+        <div class="explanation-flow">
+            <span class="flow-step">Email brut</span>
+            <span class="flow-arrow">&rarr;</span>
+            <span class="flow-step">Modele MiniLM</span>
+            <span class="flow-arrow">&rarr;</span>
+            <span class="flow-step">Vecteur (suite de chiffres)</span>
+            <span class="flow-arrow">&rarr;</span>
+            <span class="flow-step">Stocke dans ChromaDB</span>
+        </div>
+        <p>Chaque email de <em>email_context.db</em> a son equivalent vectorise dans ChromaDB.
+        Quand tu demandes un brouillon, le systeme cherche dans ChromaDB les emails similaires,
+        puis va relire les vrais emails dans <em>email_context.db</em> pour s'en inspirer.</p>
+
+        <h4>Contacts &harr; Emails &harr; Archives</h4>
+        <div class="explanation-flow">
+            <span class="flow-step">Contact (crm.db)</span>
+            <span class="flow-arrow">&harr;</span>
+            <span class="flow-step">Emails recus (email_context.db)</span>
+            <span class="flow-arrow">&harr;</span>
+            <span class="flow-step">Emails envoyes (crm.db archives)</span>
+        </div>
+        <p>Un contact est lie a ses emails. Quand tu selectionnes "Marc" dans le Draft Generator,
+        le systeme va dans <em>crm.db</em> pour trouver sa langue et son contexte,
+        puis dans <em>email_context.db</em> pour retrouver tes anciens echanges avec lui.</p>
+
+        <h4>Notifications &harr; Contacts</h4>
+        <p>Quand une notification arrive, le systeme essaie de reconnaitre l'expediteur
+        dans le CRM. Si c'est un contact connu, il enrichit la notification avec les infos
+        du contact (langue, historique, relation).</p>
+
+        <div class="explanation-example">
+            <strong>Parcours complet d'un brouillon :</strong><br>
+            1. Tu choisis "Marc" &rarr; le CRM dit : "anglais, collegue BV Germany"<br>
+            2. Le systeme cherche dans ChromaDB les emails similaires a ton sujet<br>
+            3. Il retrouve 5 anciens emails a Marc dans email_context.db<br>
+            4. Claude API genere un brouillon en anglais, dans ton style avec Marc<br>
+            5. Le brouillon s'affiche, pret a etre copie dans Gmail
+        </div>
     </div>
 </div>

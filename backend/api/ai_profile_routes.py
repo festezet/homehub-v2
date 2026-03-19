@@ -51,6 +51,25 @@ def drafts_generate():
     return _proxy("drafts/generate", method="POST", data=request.get_json(silent=True))
 
 
+# --- Draft Queue ---
+
+@ai_profile_bp.route('/drafts/queue')
+def drafts_queue_list():
+    params = request.query_string.decode()
+    path = f"drafts/queue?{params}" if params else "drafts/queue"
+    return _proxy(path)
+
+
+@ai_profile_bp.route('/drafts/queue', methods=['POST'])
+def drafts_queue_add():
+    return _proxy("drafts/queue", method="POST", data=request.get_json(silent=True))
+
+
+@ai_profile_bp.route('/drafts/queue/<int:item_id>', methods=['DELETE'])
+def drafts_queue_delete(item_id):
+    return _proxy(f"drafts/queue/{item_id}", method="DELETE")
+
+
 # --- Notifications ---
 
 @ai_profile_bp.route('/notifications')

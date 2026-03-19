@@ -1,6 +1,6 @@
 /**
- * Thread Digest Module - WhatsApp thread monitoring dashboard
- * Displays Claude-generated digests for monitored WhatsApp threads
+ * Thread Digest Module - Multi-platform thread monitoring dashboard
+ * Displays Claude-generated digests for monitored threads (WhatsApp, Signal, SMS)
  */
 
 const threadDigestModule = {
@@ -27,6 +27,21 @@ const threadDigestModule = {
         // Add thread form
         document.getElementById('td-add-btn')?.addEventListener('click', () => this.addThread());
         document.getElementById('td-discover-btn')?.addEventListener('click', () => this.discoverChats());
+        document.getElementById('td-import-sms-btn')?.addEventListener('click', () => this.importSms());
+
+        // Platform selector toggles discover/import buttons
+        document.getElementById('td-add-platform')?.addEventListener('change', (e) => {
+            const platform = e.target.value;
+            const discoverBtn = document.getElementById('td-discover-btn');
+            const importBtn = document.getElementById('td-import-sms-btn');
+            const jidInput = document.getElementById('td-add-jid');
+            if (discoverBtn) discoverBtn.style.display = (platform === 'sms') ? 'none' : '';
+            if (importBtn) importBtn.style.display = (platform === 'sms') ? '' : 'none';
+            if (jidInput) {
+                const placeholders = { whatsapp: 'JID WhatsApp', signal: 'Group ID Signal', sms: 'Numero de telephone' };
+                jidInput.placeholder = placeholders[platform] || 'Identifiant';
+            }
+        });
 
         // Move buttons — event delegation (robust after innerHTML replace)
         document.getElementById('td-cards')?.addEventListener('click', (e) => {
@@ -146,7 +161,7 @@ const threadDigestModule = {
             </div>
             <div class="td-card-title">
                 <span class="td-card-name">${this.escapeHtml(thread.name)}</span>
-                <span class="td-card-platform">${thread.platform}</span>
+                <span class="td-card-platform" data-platform="${thread.platform}">${thread.platform}</span>
             </div>
             <div class="td-card-meta">${badgeHtml}</div>
         </div>`;
@@ -223,6 +238,7 @@ const threadDigestModule = {
                 <div class="td-config-item" data-id="${t.id}">
                     <div class="td-config-item-info">
                         <span class="td-config-item-name">${this.escapeHtml(t.name)}</span>
+                        <span class="td-card-platform" data-platform="${t.platform}">${t.platform}</span>
                         <span class="td-config-item-jid">${this.escapeHtml(t.jid)}</span>
                     </div>
                     <div class="td-config-item-actions">
@@ -247,8 +263,10 @@ const threadDigestModule = {
     async addThread() {
         const nameEl = document.getElementById('td-add-name');
         const jidEl = document.getElementById('td-add-jid');
+        const platformEl = document.getElementById('td-add-platform');
         const name = nameEl.value.trim();
         const jid = jidEl.value.trim();
+        const platform = platformEl ? platformEl.value : 'whatsapp';
 
         if (!name || !jid) return;
 
@@ -256,7 +274,7 @@ const threadDigestModule = {
             await API.fetch(`${API.BASE_URL}/threads`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, jid })
+                body: JSON.stringify({ name, jid, platform })
             });
             nameEl.value = '';
             jidEl.value = '';
@@ -291,15 +309,16 @@ const threadDigestModule = {
 
     async discoverChats() {
         const listEl = document.getElementById('td-discover-list');
+        const platform = document.getElementById('td-add-platform')?.value || 'whatsapp';
         listEl.style.display = 'flex';
         listEl.innerHTML = '<p style="padding:8px;color:var(--text-secondary);">Recherche des chats...</p>';
 
         try {
-            const resp = await API.fetch(`${API.BASE_URL}/threads/chats`);
+            const resp = await API.fetch(`${API.BASE_URL}/threads/chats?platform=${platform}`);
             const chats = resp.chats || [];
 
             if (chats.length === 0) {
-                listEl.innerHTML = '<p style="padding:8px;color:var(--text-secondary);">Aucun chat trouve (Evolution API indisponible?).</p>';
+                listEl.innerHTML = '<p style="padding:8px;color:var(--text-secondary);">Aucun chat trouve (API indisponible?).</p>';
                 return;
             }
 
@@ -320,7 +339,24 @@ const threadDigestModule = {
                 });
             });
         } catch (err) {
-            listEl.innerHTML = '<p style="padding:8px;color:#ef4444;">Erreur Evolution API.</p>';
+            listEl.innerHTML = '<p style="padding:8px;color:#ef4444;">Erreur API decouverte.</p>';
+        }
+    },
+
+    async importSms() {
+        const path = prompt('Chemin du fichier XML (SMS Backup & Restore) :');
+        if (!path || !path.trim()) return;
+
+        try {
+            const resp = await API.fetch(`${API.BASE_URL}/threads/sms/import`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: path.trim() })
+            });
+            alert(`${resp.imported || 0} SMS importes avec succes.`);
+        } catch (err) {
+            console.error('Error importing SMS:', err);
+            alert('Erreur lors de l\'import SMS.');
         }
     },
 
