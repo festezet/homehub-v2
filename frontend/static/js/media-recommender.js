@@ -60,7 +60,7 @@ class MediaRecommenderModule {
         if (grid) grid.innerHTML = '<div class="media-reco-loading">Chargement...</div>';
         try {
             const data = await API.mediaReco.getLibrary();
-            if (data.status === 'ok') {
+            if (data.ok) {
                 this.library = data.library;
                 this._buildGenreFilter();
                 this.renderLibrary();
@@ -191,7 +191,7 @@ class MediaRecommenderModule {
         if (grid) grid.innerHTML = '<div class="media-reco-loading">Claude reflechit...</div>';
         try {
             const data = await API.mediaReco.generateRecommendations(type, 5);
-            if (data.status === 'ok' && data.recommendations?.length) {
+            if (data.ok && data.recommendations?.length) {
                 this.recommendations = data.recommendations;
                 grid.innerHTML = data.recommendations
                     .map(r => this._renderCard(r, 'recommendation')).join('');
@@ -210,10 +210,10 @@ class MediaRecommenderModule {
                 API.mediaReco.addTitle({ title, year, type }),
                 API.mediaReco.resolveRecommendation(id, 'added')
             ]);
-            if (addResult.status === 'ok') {
+            if (addResult.ok) {
                 window.Utils?.showToast?.(`${title} ajoute dans ${type === 'series' ? 'Sonarr' : 'Radarr'}`, 'success');
             } else {
-                window.Utils?.showToast?.(addResult.message || 'Erreur', 'error');
+                window.Utils?.showToast?.(addResult.error?.message || 'Erreur', 'error');
             }
             this._removeRecommendationCard(id);
         } catch (err) {
@@ -245,10 +245,10 @@ class MediaRecommenderModule {
     async addTitle(title, year, type) {
         try {
             const data = await API.mediaReco.addTitle({ title, year, type });
-            if (data.status === 'ok') {
+            if (data.ok) {
                 window.Utils?.showToast?.(`${title} ajoute dans ${type === 'series' ? 'Sonarr' : 'Radarr'}`, 'success');
             } else {
-                window.Utils?.showToast?.(data.message || 'Erreur', 'error');
+                window.Utils?.showToast?.(data.error?.message || 'Erreur', 'error');
             }
         } catch (err) {
             window.Utils?.showToast?.('Erreur lors de l\'ajout', 'error');
@@ -276,9 +276,9 @@ class MediaRecommenderModule {
                 API.mediaReco.getStats(),
                 API.mediaReco.getInteractions()
             ]);
-            if (tasteData.status === 'ok') this.taste = tasteData.profile;
-            if (statsData.status === 'ok') this.stats = statsData.stats;
-            if (interData.status === 'ok') this.interactions = interData.interactions || [];
+            if (tasteData.ok) this.taste = tasteData.profile;
+            if (statsData.ok) this.stats = statsData.stats;
+            if (interData.ok) this.interactions = interData.interactions || [];
             this.renderTaste();
         } catch (err) {
             container.innerHTML = '<div class="media-reco-empty"><p>Erreur de chargement</p></div>';
@@ -365,7 +365,7 @@ class MediaRecommenderModule {
         if (btn) { btn.disabled = true; btn.textContent = 'Sync...'; }
         try {
             const data = await API.mediaReco.triggerSync();
-            if (data.status === 'ok') {
+            if (data.ok) {
                 window.Utils?.showToast?.('Bibliotheque synchronisee', 'success');
                 await this.loadLibrary();
             }
@@ -382,7 +382,7 @@ class MediaRecommenderModule {
         if (!container) return;
         try {
             const data = await API.mediaReco.getPreferences();
-            if (data.status === 'ok') {
+            if (data.ok) {
                 this.preferences = data.preferences;
                 this.renderPreferences();
             }

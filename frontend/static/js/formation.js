@@ -19,7 +19,7 @@ class FormationModule {
     async load() {
         try {
             const data = await API.formation.getActions();
-            if (data.status === 'ok') {
+            if (data.ok) {
                 this.actions = data.actions;
                 this.stats = data.stats;
                 this.render();
@@ -47,7 +47,7 @@ class FormationModule {
     async loadSkoolContent() {
         try {
             const data = await API.formation.getContent();
-            if (data.status === 'ok') {
+            if (data.ok) {
                 this.skoolData = { formation: data.formation, weeks: data.weeks };
                 this.skoolLoaded = true;
                 this.currentWeek = 0;
@@ -338,7 +338,7 @@ class FormationModule {
 
         try {
             const data = await API.formation.toggle(actionId);
-            if (data.status === 'ok') {
+            if (data.ok) {
                 this.stats = data.stats;
                 // Reload full data to get updated parent statuses
                 await this.load();

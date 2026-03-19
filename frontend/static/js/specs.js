@@ -439,7 +439,7 @@ class SpecsModule {
     async scanSpecs() {
         try {
             const response = await API.specs.scan();
-            if (response.status === 'ok') {
+            if (response.ok) {
                 const r = response.results;
                 alert(`Scan termine: ${r.found} specs trouvees, ${r.updated} mises a jour, ${r.missing} manquantes`);
                 await this.load();
@@ -458,7 +458,7 @@ class SpecsModule {
 
         try {
             const response = await API.specs.securityScan();
-            if (response.status === 'ok') {
+            if (response.ok) {
                 const r = response.results;
                 alert(`Scan securite termine: ${r.scanned} projets audites, ${r.errors} erreurs`);
                 await this.load();
@@ -481,7 +481,7 @@ class SpecsModule {
 
         try {
             const response = await API.specs.healthScan();
-            if (response.status === 'ok') {
+            if (response.ok) {
                 const r = response.results;
                 alert(`Scan sante termine: ${r.scanned} projets analyses, ${r.errors} erreurs`);
                 await this.load();

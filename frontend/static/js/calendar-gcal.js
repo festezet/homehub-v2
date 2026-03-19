@@ -233,7 +233,7 @@ export function initGcalMixin(module) {
         try {
             const response = await fetch(`/api/calendar/events?start=${start}&end=${endStr}`);
             const data = await response.json();
-            if (data.status === 'ok') {
+            if (data.ok) {
                 this.googleConnected = data.connected !== false;
                 this.gcalEvents = data.events || [];
             }
@@ -324,13 +324,13 @@ export function initGcalMixin(module) {
             method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
         });
         const data = await response.json();
-        if (data.status === 'ok') {
+        if (data.ok) {
             this.showToast(isEdit ? 'Evenement modifie' : 'Evenement cree');
             this.editingEvent = null;
             await this.gcalLoadEvents();
             this.render();
         } else {
-            this.showToast('Erreur: ' + (data.message || 'echec'));
+            this.showToast('Erreur: ' + (data.error?.message || 'echec'));
         }
     };
 
@@ -358,12 +358,12 @@ export function initGcalMixin(module) {
                 method: 'DELETE'
             });
             const data = await response.json();
-            if (data.status === 'ok') {
+            if (data.ok) {
                 this.showToast('Evenement supprime');
                 await this.gcalLoadEvents();
                 this.render();
             } else {
-                this.showToast('Erreur: ' + (data.message || 'echec'));
+                this.showToast('Erreur: ' + (data.error?.message || 'echec'));
             }
         } catch (error) {
             console.error('[Calendar] Error deleting event:', error);
@@ -382,7 +382,7 @@ export function initGcalMixin(module) {
             const response = await fetch(`/api/calendar/schedule/propose?start=${this.formatDate(this.currentWeekStart)}`);
             const data = await response.json();
 
-            if (data.status === 'ok') {
+            if (data.ok) {
                 this.proposals = data.proposals;
                 this.showProposalModal();
             }
@@ -450,7 +450,7 @@ export function initGcalMixin(module) {
 
             const data = await response.json();
 
-            if (data.status === 'ok') {
+            if (data.ok) {
                 this.cancelProposal();
                 await this.loadData();
                 this.render();

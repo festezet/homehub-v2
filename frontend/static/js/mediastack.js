@@ -180,13 +180,13 @@ class MediaStackModule {
 
             const data = await response.json();
 
-            if (data.status === 'ok') {
+            if (data.ok) {
                 Utils.showToast(`${container} ${action === 'start' ? 'démarré' : action === 'stop' ? 'arrêté' : 'redémarré'} avec succès`, 'success');
 
                 // Reload after 2 seconds
                 setTimeout(() => this.load(), 2000);
             } else {
-                Utils.showToast(`Erreur: ${data.message}`, 'error');
+                Utils.showToast(`Erreur: ${data.error?.message}`, 'error');
             }
         } catch (error) {
             console.error('❌ Failed to control container:', error);

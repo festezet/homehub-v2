@@ -192,7 +192,7 @@ class ModularityAuditModule {
 
         try {
             const response = await API.modularity.runScan();
-            if (response.status === 'ok') {
+            if (response.ok) {
                 this.data = response.results || {};
                 this.scanning = false;
                 this.render();

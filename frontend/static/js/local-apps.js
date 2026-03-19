@@ -31,7 +31,7 @@ class LocalAppsModule {
 
         try {
             const response = await API.localApps.getApps();
-            if (response.status === 'ok') {
+            if (response.ok) {
                 this.data = response.categories;
                 this.render(response.categories);
                 this.loaded = true;
@@ -229,7 +229,7 @@ class LocalAppsModule {
     async launchApp(id) {
         try {
             const resp = await API.localApps.launchApp(id);
-            if (resp.status === 'ok') {
+            if (resp.ok) {
                 this.showToast(resp.message, 'success');
 
                 // Open web_url if available
@@ -265,7 +265,7 @@ class LocalAppsModule {
                     }
                 }
             } else {
-                this.showToast(resp.message || 'Erreur', 'error');
+                this.showToast(resp.error?.message || 'Erreur', 'error');
             }
         } catch (error) {
             console.error('Launch failed:', error);
@@ -289,7 +289,7 @@ class LocalAppsModule {
         this._deleting = true;
         try {
             const resp = await API.localApps.deleteApp(id);
-            if (resp.status === 'ok') {
+            if (resp.ok) {
                 card.style.transition = 'opacity 0.3s, transform 0.3s';
                 card.style.opacity = '0';
                 card.style.transform = 'scale(0.8)';
@@ -409,14 +409,14 @@ class LocalAppsModule {
             const resp = await API.localApps.createApp({
                 name, description, category, app_type, launcher_path, web_url
             });
-            if (resp.status === 'ok') {
+            if (resp.ok) {
                 removeModal();
                 this.loaded = false;
                 this.editMode = false;
                 await this.load();
                 this.toggleEditMode();
             } else {
-                alert(resp.message || 'Erreur lors de la creation');
+                alert(resp.error?.message || 'Erreur lors de la creation');
                 saveBtn.textContent = 'Ajouter';
                 saveBtn.disabled = false;
             }

@@ -41,7 +41,7 @@ class InternetModule {
 
         try {
             const response = await API.internet.getLinks();
-            if (response.status === 'ok') {
+            if (response.ok) {
                 this.data = response.categories;
                 this.render(response.categories);
                 this.loaded = true;
@@ -171,7 +171,7 @@ class InternetModule {
 
         try {
             const resp = await API.internet.deleteLink(id);
-            if (resp.status === 'ok') {
+            if (resp.ok) {
                 card.style.transition = 'opacity 0.3s, transform 0.3s';
                 card.style.opacity = '0';
                 card.style.transform = 'scale(0.8)';
@@ -271,14 +271,14 @@ class InternetModule {
 
         try {
             const resp = await API.internet.createLink({ name, url, category });
-            if (resp.status === 'ok') {
+            if (resp.ok) {
                 removeModal();
                 this.loaded = false;
                 this.editMode = false;
                 await this.load();
                 this.toggleEditMode();
             } else {
-                alert(resp.error || 'Erreur lors de la creation');
+                alert(resp.error?.message || 'Erreur lors de la creation');
                 saveBtn.textContent = 'Ajouter';
                 saveBtn.disabled = false;
             }

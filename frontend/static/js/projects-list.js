@@ -683,10 +683,10 @@ class ProjectsListModule {
         try {
             const response = await fetch(`/api/projects/open/${projectId}`, { method: 'POST' });
             const data = await response.json();
-            if (data.status === 'success') {
+            if (data.ok) {
                 this.showToast(`Dossier ouvert: ${data.path}`, 'success');
             } else {
-                this.showToast(`Erreur: ${data.message}`, 'error');
+                this.showToast(`Erreur: ${data.error?.message}`, 'error');
             }
         } catch (error) {
             console.error('Error opening folder:', error);

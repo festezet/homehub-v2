@@ -39,7 +39,7 @@ class CalendarModule {
             const data = await response.json();
             console.log('[Calendar] Combined data received:', data);
 
-            if (data.status === 'ok') {
+            if (data.ok) {
                 this.template = data.template;
                 this.googleEvents = data.google?.events || {};
                 this.googleConnected = data.google?.connected || false;
@@ -51,7 +51,7 @@ class CalendarModule {
 
             const todosResponse = await fetch('/api/calendar/schedule/todos');
             const todosData = await todosResponse.json();
-            if (todosData.status === 'ok') {
+            if (todosData.ok) {
                 this.pendingTodos = todosData.todos || [];
             }
 
