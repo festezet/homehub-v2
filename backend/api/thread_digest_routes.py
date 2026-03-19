@@ -3,7 +3,8 @@ Thread Digest API Routes - Multi-platform thread monitoring and digest storage
 Supports WhatsApp (Evolution API), Signal (signal-cli), and SMS (XML import)
 """
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, request
+from shared_lib.flask_helpers import success, error as api_error
 import logging
 
 logger = logging.getLogger(__name__)
@@ -34,14 +35,10 @@ def list_threads():
     """List all monitored threads"""
     try:
         threads = _digest_service.list_threads()
-        return jsonify({
-            'status': 'ok',
-            'threads': threads,
-            'count': len(threads)
-        })
+        return success(threads=threads, count=len(threads))
     except Exception as e:
         logger.error(f"Error listing threads: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 @thread_digest_bp.route('/api/threads', methods=['POST'])
@@ -50,23 +47,17 @@ def create_thread():
     try:
         data = request.get_json()
         if not data:
-            return jsonify({
-                'status': 'error',
-                'message': 'JSON body required'
-            }), 400
+            return api_error(400, 'JSON body required')
 
         thread_id, error = _digest_service.create_thread(data)
         if error:
-            return jsonify({'status': 'error', 'message': error}), 400
+            return api_error(400, error)
 
-        return jsonify({
-            'status': 'ok',
-            'thread_id': thread_id,
-            'message': 'Thread created'
-        }), 201
+        return success(thread_id=thread_id, message='Thread created',
+                       status_code=201)
     except Exception as e:
         logger.error(f"Error creating thread: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 @thread_digest_bp.route('/api/threads/<int:thread_id>', methods=['PUT'])
@@ -75,24 +66,18 @@ def update_thread(thread_id):
     try:
         data = request.get_json()
         if not data:
-            return jsonify({
-                'status': 'error',
-                'message': 'JSON body required'
-            }), 400
+            return api_error(400, 'JSON body required')
 
         updated, error = _digest_service.update_thread(thread_id, data)
         if error:
-            return jsonify({'status': 'error', 'message': error}), 400
+            return api_error(400, error)
         if not updated:
-            return jsonify({
-                'status': 'error',
-                'message': f'Thread {thread_id} not found'
-            }), 404
+            return api_error(404, f'Thread {thread_id} not found')
 
-        return jsonify({'status': 'ok', 'message': 'Thread updated'})
+        return success(message='Thread updated')
     except Exception as e:
         logger.error(f"Error updating thread {thread_id}: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 @thread_digest_bp.route('/api/threads/<int:thread_id>', methods=['DELETE'])
@@ -101,15 +86,12 @@ def delete_thread(thread_id):
     try:
         deleted = _digest_service.delete_thread(thread_id)
         if not deleted:
-            return jsonify({
-                'status': 'error',
-                'message': f'Thread {thread_id} not found'
-            }), 404
+            return api_error(404, f'Thread {thread_id} not found')
 
-        return jsonify({'status': 'ok', 'message': 'Thread deleted'})
+        return success(message='Thread deleted')
     except Exception as e:
         logger.error(f"Error deleting thread {thread_id}: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 # ------------------------------------------------------------------
@@ -122,26 +104,20 @@ def move_thread(thread_id):
     try:
         data = request.get_json()
         if not data:
-            return jsonify({
-                'status': 'error',
-                'message': 'JSON body required'
-            }), 400
+            return api_error(400, 'JSON body required')
 
         direction = data.get('direction', '').lower()
         if direction not in ('up', 'down'):
-            return jsonify({
-                'status': 'error',
-                'message': 'direction must be "up" or "down"'
-            }), 400
+            return api_error(400, 'direction must be "up" or "down"')
 
         moved, error = _digest_service.move_thread(thread_id, direction)
         if error:
-            return jsonify({'status': 'error', 'message': error}), 404
+            return api_error(404, error)
 
-        return jsonify({'status': 'ok', 'message': f'Thread moved {direction}'})
+        return success(message=f'Thread moved {direction}')
     except Exception as e:
         logger.error(f"Error moving thread {thread_id}: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 # ------------------------------------------------------------------
@@ -154,17 +130,11 @@ def get_messages(thread_id):
     try:
         thread = _digest_service.get_thread(thread_id)
         if not thread:
-            return jsonify({
-                'status': 'error',
-                'message': f'Thread {thread_id} not found'
-            }), 404
+            return api_error(404, f'Thread {thread_id} not found')
 
         proxy = _get_proxy(thread['platform'])
         if not proxy:
-            return jsonify({
-                'status': 'error',
-                'message': f"Unsupported platform: {thread['platform']}"
-            }), 400
+            return api_error(400, f"Unsupported platform: {thread['platform']}")
 
         limit = request.args.get('limit', 50, type=int)
         since = request.args.get('since')
@@ -173,18 +143,17 @@ def get_messages(thread_id):
             thread['jid'], limit=limit, since=since
         )
 
-        return jsonify({
-            'status': 'ok',
-            'thread_id': thread_id,
-            'jid': thread['jid'],
-            'name': thread['name'],
-            'platform': thread['platform'],
-            'messages': messages,
-            'count': len(messages)
-        })
+        return success(
+            thread_id=thread_id,
+            jid=thread['jid'],
+            name=thread['name'],
+            platform=thread['platform'],
+            messages=messages,
+            count=len(messages)
+        )
     except Exception as e:
         logger.error(f"Error fetching messages for thread {thread_id}: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 # ------------------------------------------------------------------
@@ -197,23 +166,17 @@ def store_digest(thread_id):
     try:
         data = request.get_json()
         if not data:
-            return jsonify({
-                'status': 'error',
-                'message': 'JSON body required'
-            }), 400
+            return api_error(400, 'JSON body required')
 
         digest_id, error = _digest_service.store_digest(thread_id, data)
         if error:
-            return jsonify({'status': 'error', 'message': error}), 400
+            return api_error(400, error)
 
-        return jsonify({
-            'status': 'ok',
-            'digest_id': digest_id,
-            'message': 'Digest stored'
-        }), 201
+        return success(digest_id=digest_id, message='Digest stored',
+                       status_code=201)
     except Exception as e:
         logger.error(f"Error storing digest for thread {thread_id}: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 @thread_digest_bp.route('/api/threads/<int:thread_id>/digests')
@@ -222,24 +185,20 @@ def get_digests(thread_id):
     try:
         thread = _digest_service.get_thread(thread_id)
         if not thread:
-            return jsonify({
-                'status': 'error',
-                'message': f'Thread {thread_id} not found'
-            }), 404
+            return api_error(404, f'Thread {thread_id} not found')
 
         limit = request.args.get('limit', 10, type=int)
         digests = _digest_service.get_digests(thread_id, limit=limit)
 
-        return jsonify({
-            'status': 'ok',
-            'thread_id': thread_id,
-            'name': thread['name'],
-            'digests': digests,
-            'count': len(digests)
-        })
+        return success(
+            thread_id=thread_id,
+            name=thread['name'],
+            digests=digests,
+            count=len(digests)
+        )
     except Exception as e:
         logger.error(f"Error getting digests for thread {thread_id}: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 @thread_digest_bp.route('/api/threads/digests/latest')
@@ -247,14 +206,10 @@ def get_latest_digests():
     """Get latest digest per enabled thread (dashboard view)"""
     try:
         results = _digest_service.get_latest_digests()
-        return jsonify({
-            'status': 'ok',
-            'threads': results,
-            'count': len(results)
-        })
+        return success(threads=results, count=len(results))
     except Exception as e:
         logger.error(f"Error getting latest digests: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 # ------------------------------------------------------------------
@@ -269,15 +224,14 @@ def get_status():
             platform_proxies=_platform_proxies)
         needs_count = sum(1 for r in results if r['needs_analysis'])
 
-        return jsonify({
-            'status': 'ok',
-            'threads': results,
-            'total': len(results),
-            'needs_analysis': needs_count
-        })
+        return success(
+            threads=results,
+            total=len(results),
+            needs_analysis=needs_count
+        )
     except Exception as e:
         logger.error(f"Error getting thread status: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 # ------------------------------------------------------------------
@@ -291,21 +245,13 @@ def discover_chats():
         platform = request.args.get('platform', 'whatsapp')
         proxy = _get_proxy(platform)
         if not proxy:
-            return jsonify({
-                'status': 'error',
-                'message': f'Unsupported platform: {platform}'
-            }), 400
+            return api_error(400, f'Unsupported platform: {platform}')
 
         chats = proxy.find_chats()
-        return jsonify({
-            'status': 'ok',
-            'platform': platform,
-            'chats': chats,
-            'count': len(chats)
-        })
+        return success(platform=platform, chats=chats, count=len(chats))
     except Exception as e:
         logger.error(f"Error discovering chats: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 # ------------------------------------------------------------------
@@ -318,20 +264,16 @@ def poll_signal():
     try:
         proxy = _get_proxy('signal')
         if not proxy:
-            return jsonify({
-                'status': 'error',
-                'message': 'Signal proxy not configured'
-            }), 500
+            return api_error(500, 'Signal proxy not configured')
 
         count = proxy.poll_messages()
-        return jsonify({
-            'status': 'ok',
-            'new_messages': count,
-            'message': f'{count} new Signal messages stored'
-        })
+        return success(
+            new_messages=count,
+            message=f'{count} new Signal messages stored'
+        )
     except Exception as e:
         logger.error(f"Error polling Signal: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 # ------------------------------------------------------------------
@@ -344,27 +286,20 @@ def import_sms():
     try:
         data = request.get_json()
         if not data or not data.get('path'):
-            return jsonify({
-                'status': 'error',
-                'message': 'JSON body with "path" field required'
-            }), 400
+            return api_error(400, 'JSON body with "path" field required')
 
         proxy = _get_proxy('sms')
         if not proxy:
-            return jsonify({
-                'status': 'error',
-                'message': 'SMS proxy not configured'
-            }), 500
+            return api_error(500, 'SMS proxy not configured')
 
         imported, error = proxy.import_backup(data['path'])
         if error:
-            return jsonify({'status': 'error', 'message': error}), 400
+            return api_error(400, error)
 
-        return jsonify({
-            'status': 'ok',
-            'imported': imported,
-            'message': f'{imported} SMS imported'
-        })
+        return success(
+            imported=imported,
+            message=f'{imported} SMS imported'
+        )
     except Exception as e:
         logger.error(f"Error importing SMS: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))

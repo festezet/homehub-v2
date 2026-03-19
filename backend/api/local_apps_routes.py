@@ -2,7 +2,8 @@
 Local Apps API Routes
 """
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, request
+from shared_lib.flask_helpers import success, error as api_error
 import subprocess
 import os
 import logging
@@ -35,14 +36,10 @@ def get_apps():
     try:
         categories = local_apps_service.get_all_apps()
         total = sum(len(c['apps']) for c in categories)
-        return jsonify({
-            'status': 'ok',
-            'categories': categories,
-            'total_apps': total
-        })
+        return success(categories=categories, total_apps=total)
     except Exception as e:
         logger.error(f"Error getting apps: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 def _ensure_category_exists(category):
@@ -80,24 +77,21 @@ def create_app():
         data = request.get_json()
 
         if not data.get('name') or not data.get('category'):
-            return jsonify({
-                'status': 'error',
-                'message': 'Missing required fields: name and category'
-            }), 400
+            return api_error(400, 'Missing required fields: name and category')
 
         category = data['category']
         _ensure_category_exists(category)
         app_id = _create_app_from_data(data, category)
 
-        return jsonify({
-            'status': 'ok',
-            'message': f"App '{data['name']}' created successfully",
-            'id': app_id
-        }), 201
+        return success(
+            message=f"App '{data['name']}' created successfully",
+            id=app_id,
+            status_code=201
+        )
 
     except Exception as e:
         logger.error(f"Error creating app: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 @local_apps_bp.route('/apps/<int:app_id>', methods=['PUT'])
@@ -106,23 +100,20 @@ def update_app(app_id):
     try:
         data = request.get_json()
         if not data:
-            return jsonify({'status': 'error', 'message': 'No data provided'}), 400
+            return api_error(400, 'No data provided')
 
         # Remap 'category' to 'category_slug' if present
         if 'category' in data:
             data['category_slug'] = data.pop('category')
 
         local_apps_service.update_app(app_id, **data)
-        return jsonify({
-            'status': 'ok',
-            'message': f'App {app_id} updated successfully'
-        })
+        return success(message=f'App {app_id} updated successfully')
 
     except ValueError as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 400
+        return api_error(400, str(e))
     except Exception as e:
         logger.error(f"Error updating app {app_id}: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 @local_apps_bp.route('/apps/<int:app_id>', methods=['DELETE'])
@@ -130,22 +121,16 @@ def delete_app(app_id):
     """Delete an app entry"""
     try:
         local_apps_service.delete_app(app_id)
-        return jsonify({
-            'status': 'ok',
-            'message': f'App {app_id} deleted successfully'
-        })
+        return success(message=f'App {app_id} deleted successfully')
     except Exception as e:
         logger.error(f"Error deleting app {app_id}: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 def _launch_system_app(app, launcher_path):
     """Launch a system app via direct command"""
     if not launcher_path:
-        return jsonify({
-            'status': 'error',
-            'message': f"No launcher configured for {app['name']}"
-        }), 400
+        return api_error(400, f"No launcher configured for {app['name']}")
 
     env = _get_x11_env()
     subprocess.Popen(
@@ -155,20 +140,16 @@ def _launch_system_app(app, launcher_path):
         env=env,
         close_fds=True
     )
-    return jsonify({
-        'status': 'ok',
-        'message': f"{app['name']} launched successfully",
-        'app': app
-    })
+    return success(
+        message=f"{app['name']} launched successfully",
+        app=app
+    )
 
 
 def _launch_project_app(app, app_id, launcher_path):
     """Launch a project app via bash with logging"""
     if not launcher_path or not os.path.exists(launcher_path):
-        return jsonify({
-            'status': 'error',
-            'message': f"Launcher not found for {app['name']}: {launcher_path}"
-        }), 404
+        return api_error(404, f"Launcher not found for {app['name']}: {launcher_path}")
 
     env = _get_x11_env()
     project_id = app.get('project_id', f'app-{app_id}')
@@ -184,11 +165,10 @@ def _launch_project_app(app, app_id, launcher_path):
         )
 
     logger.info(f"Launched {app['name']}, logs: {log_stdout}")
-    return jsonify({
-        'status': 'ok',
-        'message': f"{app['name']} launched successfully",
-        'app': app
-    })
+    return success(
+        message=f"{app['name']} launched successfully",
+        app=app
+    )
 
 
 @local_apps_bp.route('/apps/<int:app_id>/launch', methods=['POST'])
@@ -200,12 +180,11 @@ def launch_app(app_id):
         launcher_path = app.get('launcher_path', '')
 
         if app_type == 'docker':
-            return jsonify({
-                'status': 'ok',
-                'message': f"{app['name']} launch recorded",
-                'app': app,
-                'action': 'docker'
-            })
+            return success(
+                message=f"{app['name']} launch recorded",
+                app=app,
+                action='docker'
+            )
 
         if app_type == 'system':
             return _launch_system_app(app, launcher_path)
@@ -214,7 +193,7 @@ def launch_app(app_id):
 
     except Exception as e:
         logger.error(f"Error launching app {app_id}: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 @local_apps_bp.route('/categories', methods=['GET'])
@@ -222,14 +201,10 @@ def get_categories():
     """Get all categories"""
     try:
         cats = local_apps_service.get_categories()
-        return jsonify({
-            'status': 'ok',
-            'categories': cats,
-            'count': len(cats)
-        })
+        return success(categories=cats, count=len(cats))
     except Exception as e:
         logger.error(f"Error getting categories: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 @local_apps_bp.route('/health', methods=['GET'])
@@ -237,9 +212,8 @@ def health():
     """Health check"""
     count = local_apps_service.get_app_count()
     cats = local_apps_service.get_categories()
-    return jsonify({
-        'status': 'ok',
-        'service': 'Local Apps API',
-        'apps_count': count,
-        'categories_count': len(cats)
-    })
+    return success(
+        service='Local Apps API',
+        apps_count=count,
+        categories_count=len(cats)
+    )

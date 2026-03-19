@@ -3,6 +3,7 @@ Docker API Routes
 """
 
 from flask import Blueprint, jsonify, request
+from shared_lib.flask_helpers import success, error as api_error
 import logging
 
 # Import will be done in app.py to avoid circular imports
@@ -23,17 +24,10 @@ def get_containers():
     """Get list of all containers"""
     try:
         containers = docker_service.get_containers()
-        return jsonify({
-            'status': 'ok',
-            'containers': containers,
-            'count': len(containers)
-        })
+        return success(containers=containers, count=len(containers))
     except Exception as e:
         logger.error(f"Error getting containers: {e}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
+        return api_error(500, str(e))
 
 @docker_bp.route('/control', methods=['POST'])
 def control_container():
@@ -44,16 +38,10 @@ def control_container():
         action = data.get('action')
 
         if not name or not action:
-            return jsonify({
-                'status': 'error',
-                'message': 'Missing name or action'
-            }), 400
+            return api_error(400, 'Missing name or action')
 
         if action not in ['start', 'stop', 'restart']:
-            return jsonify({
-                'status': 'error',
-                'message': 'Invalid action. Must be start, stop, or restart'
-            }), 400
+            return api_error(400, 'Invalid action. Must be start, stop, or restart')
 
         # Execute action
         if action == 'start':
@@ -63,25 +51,18 @@ def control_container():
         elif action == 'restart':
             docker_service.restart_container(name)
 
-        return jsonify({
-            'status': 'ok',
-            'message': f'Container {name} {action}ed successfully'
-        })
+        return success(message=f'Container {name} {action}ed successfully')
 
     except Exception as e:
         logger.error(f"Error controlling container: {e}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
+        return api_error(500, str(e))
 
 @docker_bp.route('/health', methods=['GET'])
 def health():
     """Docker service health check"""
-    return jsonify({
-        'status': 'ok',
-        'docker_available': docker_service.available if docker_service else False
-    })
+    return success(
+        docker_available=docker_service.available if docker_service else False
+    )
 
 @docker_bp.route('/llm/start', methods=['POST'])
 def start_llm():
@@ -91,10 +72,7 @@ def start_llm():
         return jsonify(result)
     except Exception as e:
         logger.error(f"Error starting LLM stack: {e}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
+        return api_error(500, str(e))
 
 @docker_bp.route('/llm/stop', methods=['POST'])
 def stop_llm():
@@ -104,10 +82,7 @@ def stop_llm():
         return jsonify(result)
     except Exception as e:
         logger.error(f"Error stopping LLM stack: {e}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
+        return api_error(500, str(e))
 
 @docker_bp.route('/llm/status', methods=['GET'])
 def get_llm_status():
@@ -116,18 +91,14 @@ def get_llm_status():
         ollama_status = docker_service.get_container_status('ollama')
         webui_status = docker_service.get_container_status('open-webui')
 
-        return jsonify({
-            'status': 'ok',
+        return success(**{
             'ollama': ollama_status,
             'open-webui': webui_status,
             'running': ollama_status == 'running' and webui_status == 'running'
         })
     except Exception as e:
         logger.error(f"Error getting LLM status: {e}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
+        return api_error(500, str(e))
 
 @docker_bp.route('/stable-diffusion/start', methods=['POST'])
 def start_stable_diffusion():
@@ -137,10 +108,7 @@ def start_stable_diffusion():
         return jsonify(result)
     except Exception as e:
         logger.error(f"Error starting Stable Diffusion: {e}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
+        return api_error(500, str(e))
 
 @docker_bp.route('/stable-diffusion/stop', methods=['POST'])
 def stop_stable_diffusion():
@@ -150,24 +118,17 @@ def stop_stable_diffusion():
         return jsonify(result)
     except Exception as e:
         logger.error(f"Error stopping Stable Diffusion: {e}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
+        return api_error(500, str(e))
 
 @docker_bp.route('/stable-diffusion/status', methods=['GET'])
 def get_stable_diffusion_status():
     """Get Stable Diffusion status"""
     try:
-        status = docker_service.get_container_status('stable-diffusion')
-        return jsonify({
-            'status': 'ok',
-            'container_status': status,
-            'running': status == 'running'
-        })
+        sd_status = docker_service.get_container_status('stable-diffusion')
+        return success(
+            container_status=sd_status,
+            running=sd_status == 'running'
+        )
     except Exception as e:
         logger.error(f"Error getting Stable Diffusion status: {e}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
+        return api_error(500, str(e))
