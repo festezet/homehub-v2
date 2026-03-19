@@ -168,7 +168,7 @@ class InternetService:
         values = list(updates.values()) + [link_id]
 
         cursor.execute(
-            f"UPDATE internet_links SET {set_clause}, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            "UPDATE internet_links SET " + set_clause + ", updated_at = CURRENT_TIMESTAMP WHERE id = ?",
             values
         )
 

@@ -33,6 +33,7 @@ from services.whatsapp_proxy_service import whatsapp_proxy_service
 from services.signal_proxy_service import signal_proxy_service
 from services.sms_proxy_service import sms_proxy_service
 from services.modularity_service import modularity_service
+from services.claude_skills_service import ClaudeSkillsService
 # media_recommender_service removed — proxied to standalone project (port 5056)
 
 # Import API routes
@@ -46,6 +47,7 @@ from api.specs_routes import specs_bp, init_specs_routes
 from api.activity_routes import activity_bp, init_activity_routes
 from api.thread_digest_routes import thread_digest_bp, init_thread_digest_routes
 from api.modularity_routes import modularity_bp, init_modularity_routes
+from api.claude_skills_routes import claude_skills_bp, init_claude_skills_routes
 from api.media_recommender_routes import media_reco_bp
 from api.ai_profile_routes import ai_profile_bp
 
@@ -79,6 +81,7 @@ platform_proxies = {
 }
 init_thread_digest_routes(thread_digest_service, platform_proxies)
 init_modularity_routes(modularity_service)
+init_claude_skills_routes(ClaudeSkillsService())
 # media_reco routes are now a proxy — no init needed
 
 # Register blueprints
@@ -92,6 +95,7 @@ app.register_blueprint(specs_bp)
 app.register_blueprint(activity_bp)
 app.register_blueprint(thread_digest_bp)
 app.register_blueprint(modularity_bp)
+app.register_blueprint(claude_skills_bp)
 app.register_blueprint(media_reco_bp)
 app.register_blueprint(ai_profile_bp)
 
@@ -472,5 +476,5 @@ if __name__ == '__main__':
     app.run(
         host='0.0.0.0',
         port=5000,
-        debug=True
+        debug=os.getenv("FLASK_DEBUG", "0") == "1"
     )

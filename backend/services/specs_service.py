@@ -47,7 +47,7 @@ class SpecsService:
                        health_loc, health_has_tests, health_deps_count,
                        health_last_commit, health_readme_score,
                        health_has_gitignore, health_portability_score,
-                       health_score
+                       health_score, security_posture_score
                 FROM projects
                 WHERE status = 'active'
                 ORDER BY name
@@ -87,6 +87,7 @@ class SpecsService:
             'health_has_gitignore': row['health_has_gitignore'] or 0,
             'health_portability_score': row['health_portability_score'] or 0,
             'health_score': row['health_score'] or 0,
+            'security_posture_score': row['security_posture_score'],
             'health_port': port_info.get('port'),
             'health_service_up': self._check_port(port_info.get('port')) if port_info.get('port') else None
         }
@@ -101,11 +102,9 @@ class SpecsService:
             conn = self._get_connection()
             cursor = conn.cursor()
 
-            cursor.execute(f"""
-                UPDATE projects
-                SET {field} = ?, updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-            """, (value, project_id))
+            cursor.execute(
+                "UPDATE projects SET " + field + " = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                (value, project_id))
 
             if cursor.rowcount == 0:
                 conn.close()
@@ -236,6 +235,71 @@ class SpecsService:
               health_data['readme_score'], health_data['has_gitignore'],
               health_data['portability_score'], health_data['health_score'],
               row['id']))
+
+    def scan_security_scores(self):
+        """Run project-auditor full-audit on all active projects and store posture scores"""
+        try:
+            auditor_src = '/data/projects/project-auditor/src'
+            if not os.path.isdir(auditor_src):
+                raise FileNotFoundError("project-auditor src/ not found")
+
+            import importlib
+            import sys as _sys
+            if auditor_src not in _sys.path:
+                _sys.path.insert(0, auditor_src)
+
+            from security_audit import scan_project as scan_security
+            from deps_audit import scan_project as scan_deps
+            from docker_audit import scan_project as scan_docker
+            from quality_audit import scan_project as scan_quality
+            from scoring import compute_posture_score
+
+            conn = self._get_connection()
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                SELECT id, name, path FROM projects WHERE status = 'active'
+            """)
+
+            results = {'scanned': 0, 'errors': 0, 'scores': {}}
+
+            for row in cursor.fetchall():
+                path = row['path']
+                if not os.path.isdir(path):
+                    results['errors'] += 1
+                    continue
+
+                try:
+                    reports = {
+                        "security": scan_security(path),
+                        "deps": scan_deps(path),
+                        "docker": scan_docker(path),
+                        "quality": scan_quality(path),
+                    }
+                    posture = compute_posture_score(reports)
+                    score = posture['posture_score']
+
+                    cursor.execute(
+                        "UPDATE projects SET security_posture_score = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                        (score, row['id'])
+                    )
+                    results['scores'][row['name']] = score
+                    results['scanned'] += 1
+
+                except Exception as e:
+                    logger.warning(f"Audit error for {row['name']}: {e}")
+                    results['errors'] += 1
+
+            conn.commit()
+            conn.close()
+
+            logger.info(f"Security scan complete: {results['scanned']} scanned, {results['errors']} errors")
+            return results
+
+        except Exception as e:
+            logger.error(f"Error in security scan: {e}")
+            raise
 
     def _count_loc(self, project_path):
         """Count lines of source code, excluding generated/vendor dirs"""

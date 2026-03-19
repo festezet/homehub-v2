@@ -241,6 +241,7 @@ class SpecsModule {
                 <button class="sp-filter-btn ${this.healthSort === 'commit-desc' ? 'active' : ''}" onclick="window.SpecsModule.setHealthSort('commit-desc')">Activite</button>
                 <button class="sp-filter-btn ${this.healthSort === 'portability-desc' ? 'active' : ''}" onclick="window.SpecsModule.setHealthSort('portability-desc')">Portabilite</button>
                 <div style="flex: 1;"></div>
+                <button class="sp-filter-btn" style="background: #f97316; color: white;" onclick="window.SpecsModule.scanSecurity()">Scanner securite</button>
                 <button class="sp-filter-btn" style="background: #6366f1; color: white;" onclick="window.SpecsModule.scanHealth()">Scanner sante</button>
             </div>`;
     }
@@ -258,6 +259,7 @@ class SpecsModule {
                             <th style="width: 60px; text-align: center;" title="Tests presents">Tests</th>
                             <th style="width: 50px; text-align: center;" title=".gitignore">.git*</th>
                             <th style="width: 70px; text-align: center;" title="Portabilite (chemins absolus, .env, setup.sh)">Port.</th>
+                            <th style="width: 55px; text-align: center;" title="Security Posture Score (project-auditor)">Sec.</th>
                             <th style="width: 80px; text-align: right;">LOC</th>
                             <th style="width: 55px; text-align: right;">Deps</th>
                             <th style="width: 100px;">Dernier commit</th>
@@ -302,6 +304,11 @@ class SpecsModule {
                     : '<span style="color: #d1d5db;">--</span>'}</td>
                 <td style="text-align: center;">
                     <span style="font-size: 0.8em; font-weight: 600; color: ${this._portabilityColor(s.health_portability_score)};">${s.health_portability_score || 0}%</span>
+                </td>
+                <td style="text-align: center;">
+                    ${s.security_posture_score != null
+                        ? `<span style="font-size: 0.8em; font-weight: 600; color: ${this._scoreColor(s.security_posture_score)};">${s.security_posture_score}</span>`
+                        : '<span style="color: #d1d5db;">--</span>'}
                 </td>
                 <td style="text-align: right; font-size: 0.8em; font-family: monospace; color: #374151;">${this._formatLoc(s.health_loc)}</td>
                 <td style="text-align: right; font-size: 0.8em; color: #6b7280;">${s.health_deps_count || '-'}</td>
@@ -439,6 +446,29 @@ class SpecsModule {
             }
         } catch (error) {
             console.error('Failed to scan specs:', error);
+        }
+    }
+
+    async scanSecurity() {
+        const btn = document.querySelector('[onclick*="scanSecurity"]');
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Scan securite...';
+        }
+
+        try {
+            const response = await API.specs.securityScan();
+            if (response.status === 'ok') {
+                const r = response.results;
+                alert(`Scan securite termine: ${r.scanned} projets audites, ${r.errors} erreurs`);
+                await this.load();
+            }
+        } catch (error) {
+            console.error('Failed to scan security:', error);
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'Scanner securite';
+            }
         }
     }
 

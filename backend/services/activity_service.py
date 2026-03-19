@@ -415,5 +415,23 @@ class ActivityService:
             return {'total': 0, 'last_date': None, 'active_projects': 0, 'by_type': {}, 'by_week': []}
 
 
+    def get_strategic_ranking(self, limit=15):
+        """Get strategic project ranking combining activity, strategy, and health.
+
+        Uses project-auditor ranking engine for composite scoring.
+        """
+        import sys as _sys
+        ranking_src = '/data/projects/project-auditor/src'
+        if ranking_src not in _sys.path:
+            _sys.path.insert(0, ranking_src)
+
+        try:
+            from ranking import compute_composite_ranking
+            return compute_composite_ranking(limit=limit)
+        except Exception as e:
+            logger.error(f"Error computing strategic ranking: {e}")
+            return []
+
+
 # Create singleton instance
 activity_service = ActivityService()

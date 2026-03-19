@@ -337,10 +337,10 @@ class ScheduleService:
             todo_ids = [s['todo_id'] for s in scheduled]
             placeholders = ','.join('?' * len(todo_ids))
 
-            todo_cursor.execute(f'''
-                SELECT id, action, priority, category, deadline, notes
-                FROM todos WHERE id IN ({placeholders})
-            ''', todo_ids)
+            todo_cursor.execute(
+                'SELECT id, action, priority, category, deadline, notes'
+                ' FROM todos WHERE id IN (' + placeholders + ')',
+                todo_ids)
 
             todos_map = {row['id']: dict(row) for row in todo_cursor.fetchall()}
             todo_conn.close()

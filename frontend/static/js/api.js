@@ -151,6 +151,10 @@ const API = {
             return await API.fetch(`${API.BASE_URL}/activity/top-projects?limit=${limit}`);
         },
 
+        async getRanking(limit = 15) {
+            return await API.fetch(`${API.BASE_URL}/projects/ranking?limit=${limit}`);
+        },
+
         async log(data) {
             return await API.fetch(`${API.BASE_URL}/activity/log`, {
                 method: 'POST',
@@ -228,6 +232,12 @@ const API = {
 
         async healthScan() {
             return await API.fetch(`${API.BASE_URL}/specs/health-scan`, {
+                method: 'POST'
+            });
+        },
+
+        async securityScan() {
+            return await API.fetch(`${API.BASE_URL}/specs/security-scan`, {
                 method: 'POST'
             });
         }

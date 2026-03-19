@@ -127,6 +127,22 @@ def get_top_projects():
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
+@activity_bp.route('/api/projects/ranking')
+def get_ranking():
+    """Get strategic project ranking (composite score)"""
+    try:
+        limit = request.args.get('limit', 15, type=int)
+        projects = _service.get_strategic_ranking(limit=limit)
+        return jsonify({
+            'status': 'ok',
+            'projects': projects,
+            'count': len(projects)
+        })
+    except Exception as e:
+        logger.error(f"Error getting ranking: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
 @activity_bp.route('/api/activity/stats')
 def get_stats():
     """Get activity statistics"""

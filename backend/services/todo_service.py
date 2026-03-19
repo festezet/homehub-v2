@@ -110,11 +110,9 @@ class TodoService:
             if field not in valid_fields:
                 raise ValueError(f"Invalid field: {field}")
 
-            cursor.execute(f"""
-                UPDATE todos
-                SET {field} = ?, updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-            """, (value, todo_id))
+            cursor.execute(
+                "UPDATE todos SET " + field + " = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                (value, todo_id))
 
             if cursor.rowcount == 0:
                 raise Exception(f"TODO {todo_id} not found")

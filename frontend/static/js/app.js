@@ -21,6 +21,7 @@ import threadDigestModule from './thread-digest.js';
 import projectStatusModule from './project-status.js';
 import mediaRecommenderModule from './media-recommender.js';
 import aiProfileModule from './ai-profile.js';
+import claudeSkillsModule from './claude-skills.js';
 
 // Make modules available globally for now (will be refactored)
 window.API = API;
@@ -135,6 +136,7 @@ class HomeHubApp {
             'services-ports': () => servicesPortsModule.load(),
             'media-reco': () => mediaRecommenderModule.load(),
             'ai-profile': () => aiProfileModule.load(),
+            'claude-skills': () => claudeSkillsModule.load(),
         };
     }
 

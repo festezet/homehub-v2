@@ -44,6 +44,10 @@ else
     echo "✅ Media Recommender déjà actif"
 fi
 
+# Environment variables
+export AI_PROFILE_API_SECRET="${AI_PROFILE_API_SECRET:-YgZV5IzG5nfNZAjfb1LQ8EGDee3uqeBJTiRse9izoNeSgjaA2CVcM57nIrctLKli}"
+export FLASK_DEBUG="${FLASK_DEBUG:-1}"
+
 # Start Flask application
 echo "✅ Lancement serveur Flask..."
 echo "📊 URL: http://localhost:5000"

@@ -146,6 +146,12 @@
                         <span class="label">Prompting Disciplines</span>
                     </a>
                 </li>
+                <li class="nav-item" data-page="claude-skills">
+                    <a href="#claude-skills">
+                        <span class="icon">⚡</span>
+                        <span class="label">Claude Skills</span>
+                    </a>
+                </li>
             </div>
         </ul>
 
@@ -256,6 +262,11 @@
             <div id="prompting-disciplines-page" class="page-content" style="display: none;">
                 {% include 'prompting-disciplines.html' %}
             </div>
+
+            <!-- Claude Skills Tab -->
+            <div id="claude-skills-page" class="page-content" style="display: none;">
+                {% include 'claude-skills.html' %}
+            </div>
             {% endblock %}
         </div>
     </main>
@@ -287,6 +298,7 @@
     <script type="module" src="{{ url_for('static', filename='js/project-status.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/media-recommender.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/ai-profile.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/claude-skills.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/app.js') }}"></script>
 
     <!-- Modern Navigation Script -->
@@ -313,7 +325,8 @@
                 'project-status': { title: 'Project Status', subtitle: 'Vue unifiee des projets et activites' },
                 'services-ports': { title: 'Services & Ports', subtitle: 'Registre central des ports reseau' },
                 'ai-profile': { title: 'AI Profile', subtitle: 'Draft emails & notifications' },
-                'prompting-disciplines': { title: 'Prompting Disciplines', subtitle: 'Framework d\'optimisation Claude Code' }
+                'prompting-disciplines': { title: 'Prompting Disciplines', subtitle: 'Framework d\'optimisation Claude Code' },
+                'claude-skills': { title: 'Claude Skills', subtitle: 'Skills, commands et extensions Claude Code' }
             };
 
             function switchPage(pageName) {

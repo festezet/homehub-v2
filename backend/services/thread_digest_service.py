@@ -199,7 +199,7 @@ class ThreadDigestService:
 
         conn = self._get_conn()
         result = conn.execute(
-            f"UPDATE thread_configs SET {', '.join(updates)} WHERE id = ?",
+            "UPDATE thread_configs SET " + ', '.join(updates) + " WHERE id = ?",
             values
         )
         conn.commit()

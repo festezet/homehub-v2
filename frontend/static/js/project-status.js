@@ -105,6 +105,7 @@ class ProjectStatusModule {
         content.innerHTML = this._renderOverviewStats(stats, thisWeek)
                           + this._renderOverviewTopProjects(topProjects)
                           + this._renderOverviewProjectsTable()
+                          + this._renderOverviewMethodology()
                           + this._renderOverviewRecentActivity(recentActivity);
 
         await projectsListModule.load();
@@ -227,6 +228,7 @@ class ProjectStatusModule {
                                 <th>Application / Service</th>
                                 <th class="col-status">Status</th>
                                 <th>Description</th>
+                                <th id="th-score-sort" style="text-align:center; width:90px; cursor:pointer; user-select:none;" title="Cliquer pour trier par score">Score</th>
                                 <th class="col-actions">Actions</th>
                             </tr>
                         </thead>
@@ -239,6 +241,17 @@ class ProjectStatusModule {
                         <span id="projects-stats-content">Chargement...</span>
                     </div>
                 </div>
+            </div>`;
+    }
+
+    _renderOverviewMethodology() {
+        return `
+            <div style="padding:12px 16px; margin-top:4px; font-size:0.75rem; color:#6b7280; line-height:1.6; border-top:1px solid #374151;">
+                <strong style="color:#9ca3af;">Score composite</strong> — Combine 3 axes :
+                <span style="color:#3b82f6;">Activite (35%)</span> frequence et recence des sessions sur 90j |
+                <span style="color:#f59e0b;">Strategie (45%)</span> alignement objectifs, potentiel revenus, categorie business |
+                <span style="color:#10b981;">Sante (20%)</span> qualite technique (specs, tests, structure).
+                Uniquement pour les projets PRJ-*. Voir l'onglet <em>Ranking Strategique</em> pour le detail.
             </div>`;
     }
 

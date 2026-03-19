@@ -164,7 +164,7 @@ class LocalAppsService:
         columns = ', '.join(fields)
 
         cursor.execute(
-            f"INSERT INTO app_entries ({columns}) VALUES ({placeholders})",
+            "INSERT INTO app_entries (" + columns + ") VALUES (" + placeholders + ")",
             values
         )
 
@@ -194,7 +194,7 @@ class LocalAppsService:
         values = list(updates.values()) + [app_id]
 
         cursor.execute(
-            f"UPDATE app_entries SET {set_clause}, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            "UPDATE app_entries SET " + set_clause + ", updated_at = CURRENT_TIMESTAMP WHERE id = ?",
             values
         )
 

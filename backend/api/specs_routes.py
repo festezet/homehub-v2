@@ -106,3 +106,21 @@ def scan_health():
             'status': 'error',
             'message': str(e)
         }), 500
+
+
+@specs_bp.route('/security-scan', methods=['POST'])
+def scan_security():
+    """Run security audit on all active projects"""
+    try:
+        results = specs_service.scan_security_scores()
+        return jsonify({
+            'status': 'ok',
+            'message': 'Security scan complete',
+            'results': results
+        })
+    except Exception as e:
+        logger.error(f"Error scanning security: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500

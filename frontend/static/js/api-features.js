@@ -198,6 +198,15 @@ API.modularity = {
 };
 
 /**
+ * Claude Skills API methods
+ */
+API.claude = {
+    async getSkills() {
+        return await API.fetch(`${API.BASE_URL}/claude/skills`);
+    }
+};
+
+/**
  * AI Profile API methods (drafts + notifications)
  */
 API.aiProfile = {
@@ -259,5 +268,9 @@ API.aiProfile = {
         return await API.fetch(`${API.BASE_URL}/ai-profile/notifications/scan`, {
             method: 'POST'
         });
+    },
+
+    async getMapData() {
+        return await API.fetch(`${API.BASE_URL}/ai-profile/introspect/map-data`);
     }
 };

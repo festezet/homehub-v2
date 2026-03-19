@@ -1486,3 +1486,135 @@ tbody tr:hover {
     font-weight: 600;
     font-size: 0.85rem;
 }
+
+/* ============================================================
+   CLAUDE SKILLS MODULE
+   ============================================================ */
+
+.cs-stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    text-align: center;
+}
+
+.cs-stat-number {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--primary-light);
+    line-height: 1.2;
+}
+
+.cs-stat-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+}
+
+.cs-filter-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 6px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.cs-filter-btn:hover {
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
+}
+
+.cs-filter-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+.cs-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+}
+
+.cs-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 14px 16px;
+    transition: border-color 0.2s;
+}
+
+.cs-card:hover {
+    border-color: var(--primary);
+}
+
+.cs-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.cs-card-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+.cs-card-desc {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.cs-hint {
+    margin-top: 8px;
+    font-size: 0.78rem;
+}
+
+.cs-hint code {
+    background: var(--bg-dark);
+    color: var(--info);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.78rem;
+}
+
+.cs-badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.cs-badge-invocable {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+}
+
+.cs-badge-internal {
+    background: rgba(156, 163, 175, 0.15);
+    color: #9ca3af;
+}
+
+.cs-command {
+    margin-top: 8px;
+}
+
+.cs-command code {
+    background: var(--bg-dark);
+    color: var(--primary-light);
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}

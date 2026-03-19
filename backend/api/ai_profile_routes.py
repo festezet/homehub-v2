@@ -2,6 +2,7 @@
 AI Profile Routes - Proxy to standalone service (port 5100)
 All requests are forwarded with Bearer token authentication.
 """
+import os
 import urllib.request
 import urllib.error
 import json
@@ -11,7 +12,7 @@ from flask import Blueprint, jsonify, request
 ai_profile_bp = Blueprint('ai_profile', __name__, url_prefix='/api/ai-profile')
 
 BACKEND_URL = "http://127.0.0.1:5100/api"
-API_SECRET = "YgZV5IzG5nfNZAjfb1LQ8EGDee3uqeBJTiRse9izoNeSgjaA2CVcM57nIrctLKli"
+API_SECRET = os.environ.get('AI_PROFILE_API_SECRET', '')
 
 
 def _proxy(path, method="GET", data=None, timeout=60):
@@ -97,6 +98,13 @@ def notifications_contacts():
 @ai_profile_bp.route('/notifications/scan', methods=['POST'])
 def notifications_scan():
     return _proxy("notifications/scan", method="POST")
+
+
+# --- Introspection (live DB map data) ---
+
+@ai_profile_bp.route('/introspect/map-data')
+def introspect_map_data():
+    return _proxy("introspect/map-data")
 
 
 # --- Health ---

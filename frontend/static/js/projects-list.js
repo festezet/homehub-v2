@@ -7,6 +7,8 @@ class ProjectsListModule {
     constructor() {
         this.projects = [];
         this.filteredProjects = [];
+        this.rankingMap = {};
+        this.sortMode = 'default'; // 'default' | 'score-desc' | 'score-asc'
         this.loaded = false;
 
         // Override descriptions for projects with generic "Project X" descriptions
@@ -99,6 +101,7 @@ class ProjectsListModule {
         if (tableContainer) tableContainer.style.display = 'none';
 
         try {
+            this.sortMode = 'default';
             await this.fetchProjects();
             this.sortProjects();
             this.filteredProjects = [...this.projects];
@@ -149,6 +152,29 @@ class ProjectsListModule {
         // 4. Native applications (static)
         allProjects.push(...this.getNativeApps());
 
+        // 5. Ranking data (composite scores for PRJ-*)
+        try {
+            const rankingResponse = await fetch('/api/projects/ranking?limit=50');
+            if (rankingResponse.ok) {
+                const rankingData = await rankingResponse.json();
+                if (rankingData.projects) {
+                    this.rankingMap = {};
+                    rankingData.projects.forEach(r => {
+                        this.rankingMap[r.project_id] = {
+                            composite: r.composite_score,
+                            activity: r.activity_score,
+                            strategic: r.strategic_score,
+                            health: r.health_weight,
+                            healthRaw: r.health_score,
+                            rank: r.rank
+                        };
+                    });
+                }
+            }
+        } catch (e) {
+            console.log('Ranking API not available');
+        }
+
         this.projects = allProjects;
     }
 
@@ -175,6 +201,41 @@ class ProjectsListModule {
     _extractNumericId(id) {
         const match = id.match(/(\d+)/);
         return match ? parseInt(match[1], 10) : 999;
+    }
+
+    toggleSortByScore() {
+        if (this.sortMode === 'score-desc') {
+            this.sortMode = 'score-asc';
+        } else if (this.sortMode === 'score-asc') {
+            this.sortMode = 'default';
+        } else {
+            this.sortMode = 'score-desc';
+        }
+        this._applySortAndRender();
+    }
+
+    _applySortAndRender() {
+        if (this.sortMode === 'default') {
+            this.sortProjects();
+            this.filteredProjects = [...this.projects];
+        } else {
+            const dir = this.sortMode === 'score-desc' ? -1 : 1;
+            this.filteredProjects.sort((a, b) => {
+                const sa = this.rankingMap[a.id]?.composite ?? -1;
+                const sb = this.rankingMap[b.id]?.composite ?? -1;
+                return dir * (sa - sb);
+            });
+        }
+        this.render();
+        this._updateSortIndicator();
+    }
+
+    _updateSortIndicator() {
+        const th = document.getElementById('th-score-sort');
+        if (!th) return;
+        const arrow = this.sortMode === 'score-desc' ? ' ▼'
+                    : this.sortMode === 'score-asc' ? ' ▲' : '';
+        th.textContent = 'Score' + arrow;
     }
 
     getInfrastructureItems() {
@@ -336,7 +397,7 @@ class ProjectsListModule {
         if (this.filteredProjects.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="6" style="text-align: center; padding: 40px; color: #666;">
+                    <td colspan="7" style="text-align: center; padding: 40px; color: #666;">
                         Aucun projet trouve
                     </td>
                 </tr>
@@ -347,6 +408,16 @@ class ProjectsListModule {
         tbody.innerHTML = this.filteredProjects.map(project => {
             const escapedDesc = this._escapeHtml(project.description || '-');
             const hasDetail = project.detailedDescription && project.detailedDescription !== '-';
+            const ranking = this.rankingMap[project.id];
+            const score = ranking?.composite;
+            const scoreCell = score !== undefined
+                ? `<div style="display:flex; align-items:center; gap:4px;" title="Score composite: ${score.toFixed(1)}">
+                       <div style="flex:1; background:#374151; border-radius:3px; height:6px; overflow:hidden;">
+                           <div style="width:${Math.round(score)}%; height:100%; background:linear-gradient(90deg, #667eea, #764ba2); border-radius:3px;"></div>
+                       </div>
+                       <span style="font-size:0.75rem; color:#d1d5db; min-width:28px; text-align:right;">${score.toFixed(0)}</span>
+                   </div>`
+                : '<span style="color:#4b5563;">-</span>';
 
             return `
             <tr>
@@ -358,6 +429,7 @@ class ProjectsListModule {
                     <span class="desc-text">${escapedDesc}</span>
                     ${hasDetail ? `<button class="detail-btn" onclick="window.projectsListModule.showDetail('${project.id}')" title="Voir details">i</button>` : ''}
                 </td>
+                <td style="text-align: center;">${scoreCell}</td>
                 <td style="text-align: center;">
                     ${project.hasPath && project.id.startsWith('PRJ-')
                         ? `<button class="action-btn action-btn-folder" onclick="window.projectsListModule.openFolder('${project.id}')" title="Ouvrir ${project.path}">
@@ -401,6 +473,11 @@ class ProjectsListModule {
             const newBtn = refreshBtn.cloneNode(true);
             refreshBtn.parentNode.replaceChild(newBtn, refreshBtn);
             newBtn.addEventListener('click', () => this.load());
+        }
+
+        const scoreTh = document.getElementById('th-score-sort');
+        if (scoreTh) {
+            scoreTh.addEventListener('click', () => this.toggleSortByScore());
         }
 
         this._bindSearch();
@@ -485,6 +562,7 @@ class ProjectsListModule {
     }
 
     filterProjects(category) {
+        this.sortMode = 'default';
         if (category === 'all') {
             this.filteredProjects = [...this.projects];
         } else {
@@ -535,6 +613,45 @@ class ProjectsListModule {
             infoRows += `<div class="modal-info-row"><span class="modal-info-label">Type</span><span class="modal-info-value">${this._escapeHtml(project.dbCategory)}</span></div>`;
         }
 
+        const rankData = this.rankingMap[project.id];
+        let scoreSection = '';
+        if (rankData) {
+            const r = rankData;
+            scoreSection = `
+                <div style="margin-top:16px; padding:12px; background:#1e293b; border-radius:8px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <span style="font-size:0.85rem; font-weight:600; color:#e2e8f0;">Score Ranking</span>
+                        <span style="font-size:1.1rem; font-weight:700; color:#a78bfa;">${r.composite.toFixed(1)}</span>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:0.75rem; color:#93c5fd; min-width:65px;">Activite</span>
+                            <div style="flex:1; background:#374151; border-radius:3px; height:6px; overflow:hidden;">
+                                <div style="width:${Math.round(r.activity)}%; height:100%; background:#3b82f6; border-radius:3px;"></div>
+                            </div>
+                            <span style="font-size:0.75rem; color:#9ca3af; min-width:24px; text-align:right;">${r.activity.toFixed(0)}</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:0.75rem; color:#fcd34d; min-width:65px;">Strategie</span>
+                            <div style="flex:1; background:#374151; border-radius:3px; height:6px; overflow:hidden;">
+                                <div style="width:${Math.round(r.strategic)}%; height:100%; background:#f59e0b; border-radius:3px;"></div>
+                            </div>
+                            <span style="font-size:0.75rem; color:#9ca3af; min-width:24px; text-align:right;">${r.strategic.toFixed(0)}</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:0.75rem; color:#6ee7b7; min-width:65px;">Sante</span>
+                            <div style="flex:1; background:#374151; border-radius:3px; height:6px; overflow:hidden;">
+                                <div style="width:${Math.round(r.health)}%; height:100%; background:#10b981; border-radius:3px;"></div>
+                            </div>
+                            <span style="font-size:0.75rem; color:#9ca3af; min-width:24px; text-align:right;">${r.health.toFixed(0)}</span>
+                        </div>
+                    </div>
+                    <div style="margin-top:8px; font-size:0.7rem; color:#6b7280; text-align:right;">
+                        Poids: Act 35% | Strat 45% | Sante 20%
+                    </div>
+                </div>`;
+        }
+
         modal.innerHTML = `
             <div class="project-modal-content">
                 <div class="project-modal-header">
@@ -548,6 +665,7 @@ class ProjectsListModule {
                     <div class="modal-badges">${categoryHtml} ${statusHtml}</div>
                     <div class="modal-description">${this._escapeHtml(project.detailedDescription || project.description || '-')}</div>
                     ${infoRows ? `<div class="modal-info">${infoRows}</div>` : ''}
+                    ${scoreSection}
                 </div>
                 <div class="project-modal-footer">
                     ${project.hasPath ? `<button class="action-btn action-btn-folder" onclick="window.projectsListModule.openFolder('${project.id}')">Ouvrir dossier</button>` : ''}
@@ -600,7 +718,7 @@ class ProjectsListModule {
         if (tbody) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="6" style="text-align: center; padding: 40px; color: #ef4444;">
+                    <td colspan="7" style="text-align: center; padding: 40px; color: #ef4444;">
                         ${message}
                     </td>
                 </tr>

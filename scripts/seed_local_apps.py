@@ -170,7 +170,7 @@ def _seed_app_list(cursor, conn, app_list, label):
         cols = [k for k, v in values.items() if v != '' or k in ('name', 'description', 'category_slug', 'icon', 'app_type', 'project_id', 'position')]
         placeholders = ', '.join(['?'] * len(cols))
         cursor.execute(
-            f"INSERT INTO app_entries ({', '.join(cols)}) VALUES ({placeholders})",
+            "INSERT INTO app_entries (" + ', '.join(cols) + ") VALUES (" + placeholders + ")",
             tuple(values[c] for c in cols)
         )
         added += 1
