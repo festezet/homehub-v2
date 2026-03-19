@@ -6,6 +6,7 @@ Main application entry point with unified API
 
 from flask import Flask, render_template, jsonify, send_file
 from flask_cors import CORS
+from shared_lib.flask_helpers import success, error as api_error
 import logging
 import sys
 import os
@@ -123,14 +124,9 @@ def index():
 @app.route('/api/health')
 def health():
     """Health check endpoint"""
-    return jsonify({
-        'status': 'ok',
-        'service': 'HomeHub v2',
-        'version': '2.0.0',
-        'apis': {
-            'docker': docker_service.available,
-            'todo': True
-        }
+    return success(service='HomeHub v2', version='2.0.0', apis={
+        'docker': docker_service.available,
+        'todo': True
     })
 
 @app.route('/api/infrastructure/dashboard')
@@ -138,16 +134,10 @@ def get_infrastructure_dashboard():
     """Get infrastructure monitoring data"""
     try:
         data = infrastructure_service.get_dashboard_data()
-        return jsonify({
-            'status': 'ok',
-            'data': data
-        })
+        return success(data)
     except Exception as e:
         logger.error(f"Error getting infrastructure data: {e}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
+        return api_error(500, str(e))
 
 @app.route('/api/services/ports')
 def get_services_ports():
@@ -158,23 +148,16 @@ def get_services_ports():
     try:
         with open(registry_path, 'r') as f:
             data = json.load(f)
-        return jsonify({
-            'status': 'ok',
-            'ports': data.get('ports', []),
-            'stacks': data.get('stacks', {}),
-            'allocation_ranges': data.get('allocation_ranges', {})
-        })
+        return success(
+            ports=data.get('ports', []),
+            stacks=data.get('stacks', {}),
+            allocation_ranges=data.get('allocation_ranges', {})
+        )
     except FileNotFoundError:
-        return jsonify({
-            'status': 'error',
-            'message': 'port_registry.json not found'
-        }), 404
+        return api_error(404, 'port_registry.json not found')
     except Exception as e:
         logger.error(f"Error reading port registry: {e}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
+        return api_error(500, str(e))
 
 @app.route('/api/apps')
 def get_applications():
@@ -187,11 +170,7 @@ def get_applications():
         {'id': 'APP-004', 'name': 'Firefox', 'icon': '🦊', 'command': 'firefox'},
         {'id': 'APP-006', 'name': 'Cursor', 'icon': '⌨️', 'command': 'cursor'}
     ]
-    return jsonify({
-        'status': 'ok',
-        'apps': apps,
-        'count': len(apps)
-    })
+    return success(apps=apps, count=len(apps))
 
 def extract_description_from_readme(project_path):
     """Extract description from README.md (first 15 lines)"""
@@ -264,11 +243,10 @@ def _row_to_project(row):
 
 def _fetch_projects_from_db():
     """Fetch active projects from projects.db"""
-    import sqlite3
+    from shared_lib.db import get_connection
     db_path = '/data/projects/project-management/data/projects.db'
     try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
+        conn = get_connection(db_path)
         cursor = conn.cursor()
         cursor.execute('''
             SELECT unique_id, name, category, status, path, description,
@@ -301,18 +279,15 @@ def get_projects():
     """Get list of projects from projects.db"""
     projects = _fetch_projects_from_db()
     projects.extend(ADDITIONAL_APPS)
-    return jsonify({
-        'status': 'ok', 'projects': projects, 'count': len(projects)
-    })
+    return success(projects=projects, count=len(projects))
 
 @app.route('/api/system/storage')
 def get_storage_info():
     """Get disk storage information in hierarchical format by disk"""
     storage = get_storage_data()
-    return jsonify({
-        'status': 'ok' if storage else 'error',
-        **storage
-    })
+    if storage:
+        return success(**storage)
+    return api_error(500, 'Failed to get storage data')
 
 @app.route('/api/apps/launch/<app_id>', methods=['POST'])
 def launch_application(app_id):
@@ -329,10 +304,7 @@ def launch_application(app_id):
     }
 
     if app_id not in apps_map:
-        return jsonify({
-            'status': 'error',
-            'message': f'Application {app_id} not found'
-        }), 404
+        return api_error(404, f'Application {app_id} not found')
 
     app = apps_map[app_id]
 
@@ -350,25 +322,15 @@ def launch_application(app_id):
 
         logger.info(f"✅ Launched application: {app['name']} ({app['command']})")
 
-        return jsonify({
-            'status': 'success',
-            'message': f"{app['name']} launched successfully",
-            'app_id': app_id
-        })
+        return success(message=f"{app['name']} launched successfully", app_id=app_id)
 
     except FileNotFoundError:
-        logger.error(f"❌ Application not found: {app['command']}")
-        return jsonify({
-            'status': 'error',
-            'message': f"Application {app['name']} not installed"
-        }), 404
+        logger.error(f"Application not found: {app['command']}")
+        return api_error(404, f"Application {app['name']} not installed")
 
     except Exception as e:
-        logger.error(f"❌ Error launching {app['name']}: {e}")
-        return jsonify({
-            'status': 'error',
-            'message': f"Failed to launch {app['name']}: {str(e)}"
-        }), 500
+        logger.error(f"Error launching {app['name']}: {e}")
+        return api_error(500, f"Failed to launch {app['name']}: {str(e)}")
 
 @app.route('/api/projects/launch/<project_id>', methods=['POST'])
 def launch_project(project_id):
@@ -383,31 +345,27 @@ def launch_project(project_id):
     }
 
     try:
-        project_info, error = _resolve_launch_command(project_id, additional_apps)
-        if error:
-            return jsonify(error[0]), error[1]
+        project_info, err = _resolve_launch_command(project_id, additional_apps)
+        if err:
+            return jsonify(err[0]), err[1]
 
         result = _execute_launch(project_id, project_info)
         return jsonify(result)
 
     except Exception as e:
         logger.error(f"Error launching project {project_id}: {e}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
+        return api_error(500, str(e))
 
 @app.route('/api/projects/open/<project_id>', methods=['POST'])
 def open_project_folder(project_id):
     """Open project folder in file manager"""
     import subprocess
-    import sqlite3
+    from shared_lib.db import get_connection
 
     db_path = '/data/projects/project-management/data/projects.db'
 
     try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
+        conn = get_connection(db_path)
         cursor = conn.cursor()
 
         cursor.execute('SELECT name, path FROM projects WHERE unique_id = ?', (project_id,))
@@ -415,10 +373,7 @@ def open_project_folder(project_id):
         conn.close()
 
         if not row:
-            return jsonify({
-                'status': 'error',
-                'message': f'Project {project_id} not found'
-            }), 404
+            return api_error(404, f'Project {project_id} not found')
 
         # Open folder with default file manager
         env = get_x11_env()
@@ -433,18 +388,11 @@ def open_project_folder(project_id):
 
         logger.info(f"Opened folder: {row['path']}")
 
-        return jsonify({
-            'status': 'success',
-            'message': f"Opened {row['name']} folder",
-            'path': row['path']
-        })
+        return success(message=f"Opened {row['name']} folder", path=row['path'])
 
     except Exception as e:
         logger.error(f"Error opening project folder {project_id}: {e}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
+        return api_error(500, str(e))
 
 # ============================================
 # FILE SERVING - Generated files
@@ -456,20 +404,20 @@ def serve_calendar():
     calendar_path = os.path.expanduser('~/Downloads/calendrier_location_2025.html')
     if os.path.exists(calendar_path):
         return send_file(calendar_path, mimetype='text/html')
-    return jsonify({'error': 'Calendar not generated yet'}), 404
+    return api_error(404, 'Calendar not generated yet')
 
 # ============================================
 # ERROR HANDLERS
 # ============================================
 
 @app.errorhandler(404)
-def not_found(error):
-    return jsonify({'error': 'Not found'}), 404
+def not_found(e):
+    return api_error(404, 'Not found')
 
 @app.errorhandler(500)
-def internal_error(error):
-    logger.error(f'Internal error: {error}')
-    return jsonify({'error': 'Internal server error'}), 500
+def internal_error(e):
+    logger.error(f'Internal error: {e}')
+    return api_error(500, 'Internal server error')
 
 # ============================================
 # MAIN
