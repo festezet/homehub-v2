@@ -209,13 +209,85 @@ API.claude = {
 /**
  * AI Profile API methods (drafts + notifications)
  */
+/**
+ * Session Close API methods
+ */
+API.sessionClose = {
+    async create(data) {
+        return await API.fetch(`${API.BASE_URL}/session-close`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    },
+
+    async list(params = {}) {
+        const qs = new URLSearchParams();
+        if (params.project_id) qs.set('project_id', params.project_id);
+        if (params.limit) qs.set('limit', params.limit);
+        const query = qs.toString();
+        return await API.fetch(`${API.BASE_URL}/session-close${query ? '?' + query : ''}`);
+    },
+
+    async getLatest(projectId) {
+        return await API.fetch(`${API.BASE_URL}/session-close/latest/${projectId}`);
+    },
+
+    async getRecent(days = 7) {
+        return await API.fetch(`${API.BASE_URL}/session-close/recent?days=${days}`);
+    }
+};
+
+/**
+ * Project Actions API methods
+ */
+API.projectActions = {
+    async list(params = {}) {
+        const qs = new URLSearchParams();
+        if (params.project_id) qs.set('project_id', params.project_id);
+        if (params.status) qs.set('status', params.status);
+        const query = qs.toString();
+        return await API.fetch(`${API.BASE_URL}/project-actions${query ? '?' + query : ''}`);
+    },
+
+    async create(data) {
+        return await API.fetch(`${API.BASE_URL}/project-actions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    },
+
+    async update(id, data) {
+        return await API.fetch(`${API.BASE_URL}/project-actions/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    },
+
+    async delete(id) {
+        return await API.fetch(`${API.BASE_URL}/project-actions/${id}`, {
+            method: 'DELETE'
+        });
+    },
+
+    async getStats() {
+        return await API.fetch(`${API.BASE_URL}/project-actions/stats`);
+    }
+};
+
+/**
+ * AI Profile API methods (drafts + notifications)
+ */
 API.aiProfile = {
     async getChannels() {
         return await API.fetch(`${API.BASE_URL}/ai-profile/drafts/channels`);
     },
 
-    async getContacts() {
-        return await API.fetch(`${API.BASE_URL}/ai-profile/drafts/contacts`);
+    async getContacts(channel) {
+        const params = channel ? `?channel=${channel}` : '';
+        return await API.fetch(`${API.BASE_URL}/ai-profile/drafts/contacts${params}`);
     },
 
     async getContactContext(contactId) {
@@ -276,5 +348,13 @@ API.aiProfile = {
 
     async getMapData() {
         return await API.fetch(`${API.BASE_URL}/ai-profile/introspect/map-data`);
+    },
+
+    async sendMessage(data) {
+        return await API.fetch(`${API.BASE_URL}/ai-profile/messaging/send`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
     }
 };

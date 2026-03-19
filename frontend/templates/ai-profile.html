@@ -36,18 +36,25 @@
     </div>
 
     <div class="ai-profile-draft-form">
-        <div class="ai-profile-form-row ai-profile-search-wrapper">
-            <label for="ai-profile-contact-search">Destinataire</label>
-            <input type="text" id="ai-profile-contact-search"
-                   placeholder="Rechercher un contact..."
-                   autocomplete="off">
-            <input type="hidden" id="ai-profile-contact" value="">
-            <div id="ai-profile-contact-dropdown" class="ai-profile-search-dropdown"></div>
+        <div class="ai-profile-form-row">
+            <label for="ai-profile-contact">Destinataire</label>
+            <select id="ai-profile-contact" onchange="window.aiProfileModule._onContactChange()">
+                <option value="">-- Choisir un contact --</option>
+            </select>
         </div>
         <div id="ai-profile-contact-info" class="ai-profile-contact-info" style="display:none;">
             <span id="ai-profile-contact-lang" class="ai-profile-tag"></span>
             <span id="ai-profile-contact-account" class="ai-profile-tag"></span>
             <span id="ai-profile-contact-count" class="ai-profile-tag"></span>
+        </div>
+        <div id="ai-profile-channel-row" class="ai-profile-form-row">
+            <label for="ai-profile-channel">Canal</label>
+            <div style="display:flex; align-items:center; gap:8px; flex:1;">
+                <select id="ai-profile-channel" onchange="window.aiProfileModule._onChannelChange()">
+                    <option value="email">Email</option>
+                </select>
+                <span id="ai-profile-channel-info" class="ai-profile-tag" style="display:none;"></span>
+            </div>
         </div>
         <div class="ai-profile-form-row">
             <label for="ai-profile-subject">Sujet</label>
@@ -81,6 +88,10 @@
             <button class="ai-profile-btn-secondary"
                     onclick="window.aiProfileModule.copyDraft()">
                 Copier
+            </button>
+            <button id="ai-profile-btn-send" class="ai-profile-btn-primary"
+                    onclick="window.aiProfileModule.sendDraft()" style="display:none;">
+                Envoyer
             </button>
             <button class="ai-profile-btn-secondary"
                     onclick="window.aiProfileModule.submitDraft()">
@@ -122,14 +133,16 @@
         plus decontracte sur Gmail, plus formel sur Hostinger. A terme, l'envoi direct (sans passer par Gmail/webmail)
         sera possible depuis cette interface.</p>
 
-        <h4>Multi reseaux sociaux (a venir)</h4>
-        <p>La meme logique s'appliquera aux reseaux sociaux. Au lieu de rediger uniquement des emails,
-        le Draft Generator pourra generer des messages adaptes a chaque plateforme :</p>
+        <h4>Multi-canaux (actif)</h4>
+        <p>Le Draft Generator genere des messages adaptes a chaque plateforme,
+        avec un style et un ton specifiques par canal :</p>
         <div class="explanation-example">
+            <strong>Email</strong> — Gmail et Hostinger, style adapte par compte (perso/pro).
+            Corpus de ~1 970 emails indexes. Envoi direct depuis l'interface.<br>
             <strong>WhatsApp</strong> — Messages courts, ton informel, emojis naturels.
-            L'API Evolution est deja connectee (envoi + reception).<br>
+            Corpus de ~43 messages indexes. Envoi via Evolution API.<br>
             <strong>LinkedIn</strong> — Messages professionnels, ton reseau-compatible.
-            L'API est integree (en attente de retablissement des endpoints messaging cote LinkedIn).<br>
+            API integree (en attente de retablissement des endpoints messaging cote LinkedIn).<br>
             <strong>Autres</strong> — Telegram, SMS, ou tout nouveau canal pourra etre ajoute
             avec le meme principe : style adapte + envoi direct.
         </div>

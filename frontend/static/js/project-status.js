@@ -30,6 +30,8 @@ class ProjectStatusModule {
             { id: 'health', label: 'Health & Specs' },
             { id: 'activity-log', label: 'Activity Log' },
             { id: 'recent-sessions', label: 'Sessions Recentes' },
+            { id: 'project-actions', label: 'Actions Projet' },
+            { id: 'session-closes', label: 'Session Closes' },
             { id: 'modularity', label: 'Modularity' }
         ];
 
@@ -65,6 +67,12 @@ class ProjectStatusModule {
                 break;
             case 'recent-sessions':
                 await this.renderRecentSessions(content);
+                break;
+            case 'project-actions':
+                await this.renderProjectActions(content);
+                break;
+            case 'session-closes':
+                await this.renderSessionCloses(content);
                 break;
             case 'modularity':
                 content.innerHTML = '<div id="modularity-container"></div>';
@@ -432,6 +440,158 @@ class ProjectStatusModule {
     filterActivity(key, value) {
         this.activityFilter[key] = value;
         this.renderActivityContent();
+    }
+
+    // --- PROJECT ACTIONS SUB-TAB ---
+
+    async renderProjectActions(content) {
+        this.actionsFilter = this.actionsFilter || 'all';
+        let actions = [];
+        try {
+            const params = {};
+            if (this.actionsFilter !== 'all') params.status = this.actionsFilter;
+            const response = await API.projectActions.list(params);
+            actions = response.actions || [];
+        } catch (e) {
+            console.error('Failed to load project actions:', e);
+        }
+
+        const statusOptions = ['all', 'todo', 'in_progress', 'done', 'blocked'];
+        const statusLabels = { all: 'Tous', todo: 'A faire', in_progress: 'En cours', done: 'Termine', blocked: 'Bloque' };
+
+        const priorityColors = { critical: '#dc2626', high: '#f59e0b', medium: '#3b82f6', low: '#9ca3af' };
+        const statusColors = { todo: '#6b7280', in_progress: '#3b82f6', done: '#10b981', blocked: '#ef4444' };
+
+        const filterHtml = `
+            <div class="ps-activity-filters">
+                ${statusOptions.map(s => `
+                    <button class="ps-action-filter-btn ${this.actionsFilter === s ? 'active' : ''}"
+                            onclick="window.ProjectStatusModule.filterActions('${s}')">
+                        ${statusLabels[s]}
+                    </button>
+                `).join('')}
+                <span class="ps-filter-count">${actions.length} action${actions.length !== 1 ? 's' : ''}</span>
+            </div>`;
+
+        let listHtml;
+        if (actions.length === 0) {
+            listHtml = '<div class="ps-empty">Aucune action trouvee.</div>';
+        } else {
+            listHtml = `<div class="ps-actions-list">
+                ${actions.map(a => {
+                    const pColor = priorityColors[a.priority] || '#6b7280';
+                    const sColor = statusColors[a.status] || '#6b7280';
+                    return `
+                    <div class="ps-action-item">
+                        <div class="ps-action-priority" style="background: ${pColor};" title="${a.priority}"></div>
+                        <div class="ps-action-body">
+                            <div class="ps-action-header">
+                                <span class="ps-action-title">${this.escapeHtml(a.title)}</span>
+                                <span class="ps-action-status" style="background: ${sColor}15; color: ${sColor};">${a.status}</span>
+                            </div>
+                            ${a.description ? `<div class="ps-action-desc">${this.escapeHtml(a.description)}</div>` : ''}
+                            <div class="ps-action-meta">
+                                <span class="ps-action-project">${this.escapeHtml(a.project_name || a.project_id)}</span>
+                                <span class="ps-action-type">${a.type || 'action'}</span>
+                                ${a.due_date ? `<span class="ps-action-due">Echeance: ${a.due_date}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="ps-action-btns">
+                            ${a.status !== 'done' ? `<button class="ps-action-btn-done" onclick="window.ProjectStatusModule.completeAction(${a.id})" title="Marquer termine">&#10003;</button>` : ''}
+                            <button class="ps-action-btn-del" onclick="window.ProjectStatusModule.deleteAction(${a.id})" title="Supprimer">&#10005;</button>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>`;
+        }
+
+        content.innerHTML = filterHtml + listHtml;
+    }
+
+    async filterActions(status) {
+        this.actionsFilter = status;
+        const content = document.getElementById('ps-content');
+        if (content) {
+            content.innerHTML = '<div class="ps-loading"><span class="spinner"></span> Chargement...</div>';
+            await this.renderProjectActions(content);
+        }
+    }
+
+    async completeAction(id) {
+        try {
+            await API.projectActions.update(id, { status: 'done' });
+            await this.filterActions(this.actionsFilter);
+        } catch (e) {
+            console.error('Failed to complete action:', e);
+        }
+    }
+
+    async deleteAction(id) {
+        if (!confirm('Supprimer cette action ?')) return;
+        try {
+            await API.projectActions.delete(id);
+            await this.filterActions(this.actionsFilter);
+        } catch (e) {
+            console.error('Failed to delete action:', e);
+        }
+    }
+
+    // --- SESSION CLOSES SUB-TAB ---
+
+    async renderSessionCloses(content) {
+        let closes = [];
+        try {
+            const response = await API.sessionClose.getRecent(30);
+            closes = response.closes || [];
+        } catch (e) {
+            console.error('Failed to load session closes:', e);
+        }
+
+        if (closes.length === 0) {
+            content.innerHTML = '<div class="ps-empty">Aucun session close enregistre.</div>';
+            return;
+        }
+
+        content.innerHTML = `
+            <div class="ps-closes-header">
+                <span class="ps-filter-count">${closes.length} session close${closes.length !== 1 ? 's' : ''} (30 derniers jours)</span>
+            </div>
+            <div class="ps-closes-list">
+                ${closes.map(c => this._renderCloseCard(c)).join('')}
+            </div>`;
+    }
+
+    _renderCloseCard(c) {
+        const catColors = { dev: '#3b82f6', evaluation: '#f59e0b', 'gestion-doc': '#8b5cf6', infra: '#10b981' };
+        const color = catColors[c.category] || '#6b7280';
+
+        const decisions = c.decisions || [];
+        const nextSteps = c.next_steps || [];
+        const blockers = c.blockers || [];
+        const hasDetails = decisions.length > 0 || nextSteps.length > 0 || blockers.length > 0;
+        const closeId = `close-${c.id}`;
+
+        return `
+            <div class="ps-close-card" style="border-left-color: ${color};">
+                <div class="ps-close-header" ${hasDetails ? `onclick="document.getElementById('${closeId}').classList.toggle('expanded')" style="cursor:pointer;"` : ''}>
+                    <div class="ps-close-left">
+                        <span class="ps-close-project">${this.escapeHtml(c.project_name || c.project_id)}</span>
+                        ${c.category ? `<span class="ps-timeline-type" style="background: ${color}15; color: ${color};">${c.category}</span>` : ''}
+                        ${c.duration_minutes ? `<span class="ps-close-duration">${c.duration_minutes} min</span>` : ''}
+                    </div>
+                    <div class="ps-close-right">
+                        <span class="ps-close-date">${c.session_date}</span>
+                        ${hasDetails ? '<span class="ps-close-expand">&#9662;</span>' : ''}
+                    </div>
+                </div>
+                <div class="ps-close-summary">${this.escapeHtml(c.summary)}</div>
+                ${hasDetails ? `
+                <div id="${closeId}" class="ps-close-details">
+                    ${decisions.length > 0 ? `<div class="ps-close-section"><span class="ps-close-label">Decisions</span><ul>${decisions.map(d => `<li>${this.escapeHtml(d)}</li>`).join('')}</ul></div>` : ''}
+                    ${nextSteps.length > 0 ? `<div class="ps-close-section"><span class="ps-close-label">Prochaines etapes</span><ul>${nextSteps.map(s => `<li>${this.escapeHtml(s)}</li>`).join('')}</ul></div>` : ''}
+                    ${blockers.length > 0 ? `<div class="ps-close-section"><span class="ps-close-label">Blockers</span><ul>${blockers.map(b => `<li>${this.escapeHtml(b)}</li>`).join('')}</ul></div>` : ''}
+                </div>` : ''}
+            </div>`;
     }
 
     // --- HELPERS ---

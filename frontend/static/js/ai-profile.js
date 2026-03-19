@@ -9,11 +9,13 @@ import Utils from './utils.js';
 const aiProfileModule = {
     loaded: false,
     contacts: [],
+    channels: [],
     mode: 'api',
 
     async load() {
         if (!this.loaded) {
-            await this.loadContacts();
+            await this.loadChannels();
+            this._updateChannelSelector();
             this.loaded = true;
         }
         this.loadNotificationStats();
@@ -58,102 +60,38 @@ const aiProfileModule = {
 
     // --- Draft Generation ---
 
-    async loadContacts() {
-        const searchInput = document.getElementById('ai-profile-contact-search');
-        const dropdown = document.getElementById('ai-profile-contact-dropdown');
+    async loadChannels() {
         try {
-            const result = await API.aiProfile.getContacts();
-            this.contacts = result.data || [];
-            searchInput.placeholder = `Rechercher parmi ${this.contacts.length} contacts...`;
-            this._setupContactSearch(searchInput, dropdown);
+            const result = await API.aiProfile.getChannels();
+            this.channels = result.data || [];
         } catch {
-            searchInput.placeholder = 'Service indisponible';
-            searchInput.disabled = true;
+            this.channels = [{ id: 'email', label: 'Email', status: 'active', corpus: true, send: true }];
         }
     },
 
-    _setupContactSearch(input, dropdown) {
-        let highlightIdx = -1;
-
-        const showDropdown = (items) => {
-            if (items.length === 0) {
-                dropdown.innerHTML = '<div class="ai-profile-search-no-result">Aucun contact</div>';
-            } else {
-                dropdown.innerHTML = items.map((c, i) => `
-                    <div class="ai-profile-search-item ${i === highlightIdx ? 'highlighted' : ''}"
-                         data-contact-id="${c.contact_id}" data-index="${i}">
-                        <span class="ai-profile-search-name">${this._escapeHtml(c.contact_id)}</span>
-                        <span class="ai-profile-search-count">${c.email_count} emails</span>
-                    </div>
-                `).join('');
-            }
-            dropdown.classList.add('visible');
-        };
-
-        const selectContact = (contactId) => {
-            const contact = this.contacts.find(c => c.contact_id === contactId);
-            if (!contact) return;
-            input.value = contact.contact_id;
-            document.getElementById('ai-profile-contact').value = contactId;
-            dropdown.classList.remove('visible');
-            highlightIdx = -1;
-            this._onContactChange();
-        };
-
-        const filterContacts = () => {
-            const q = input.value.toLowerCase().trim();
-            if (!q) return this.contacts.slice(0, 20);
-            return this.contacts.filter(c => c.contact_id.toLowerCase().includes(q));
-        };
-
-        input.addEventListener('focus', () => {
-            highlightIdx = -1;
-            showDropdown(filterContacts());
-        });
-
-        input.addEventListener('input', () => {
-            highlightIdx = -1;
-            // Clear selection if user edits text
-            document.getElementById('ai-profile-contact').value = '';
-            document.getElementById('ai-profile-contact-info').style.display = 'none';
-            showDropdown(filterContacts());
-        });
-
-        input.addEventListener('keydown', (e) => {
-            const items = dropdown.querySelectorAll('.ai-profile-search-item');
-            if (!items.length) return;
-
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                highlightIdx = Math.min(highlightIdx + 1, items.length - 1);
-                items.forEach((el, i) => el.classList.toggle('highlighted', i === highlightIdx));
-                items[highlightIdx]?.scrollIntoView({ block: 'nearest' });
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                highlightIdx = Math.max(highlightIdx - 1, 0);
-                items.forEach((el, i) => el.classList.toggle('highlighted', i === highlightIdx));
-                items[highlightIdx]?.scrollIntoView({ block: 'nearest' });
-            } else if (e.key === 'Enter') {
-                e.preventDefault();
-                if (highlightIdx >= 0 && items[highlightIdx]) {
-                    selectContact(items[highlightIdx].dataset.contactId);
-                }
-            } else if (e.key === 'Escape') {
-                dropdown.classList.remove('visible');
-            }
-        });
-
-        dropdown.addEventListener('click', (e) => {
-            const item = e.target.closest('.ai-profile-search-item');
-            if (item) selectContact(item.dataset.contactId);
-        });
-
-        // Close dropdown on outside click
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.ai-profile-search-wrapper')) {
-                dropdown.classList.remove('visible');
-            }
-        });
+    async loadContacts(channel) {
+        const select = document.getElementById('ai-profile-contact');
+        select.disabled = true;
+        select.innerHTML = '<option value="">Chargement...</option>';
+        try {
+            const result = await API.aiProfile.getContacts(channel);
+            this.contacts = result.data || [];
+            select.innerHTML = '<option value="">-- Choisir un contact --</option>' +
+                this.contacts.map(c => {
+                    const label = c.display_name || c.contact_id;
+                    const stat = c.email_count
+                        ? `${c.email_count} emails`
+                        : c.message_count
+                            ? `${c.message_count} msgs`
+                            : '';
+                    const suffix = stat ? ` (${stat})` : '';
+                    return `<option value="${c.contact_id}">${this._escapeHtml(label)}${suffix}</option>`;
+                }).join('');
+            select.disabled = false;
+        } catch {
+            select.innerHTML = '<option value="">Service indisponible</option>';
+            select.disabled = true;
+        }
     },
 
     async _onContactChange() {
@@ -170,12 +108,50 @@ const aiProfileModule = {
             document.getElementById('ai-profile-contact-lang').textContent =
                 ctx.language === 'en' ? 'EN' : 'FR';
             document.getElementById('ai-profile-contact-account').textContent = ctx.account;
+            const count = contact?.email_count || contact?.message_count || '?';
+            const unit = contact?.email_count ? 'emails' : 'msgs';
             document.getElementById('ai-profile-contact-count').textContent =
-                `${contact?.email_count || '?'} emails`;
+                `${count} ${unit}`;
             infoDiv.style.display = 'flex';
         } catch {
             infoDiv.style.display = 'none';
         }
+    },
+
+    _updateChannelSelector() {
+        const select = document.getElementById('ai-profile-channel');
+        select.innerHTML = this.channels
+            .filter(ch => ch.status === 'active' || ch.status === 'limited')
+            .map(ch => {
+                const suffix = ch.status === 'limited' ? ' (limite)' : '';
+                return `<option value="${ch.id}">${ch.label}${suffix}</option>`;
+            }).join('');
+        this._onChannelChange();
+    },
+
+    _onChannelChange() {
+        const channelId = document.getElementById('ai-profile-channel').value;
+        const infoSpan = document.getElementById('ai-profile-channel-info');
+        const sendBtn = document.getElementById('ai-profile-btn-send');
+        const ch = this.channels.find(c => c.id === channelId);
+        if (!ch) {
+            infoSpan.style.display = 'none';
+            if (sendBtn) sendBtn.style.display = 'none';
+            return;
+        }
+        const parts = [];
+        if (ch.corpus) parts.push('corpus');
+        if (ch.send) parts.push('envoi');
+        if (ch.note) parts.push(ch.note);
+        if (parts.length) {
+            infoSpan.textContent = parts.join(' | ');
+            infoSpan.style.display = 'inline-block';
+        } else {
+            infoSpan.style.display = 'none';
+        }
+        if (sendBtn) sendBtn.style.display = ch.send ? 'inline-block' : 'none';
+        // Reload contacts for the selected channel
+        this.loadContacts(channelId);
     },
 
     submitDraft() {
@@ -201,7 +177,8 @@ const aiProfileModule = {
         btn.textContent = 'Generation en cours...';
 
         try {
-            const result = await API.aiProfile.generateDraft({ contact_id: contactId, subject, context });
+            const channel = document.getElementById('ai-profile-channel').value || 'email';
+            const result = await API.aiProfile.generateDraft({ contact_id: contactId, subject, context, channel });
             const data = result.data;
 
             document.getElementById('ai-profile-draft-text').textContent = data.draft;
@@ -229,6 +206,37 @@ const aiProfileModule = {
         });
     },
 
+    async sendDraft() {
+        const contactId = document.getElementById('ai-profile-contact').value;
+        const subject = document.getElementById('ai-profile-subject').value.trim();
+        const draftText = document.getElementById('ai-profile-draft-text').textContent;
+        const channel = document.getElementById('ai-profile-channel').value || 'email';
+
+        if (!contactId || !draftText) {
+            Utils.showToast('Pas de brouillon a envoyer', 'error');
+            return;
+        }
+
+        const chLabel = this.channels.find(c => c.id === channel)?.label || channel;
+        if (!confirm(`Envoyer ce message via ${chLabel} a ${contactId} ?`)) return;
+
+        const btn = document.getElementById('ai-profile-btn-send');
+        btn.disabled = true;
+        btn.textContent = 'Envoi...';
+
+        try {
+            const payload = { channel, to: contactId, body: draftText };
+            if (channel === 'email' && subject) payload.subject = subject;
+            await API.aiProfile.sendMessage(payload);
+            Utils.showToast(`Message envoye via ${chLabel}`, 'success');
+        } catch (err) {
+            Utils.showToast(`Erreur envoi: ${err.message}`, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Envoyer';
+        }
+    },
+
     // --- Queue Mode ---
 
     async addToQueue() {
@@ -245,7 +253,8 @@ const aiProfileModule = {
         btn.disabled = true;
 
         try {
-            await API.aiProfile.addToQueue({ contact_id: contactId, subject, context });
+            const channel = document.getElementById('ai-profile-channel').value || 'email';
+            await API.aiProfile.addToQueue({ contact_id: contactId, subject, context, channel });
             Utils.showToast('Ajoute a la file d\'attente', 'success');
             document.getElementById('ai-profile-subject').value = '';
             document.getElementById('ai-profile-context').value = '';
@@ -290,6 +299,7 @@ const aiProfileModule = {
                 <div class="ai-profile-queue-item-header">
                     <strong>${this._escapeHtml(item.contact_id)}</strong>
                     <span class="ai-profile-tag">${statusLabel}</span>
+                    ${item.channel ? `<span class="ai-profile-tag" style="background:var(--bg-tertiary)">${this._escapeHtml(item.channel)}</span>` : ''}
                 </div>
                 <div class="ai-profile-queue-item-subject">${this._escapeHtml(item.subject)}</div>
                 <div class="ai-profile-queue-item-context">${this._escapeHtml(item.context)}</div>

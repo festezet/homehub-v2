@@ -44,7 +44,9 @@ def drafts_channels():
 
 @ai_profile_bp.route('/drafts/contacts')
 def drafts_contacts():
-    return _proxy("drafts/contacts")
+    params = request.query_string.decode()
+    path = f"drafts/contacts?{params}" if params else "drafts/contacts"
+    return _proxy(path)
 
 
 @ai_profile_bp.route('/drafts/contacts/<contact_id>/context')
@@ -103,6 +105,28 @@ def notifications_contacts():
 @ai_profile_bp.route('/notifications/scan', methods=['POST'])
 def notifications_scan():
     return _proxy("notifications/scan", method="POST")
+
+
+# --- Messaging (send) ---
+
+@ai_profile_bp.route('/messaging/send', methods=['POST'])
+def messaging_send():
+    return _proxy("messaging/send", method="POST", data=request.get_json(silent=True))
+
+
+@ai_profile_bp.route('/messaging/email/send', methods=['POST'])
+def messaging_email_send():
+    return _proxy("messaging/email/send", method="POST", data=request.get_json(silent=True))
+
+
+@ai_profile_bp.route('/messaging/whatsapp/send', methods=['POST'])
+def messaging_whatsapp_send():
+    return _proxy("messaging/whatsapp/send", method="POST", data=request.get_json(silent=True))
+
+
+@ai_profile_bp.route('/messaging/linkedin/send', methods=['POST'])
+def messaging_linkedin_send():
+    return _proxy("messaging/linkedin/send", method="POST", data=request.get_json(silent=True))
 
 
 # --- Introspection (live DB map data) ---
