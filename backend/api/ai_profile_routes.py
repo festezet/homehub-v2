@@ -8,6 +8,7 @@ import urllib.error
 import json
 
 from flask import Blueprint, jsonify, request
+from shared_lib.flask_helpers import error as api_error
 
 ai_profile_bp = Blueprint('ai_profile', __name__, url_prefix='/api/ai-profile')
 
@@ -32,7 +33,7 @@ def _proxy(path, method="GET", data=None, timeout=60):
         result = json.loads(e.read())
         return jsonify(result), e.code
     except urllib.error.URLError:
-        return jsonify({"ok": False, "error": "AI Profile service unavailable (port 5100)"}), 503
+        return api_error(503, "AI Profile service unavailable (port 5100)")
 
 
 # --- Draft Generation ---

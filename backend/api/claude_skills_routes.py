@@ -2,7 +2,8 @@
 Claude Skills API Routes
 """
 
-from flask import Blueprint, jsonify
+from flask import Blueprint
+from shared_lib.flask_helpers import success, error as api_error
 import logging
 
 claude_skills_service = None
@@ -23,13 +24,7 @@ def get_skills():
     """Get all Claude Code skills and commands (live filesystem scan)"""
     try:
         data = claude_skills_service.scan_all()
-        return jsonify({
-            'status': 'ok',
-            **data
-        })
+        return success(**data)
     except Exception as e:
         logger.error(f"Error scanning Claude skills: {e}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
+        return api_error(500, str(e))

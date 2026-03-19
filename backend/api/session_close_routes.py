@@ -2,7 +2,8 @@
 Session Close API Routes - Structured end-of-session records
 """
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, request
+from shared_lib.flask_helpers import success, error as api_error
 import logging
 
 logger = logging.getLogger(__name__)
@@ -23,25 +24,22 @@ def create_session_close():
     try:
         data = request.get_json()
         if not data:
-            return jsonify({'status': 'error', 'message': 'No JSON body'}), 400
+            return api_error(400, 'No JSON body')
 
         for field in ('project_id', 'session_date', 'summary'):
             if not data.get(field):
-                return jsonify({
-                    'status': 'error',
-                    'message': f'{field} is required'
-                }), 400
+                return api_error(400, f'{field} is required')
 
         close_id = _service.create(data)
-        return jsonify({
-            'status': 'ok',
-            'id': close_id,
-            'message': 'Session close recorded'
-        }), 201
+        return success(
+            id=close_id,
+            message='Session close recorded',
+            status_code=201
+        )
 
     except Exception as e:
         logger.error(f"Error creating session close: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 @session_close_bp.route('/api/session-close')
@@ -51,14 +49,10 @@ def list_session_closes():
         project_id = request.args.get('project_id')
         limit = request.args.get('limit', 20, type=int)
         closes = _service.get_closes(project_id=project_id, limit=limit)
-        return jsonify({
-            'status': 'ok',
-            'closes': closes,
-            'count': len(closes)
-        })
+        return success(closes=closes, count=len(closes))
     except Exception as e:
         logger.error(f"Error listing session closes: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 @session_close_bp.route('/api/session-close/latest/<project_id>')
@@ -67,15 +61,11 @@ def get_latest_close(project_id):
     try:
         close = _service.get_latest_by_project(project_id)
         if not close:
-            return jsonify({
-                'status': 'ok',
-                'close': None,
-                'message': 'No session close found'
-            })
-        return jsonify({'status': 'ok', 'close': close})
+            return success(close=None, message='No session close found')
+        return success(close=close)
     except Exception as e:
         logger.error(f"Error getting latest close: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 @session_close_bp.route('/api/session-close/recent')
@@ -84,11 +74,7 @@ def get_recent_closes():
     try:
         days = request.args.get('days', 7, type=int)
         closes = _service.get_recent(days=days)
-        return jsonify({
-            'status': 'ok',
-            'closes': closes,
-            'count': len(closes)
-        })
+        return success(closes=closes, count=len(closes))
     except Exception as e:
         logger.error(f"Error getting recent closes: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))

@@ -7,6 +7,7 @@ import urllib.error
 import json
 
 from flask import Blueprint, jsonify, request
+from shared_lib.flask_helpers import error as api_error
 
 media_reco_bp = Blueprint('media_reco', __name__, url_prefix='/api/media-reco')
 
@@ -27,7 +28,7 @@ def _proxy(path, method="GET", data=None):
         result = json.loads(e.read())
         return jsonify(result), e.code
     except urllib.error.URLError:
-        return jsonify({"status": "error", "message": "Media recommender service unavailable (port 5056)"}), 503
+        return api_error(503, "Media recommender service unavailable (port 5056)")
 
 
 @media_reco_bp.route('/library')

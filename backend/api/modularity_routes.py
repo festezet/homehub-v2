@@ -2,7 +2,8 @@
 Modularity Audit API Routes
 """
 
-from flask import Blueprint, jsonify
+from flask import Blueprint
+from shared_lib.flask_helpers import success, error as api_error
 import logging
 
 modularity_service = None
@@ -23,17 +24,10 @@ def get_audit():
     """Get cached modularity audit results"""
     try:
         results = modularity_service.get_results()
-        return jsonify({
-            'status': 'ok',
-            'results': results,
-            'count': len(results)
-        })
+        return success(results=results, count=len(results))
     except Exception as e:
         logger.error(f"Error getting audit results: {e}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
+        return api_error(500, str(e))
 
 
 @modularity_bp.route('/scan', methods=['POST'])
@@ -41,15 +35,11 @@ def run_scan():
     """Run modularity scan on all projects"""
     try:
         results = modularity_service.scan_all_projects()
-        return jsonify({
-            'status': 'ok',
-            'message': 'Scan complete',
-            'results': results,
-            'count': len(results)
-        })
+        return success(
+            message='Scan complete',
+            results=results,
+            count=len(results)
+        )
     except Exception as e:
         logger.error(f"Error running modularity scan: {e}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
+        return api_error(500, str(e))

@@ -2,7 +2,8 @@
 Internet Links API Routes
 """
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, request
+from shared_lib.flask_helpers import success, error as api_error
 import logging
 
 internet_service = None
@@ -23,14 +24,10 @@ def get_links():
     try:
         categories = internet_service.get_all_links()
         total = sum(len(c['links']) for c in categories)
-        return jsonify({
-            'status': 'ok',
-            'categories': categories,
-            'total_links': total
-        })
+        return success(categories=categories, total_links=total)
     except Exception as e:
         logger.error(f"Error getting links: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 @internet_bp.route('/links', methods=['POST'])
@@ -49,10 +46,7 @@ def create_link():
         data = request.get_json()
 
         if not data.get('name') or not data.get('url'):
-            return jsonify({
-                'status': 'error',
-                'message': 'Missing required fields: name and url'
-            }), 400
+            return api_error(400, 'Missing required fields: name and url')
 
         category = data.get('category', 'tools')
 
@@ -74,21 +68,21 @@ def create_link():
             'position': data.get('position', 0),
         })
 
-        return jsonify({
-            'status': 'ok',
-            'message': f"Link '{data['name']}' created successfully",
-            'id': link_id,
-            'link': {
+        return success(
+            message=f"Link '{data['name']}' created successfully",
+            id=link_id,
+            link={
                 'id': link_id,
                 'name': data['name'],
                 'url': data['url'],
                 'category': category
-            }
-        }), 201
+            },
+            status_code=201
+        )
 
     except Exception as e:
         logger.error(f"Error creating link: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 @internet_bp.route('/links/<int:link_id>', methods=['PUT'])
@@ -97,19 +91,16 @@ def update_link(link_id):
     try:
         data = request.get_json()
         if not data:
-            return jsonify({'status': 'error', 'message': 'No data provided'}), 400
+            return api_error(400, 'No data provided')
 
         internet_service.update_link(link_id, **data)
-        return jsonify({
-            'status': 'ok',
-            'message': f'Link {link_id} updated successfully'
-        })
+        return success(message=f'Link {link_id} updated successfully')
 
     except ValueError as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 400
+        return api_error(400, str(e))
     except Exception as e:
         logger.error(f"Error updating link {link_id}: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 @internet_bp.route('/links/<int:link_id>', methods=['DELETE'])
@@ -117,13 +108,10 @@ def delete_link(link_id):
     """Delete an internet link"""
     try:
         internet_service.delete_link(link_id)
-        return jsonify({
-            'status': 'ok',
-            'message': f'Link {link_id} deleted successfully'
-        })
+        return success(message=f'Link {link_id} deleted successfully')
     except Exception as e:
         logger.error(f"Error deleting link {link_id}: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 @internet_bp.route('/categories', methods=['GET'])
@@ -131,14 +119,10 @@ def get_categories():
     """Get all categories"""
     try:
         cats = internet_service.get_categories()
-        return jsonify({
-            'status': 'ok',
-            'categories': cats,
-            'count': len(cats)
-        })
+        return success(categories=cats, count=len(cats))
     except Exception as e:
         logger.error(f"Error getting categories: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 @internet_bp.route('/categories', methods=['POST'])
@@ -147,10 +131,7 @@ def create_category():
     try:
         data = request.get_json()
         if not data.get('slug') or not data.get('name'):
-            return jsonify({
-                'status': 'error',
-                'message': 'Missing required fields: slug and name'
-            }), 400
+            return api_error(400, 'Missing required fields: slug and name')
 
         cat_id = internet_service.create_category(
             slug=data['slug'],
@@ -159,15 +140,15 @@ def create_category():
             position=data.get('position', 0)
         )
 
-        return jsonify({
-            'status': 'ok',
-            'message': f"Category '{data['name']}' created",
-            'id': cat_id
-        }), 201
+        return success(
+            message=f"Category '{data['name']}' created",
+            id=cat_id,
+            status_code=201
+        )
 
     except Exception as e:
         logger.error(f"Error creating category: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return api_error(500, str(e))
 
 
 @internet_bp.route('/health', methods=['GET'])
@@ -175,9 +156,8 @@ def health():
     """Health check"""
     count = internet_service.get_link_count()
     cats = internet_service.get_categories()
-    return jsonify({
-        'status': 'ok',
-        'service': 'Internet Links API',
-        'links_count': count,
-        'categories_count': len(cats)
-    })
+    return success(
+        service='Internet Links API',
+        links_count=count,
+        categories_count=len(cats)
+    )
