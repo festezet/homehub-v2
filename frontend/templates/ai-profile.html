@@ -1,0 +1,96 @@
+<!-- AI Profile Sub-tabs -->
+<div class="ai-profile-subtabs">
+    <button class="ai-profile-subtab active" data-subtab="drafts"
+            onclick="window.aiProfileModule.switchSubTab('drafts')">
+        Draft Generator
+    </button>
+    <button class="ai-profile-subtab" data-subtab="notifications"
+            onclick="window.aiProfileModule.switchSubTab('notifications')">
+        Notifications
+        <span id="ai-profile-notif-badge" class="ai-profile-badge" style="display:none;">0</span>
+    </button>
+</div>
+
+<!-- Draft Generator Sub-tab -->
+<div class="ai-profile-subtab-content active" id="ai-profile-tab-drafts">
+    <div class="ai-profile-draft-form">
+        <div class="ai-profile-form-row">
+            <label for="ai-profile-contact">Destinataire</label>
+            <select id="ai-profile-contact">
+                <option value="">Chargement...</option>
+            </select>
+        </div>
+        <div id="ai-profile-contact-info" class="ai-profile-contact-info" style="display:none;">
+            <span id="ai-profile-contact-lang" class="ai-profile-tag"></span>
+            <span id="ai-profile-contact-account" class="ai-profile-tag"></span>
+            <span id="ai-profile-contact-count" class="ai-profile-tag"></span>
+        </div>
+        <div class="ai-profile-form-row">
+            <label for="ai-profile-subject">Sujet</label>
+            <input type="text" id="ai-profile-subject" placeholder="Ex: Status update, Rendez-vous...">
+        </div>
+        <div class="ai-profile-form-row">
+            <label for="ai-profile-context">Contexte / intention</label>
+            <textarea id="ai-profile-context" rows="3"
+                      placeholder="Ex: Proposer un rdv la semaine prochaine pour discuter du projet"></textarea>
+        </div>
+        <div class="ai-profile-form-actions">
+            <button id="ai-profile-btn-generate" class="ai-profile-btn-primary"
+                    onclick="window.aiProfileModule.generateDraft()">
+                Generer le brouillon
+            </button>
+        </div>
+    </div>
+
+    <div id="ai-profile-draft-result" class="ai-profile-draft-result" style="display:none;">
+        <div class="ai-profile-draft-header">
+            <h3>Brouillon genere</h3>
+            <div class="ai-profile-draft-meta">
+                <span id="ai-profile-draft-lang" class="ai-profile-tag"></span>
+                <span id="ai-profile-draft-examples" class="ai-profile-tag"></span>
+                <span id="ai-profile-draft-tokens" class="ai-profile-tag"></span>
+            </div>
+        </div>
+        <pre id="ai-profile-draft-text" class="ai-profile-draft-text"></pre>
+        <div class="ai-profile-draft-actions">
+            <button class="ai-profile-btn-secondary"
+                    onclick="window.aiProfileModule.copyDraft()">
+                Copier
+            </button>
+            <button class="ai-profile-btn-secondary"
+                    onclick="window.aiProfileModule.generateDraft()">
+                Regenerer
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Notifications Sub-tab -->
+<div class="ai-profile-subtab-content" id="ai-profile-tab-notifications">
+    <div class="ai-profile-notif-toolbar">
+        <div class="ai-profile-notif-filters">
+            <select id="ai-profile-notif-source" onchange="window.aiProfileModule.loadNotifications()">
+                <option value="">Toutes les sources</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="linkedin">LinkedIn</option>
+                <option value="gmail">Gmail</option>
+                <option value="hostinger">Hostinger</option>
+            </select>
+            <select id="ai-profile-notif-status" onchange="window.aiProfileModule.loadNotifications()">
+                <option value="new">Non lues</option>
+                <option value="">Toutes</option>
+                <option value="read">Lues</option>
+            </select>
+        </div>
+        <div class="ai-profile-notif-actions">
+            <span id="ai-profile-notif-count" class="ai-profile-notif-count"></span>
+            <button class="ai-profile-btn-secondary"
+                    onclick="window.aiProfileModule.triggerScan()">
+                Scanner
+            </button>
+        </div>
+    </div>
+    <div id="ai-profile-notif-list" class="ai-profile-notif-list">
+        <div class="ai-profile-loading">Chargement des notifications...</div>
+    </div>
+</div>

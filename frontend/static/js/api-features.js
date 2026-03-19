@@ -196,3 +196,49 @@ API.modularity = {
         });
     }
 };
+
+/**
+ * AI Profile API methods (drafts + notifications)
+ */
+API.aiProfile = {
+    async getContacts() {
+        return await API.fetch(`${API.BASE_URL}/ai-profile/drafts/contacts`);
+    },
+
+    async getContactContext(contactId) {
+        return await API.fetch(`${API.BASE_URL}/ai-profile/drafts/contacts/${contactId}/context`);
+    },
+
+    async generateDraft(data) {
+        return await API.fetch(`${API.BASE_URL}/ai-profile/drafts/generate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    },
+
+    async getNotifications(params = '') {
+        const url = params
+            ? `${API.BASE_URL}/ai-profile/notifications?${params}`
+            : `${API.BASE_URL}/ai-profile/notifications`;
+        return await API.fetch(url);
+    },
+
+    async getNotificationStats() {
+        return await API.fetch(`${API.BASE_URL}/ai-profile/notifications/stats`);
+    },
+
+    async markAsRead(id) {
+        return await API.fetch(`${API.BASE_URL}/ai-profile/notifications/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'read' })
+        });
+    },
+
+    async triggerScan() {
+        return await API.fetch(`${API.BASE_URL}/ai-profile/notifications/scan`, {
+            method: 'POST'
+        });
+    }
+};

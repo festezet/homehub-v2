@@ -45,6 +45,7 @@ from api.activity_routes import activity_bp, init_activity_routes
 from api.thread_digest_routes import thread_digest_bp, init_thread_digest_routes
 from api.modularity_routes import modularity_bp, init_modularity_routes
 from api.media_recommender_routes import media_reco_bp
+from api.ai_profile_routes import ai_profile_bp
 
 # Configure logging
 logging.basicConfig(
@@ -85,6 +86,7 @@ app.register_blueprint(activity_bp)
 app.register_blueprint(thread_digest_bp)
 app.register_blueprint(modularity_bp)
 app.register_blueprint(media_reco_bp)
+app.register_blueprint(ai_profile_bp)
 
 # ============================================
 # ROUTES - Pages

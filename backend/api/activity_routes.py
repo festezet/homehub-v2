@@ -111,6 +111,22 @@ def get_recent_sessions():
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
+@activity_bp.route('/api/activity/top-projects')
+def get_top_projects():
+    """Get most active projects ranked by frequency * recency"""
+    try:
+        limit = request.args.get('limit', 10, type=int)
+        projects = _service.get_top_projects(limit=limit)
+        return jsonify({
+            'status': 'ok',
+            'projects': projects,
+            'count': len(projects)
+        })
+    except Exception as e:
+        logger.error(f"Error getting top projects: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
 @activity_bp.route('/api/activity/stats')
 def get_stats():
     """Get activity statistics"""

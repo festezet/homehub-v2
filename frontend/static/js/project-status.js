@@ -92,9 +92,18 @@ class ProjectStatusModule {
             console.log('Recent activity not available');
         }
 
+        let topProjects = [];
+        try {
+            const response = await API.activity.getTopProjects(10);
+            topProjects = response.projects || [];
+        } catch (e) {
+            console.log('Top projects not available');
+        }
+
         const thisWeek = stats.by_week.length > 0 ? stats.by_week[0].count : 0;
 
         content.innerHTML = this._renderOverviewStats(stats, thisWeek)
+                          + this._renderOverviewTopProjects(topProjects)
                           + this._renderOverviewProjectsTable()
                           + this._renderOverviewRecentActivity(recentActivity);
 
@@ -121,6 +130,71 @@ class ProjectStatusModule {
                     <div class="ps-stat-label">Derniere activite</div>
                 </div>
             </div>`;
+    }
+
+    _renderOverviewTopProjects(topProjects) {
+        if (topProjects.length === 0) return '';
+
+        const rows = topProjects.map((p, index) => {
+            const rank = index + 1;
+            const medal = rank <= 3 ? ['&#129351;', '&#129352;', '&#129353;'][rank - 1] : `<span style="color:#9ca3af;">${rank}</span>`;
+            const statusClass = p.status === 'active' ? 'ok' : (p.status === 'archived' ? 'stopped' : 'warning');
+            const daysLabel = p.days_ago === 0 ? "aujourd'hui" : (p.days_ago === 1 ? 'hier' : `il y a ${p.days_ago}j`);
+
+            const barWidth = topProjects[0].score > 0 ? Math.round((p.score / topProjects[0].score) * 100) : 0;
+
+            return `
+            <tr>
+                <td style="text-align:center; font-size:1.1rem;">${medal}</td>
+                <td><span class="id-badge">${p.project_id}</span></td>
+                <td>${this._escapeHtml(p.name)}</td>
+                <td style="text-align:center;"><span class="status-badge status-${statusClass}">${p.status}</span></td>
+                <td style="text-align:center;">${p.activity_count}</td>
+                <td style="text-align:center; color:#9ca3af; font-size:0.85rem;">${daysLabel}</td>
+                <td>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div style="flex:1; background:#e5e7eb; border-radius:4px; height:8px; overflow:hidden;">
+                            <div style="width:${barWidth}%; height:100%; background:linear-gradient(90deg, #667eea, #764ba2); border-radius:4px;"></div>
+                        </div>
+                        <span style="font-size:0.8rem; color:#e5e7eb; font-weight:600; min-width:32px;">${p.score}</span>
+                    </div>
+                </td>
+                <td style="text-align:center;">
+                    <button class="detail-btn" onclick="window.projectsListModule.showDetail('${p.project_id}')" title="Voir details">i</button>
+                </td>
+            </tr>`;
+        }).join('');
+
+        return `
+            <div class="projects-list-container" style="margin-bottom: 24px;">
+                <div class="section-header">
+                    <h3>Projets les plus actifs (90 jours)</h3>
+                </div>
+                <div class="table-container">
+                    <table class="projects-table">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;">#</th>
+                                <th class="col-id">ID</th>
+                                <th>Projet</th>
+                                <th class="col-status">Status</th>
+                                <th style="text-align:center; width:70px;">Sessions</th>
+                                <th style="text-align:center; width:100px;">Derniere</th>
+                                <th style="width:180px;">Score</th>
+                                <th style="width:40px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            </div>`;
+    }
+
+    _escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     _renderOverviewProjectsTable() {

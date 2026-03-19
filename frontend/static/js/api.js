@@ -147,6 +147,10 @@ const API = {
             return await API.fetch(`${API.BASE_URL}/projects/recent-sessions?limit=${limit}`);
         },
 
+        async getTopProjects(limit = 10) {
+            return await API.fetch(`${API.BASE_URL}/activity/top-projects?limit=${limit}`);
+        },
+
         async log(data) {
             return await API.fetch(`${API.BASE_URL}/activity/log`, {
                 method: 'POST',

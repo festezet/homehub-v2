@@ -302,6 +302,56 @@ class ActivityService:
             cleaned.pop()
         return '\n'.join(cleaned)
 
+    def get_top_projects(self, limit=10):
+        """Get most active projects scored by per-activity recency weighting.
+
+        Each activity contributes 1/(1 + days_ago/14) to the score,
+        so recent activities weigh heavily while old ones fade out.
+        """
+        try:
+            conn = self._get_connection()
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                SELECT
+                    m.project_id,
+                    p.name as project_name,
+                    p.status,
+                    p.description,
+                    COUNT(*) as activity_count,
+                    MAX(m.date) as last_activity,
+                    CAST(julianday('now') - julianday(MAX(m.date)) AS INTEGER) as days_ago,
+                    ROUND(SUM(1.0 / (1.0 + (julianday('now') - julianday(m.date)) / 14.0)), 1) as score
+                FROM project_milestones m
+                LEFT JOIN projects p ON m.project_id = p.unique_id
+                WHERE m.date >= date('now', '-90 days')
+                  AND (p.status IS NULL OR p.status != 'archived')
+                GROUP BY m.project_id
+                ORDER BY score DESC
+                LIMIT ?
+            """, (limit,))
+
+            results = []
+            for row in cursor.fetchall():
+                results.append({
+                    'project_id': row['project_id'],
+                    'name': row['project_name'] or row['project_id'],
+                    'status': row['status'] or 'unknown',
+                    'description': row['description'] or '',
+                    'activity_count': row['activity_count'],
+                    'last_activity': row['last_activity'],
+                    'days_ago': row['days_ago'] or 0,
+                    'score': row['score'] or 0
+                })
+
+            conn.close()
+            return results
+
+        except Exception as e:
+            logger.error(f"Error getting top projects: {e}")
+            return []
+
     def get_activity_stats(self):
         """Get activity statistics: counts by type and by week"""
         try:

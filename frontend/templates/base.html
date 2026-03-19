@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/formation.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/prompting-disciplines.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/media-recommender.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/ai-profile.css') }}">
 
     {% block extra_css %}{% endblock %}
 </head>
@@ -99,6 +100,12 @@
                     <a href="#local-apps">
                         <span class="icon">📱</span>
                         <span class="label">Applications Locales</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="ai-profile">
+                    <a href="#ai-profile">
+                        <span class="icon">🤖</span>
+                        <span class="label">AI Profile</span>
                     </a>
                 </li>
             </div>
@@ -237,6 +244,11 @@
                 {% include 'services-ports.html' %}
             </div>
 
+            <!-- AI Profile Tab -->
+            <div id="ai-profile-page" class="page-content" style="display: none;">
+                {% include 'ai-profile.html' %}
+            </div>
+
             <!-- Prompting Disciplines Tab -->
             <div id="prompting-disciplines-page" class="page-content" style="display: none;">
                 {% include 'prompting-disciplines.html' %}
@@ -271,6 +283,7 @@
     <script type="module" src="{{ url_for('static', filename='js/specs.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/project-status.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/media-recommender.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/ai-profile.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/app.js') }}"></script>
 
     <!-- Modern Navigation Script -->
@@ -296,6 +309,7 @@
                 'system-monitor': { title: 'System Monitor', subtitle: 'CPU / GPU / RAM / Stockage' },
                 'project-status': { title: 'Project Status', subtitle: 'Vue unifiee des projets et activites' },
                 'services-ports': { title: 'Services & Ports', subtitle: 'Registre central des ports reseau' },
+                'ai-profile': { title: 'AI Profile', subtitle: 'Draft emails & notifications' },
                 'prompting-disciplines': { title: 'Prompting Disciplines', subtitle: 'Framework d\'optimisation Claude Code' }
             };
 
