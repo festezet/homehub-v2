@@ -68,6 +68,26 @@ def get_latest_close(project_id):
         return api_error(500, str(e))
 
 
+@session_close_bp.route('/api/session-close/search')
+def search_session_closes():
+    """Full-text search in session closes using FTS5"""
+    try:
+        query = request.args.get('q', '').strip()
+        if not query:
+            return api_error(400, 'q parameter is required')
+
+        project_id = request.args.get('project_id')
+        category = request.args.get('category')
+        limit = request.args.get('limit', 20, type=int)
+
+        results = _service.search(query, project_id=project_id,
+                                  category=category, limit=limit)
+        return success(results=results, count=len(results), query=query)
+    except Exception as e:
+        logger.error(f"Error searching session closes: {e}")
+        return api_error(500, str(e))
+
+
 @session_close_bp.route('/api/session-close/recent')
 def get_recent_closes():
     """Get session closes from the last N days"""

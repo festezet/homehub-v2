@@ -157,6 +157,54 @@ class SessionCloseService:
         finally:
             conn.close()
 
+    def search(self, query, project_id=None, category=None, limit=20):
+        """Full-text search in session_close using FTS5 index."""
+        conn = self._get_connection()
+        try:
+            sql = """
+                SELECT sc.id, sc.project_id, sc.session_date, sc.session_doc,
+                       sc.summary, sc.category, sc.duration_minutes,
+                       sc.decisions, sc.next_steps, sc.created_at,
+                       p.name as project_name,
+                       snippet(session_close_fts, 1, '<b>', '</b>', '...', 40) as snippet,
+                       fts.rank
+                FROM session_close_fts fts
+                JOIN session_close sc ON sc.id = fts.rowid
+                LEFT JOIN projects p ON sc.project_id = p.unique_id
+                WHERE session_close_fts MATCH ?
+            """
+            params = [query]
+
+            if project_id:
+                sql += " AND sc.project_id = ?"
+                params.append(project_id)
+            if category:
+                sql += " AND sc.category = ?"
+                params.append(category)
+
+            sql += " ORDER BY fts.rank LIMIT ?"
+            params.append(limit)
+
+            cursor = conn.cursor()
+            cursor.execute(sql, params)
+            results = []
+            for row in cursor.fetchall():
+                d = dict(row)
+                d['score'] = round(abs(d.pop('rank')), 2)
+                for field in ('decisions', 'next_steps'):
+                    val = d.get(field)
+                    if val:
+                        try:
+                            d[field] = json.loads(val)
+                        except (json.JSONDecodeError, TypeError):
+                            d[field] = []
+                    else:
+                        d[field] = []
+                results.append(d)
+            return results
+        finally:
+            conn.close()
+
     def get_recent(self, days=7):
         """Get session closes from the last N days."""
         conn = self._get_connection()

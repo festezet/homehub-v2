@@ -8,6 +8,9 @@
         <button class="formation-subtab" data-subtab="skool" onclick="window.formationModule.switchSubTab('skool')">
             Contenu Skool
         </button>
+        <button class="formation-subtab" data-subtab="apercu" onclick="window.formationModule.switchSubTab('apercu')">
+            Apercu Skool
+        </button>
     </div>
 
     <!-- Sub-tab: Plan d'action -->
@@ -41,5 +44,21 @@
         </div>
         <div class="skool-week-tabs" id="skool-week-tabs"></div>
         <div class="skool-videos" id="skool-videos"></div>
+    </div>
+
+    <!-- Sub-tab: Apercu Skool -->
+    <div class="formation-subtab-content" id="formation-tab-apercu">
+        <div class="apercu-layout">
+            <aside class="apercu-sidebar" id="apercu-sidebar">
+                <div class="loading-state">
+                    <p>Chargement...</p>
+                </div>
+            </aside>
+            <main class="apercu-main" id="apercu-main">
+                <div class="apercu-placeholder">
+                    <p>Selectionnez une lecon dans la sidebar</p>
+                </div>
+            </main>
+        </div>
     </div>
 </div>

@@ -33,6 +33,14 @@ API.formation = {
 
     async getContent() {
         return await API.fetch(`${API.BASE_URL}/formation/content`);
+    },
+
+    async getTranscript(week, video) {
+        return await API.fetch(`${API.BASE_URL}/formation/transcript/${week}/${video}`);
+    },
+
+    getMediaUrl(filepath) {
+        return `${API.BASE_URL}/formation/media/${filepath}`;
     }
 };
 

@@ -4,13 +4,15 @@ Formation API Routes - Plan d'action DeepSignal V1
 
 import json
 import os
-from flask import Blueprint, request
+from flask import Blueprint, request, send_from_directory
 from shared_lib.flask_helpers import success, error as api_error
 
 formation_bp = Blueprint('formation', __name__, url_prefix='/api/formation')
 
 formation_service = None
 FORMATION_JSON_PATH = '/data/media/skool-formation/data/formation.json'
+TRANSCRIPTIONS_DIR = '/data/media/skool-formation/transcriptions'
+GENERATED_MEDIA_DIR = '/data/media/skool-formation/generated'
 
 
 def init_formation_routes(service):
@@ -83,5 +85,35 @@ def get_content():
             formation=data.get("formation", {}),
             weeks=data.get("weeks", [])
         )
+    except Exception as e:
+        return api_error(500, str(e))
+
+
+@formation_bp.route('/transcript/<int:week>/<int:video>', methods=['GET'])
+def get_transcript(week, video):
+    """Get transcript text for a specific video"""
+    try:
+        prefix = f'S{week}_{video:02d}_'
+        for fname in os.listdir(TRANSCRIPTIONS_DIR):
+            if fname.startswith(prefix) and fname.endswith('.txt'):
+                fpath = os.path.join(TRANSCRIPTIONS_DIR, fname)
+                with open(fpath, 'r', encoding='utf-8') as f:
+                    text = f.read()
+                return success(transcript=text, filename=fname)
+        return api_error(404, f'No transcript found for S{week} V{video}')
+    except Exception as e:
+        return api_error(500, str(e))
+
+
+@formation_bp.route('/media/<path:filepath>', methods=['GET'])
+def serve_media(filepath):
+    """Serve generated media files (avatar videos, images)"""
+    try:
+        full_path = os.path.join(GENERATED_MEDIA_DIR, filepath)
+        if not os.path.isfile(full_path):
+            return api_error(404, 'Media file not found')
+        directory = os.path.dirname(full_path)
+        filename = os.path.basename(full_path)
+        return send_from_directory(directory, filename)
     except Exception as e:
         return api_error(500, str(e))

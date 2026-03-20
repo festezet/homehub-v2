@@ -14,6 +14,11 @@ class FormationModule {
         this.skoolLoaded = false;
         this.currentWeek = 0;
         this.expandedVideos = new Set();
+        // Apercu state
+        this.apercuLoaded = false;
+        this.apercuWeek = 0;
+        this.apercuActiveLesson = null;
+        this.apercuContentTab = 'description';
     }
 
     async load() {
@@ -41,6 +46,9 @@ class FormationModule {
 
         if (tabName === 'skool' && !this.skoolLoaded) {
             this.loadSkoolContent();
+        }
+        if (tabName === 'apercu' && !this.apercuLoaded) {
+            this.loadApercuContent();
         }
     }
 
@@ -195,6 +203,188 @@ class FormationModule {
             return hostname.split('.')[0];
         } catch {
             return 'Lien';
+        }
+    }
+
+    async loadApercuContent() {
+        try {
+            if (!this.skoolData) {
+                const data = await API.formation.getContent();
+                if (data.ok) {
+                    this.skoolData = { formation: data.formation, weeks: data.weeks };
+                    this.skoolLoaded = true;
+                }
+            }
+            this.apercuLoaded = true;
+            this.apercuWeek = 0;
+            this.renderApercuSidebar();
+        } catch (error) {
+            document.getElementById('apercu-sidebar').innerHTML =
+                '<p style="color: #ef4444; padding: 20px;">Erreur de chargement</p>';
+        }
+    }
+
+    renderApercuSidebar() {
+        const sidebar = document.getElementById('apercu-sidebar');
+        if (!sidebar || !this.skoolData) return;
+
+        const weeks = this.skoolData.weeks;
+        const week = weeks[this.apercuWeek];
+        if (!week) return;
+
+        const weekOptions = weeks.map((w, i) =>
+            `<option value="${i}" ${i === this.apercuWeek ? 'selected' : ''}>S${w.number} - ${w.title}</option>`
+        ).join('');
+
+        const lessons = week.videos.filter(v => v.type !== 'replay' && v.type !== 'resources' && v.type !== 'checklist');
+
+        const lessonItems = lessons.map((v, idx) => {
+            const realIdx = week.videos.indexOf(v);
+            const isActive = this.apercuActiveLesson === realIdx;
+            const statusClass = (v.status || '').replace(/\s/g, '_');
+            return `
+                <li class="apercu-lesson-item ${isActive ? 'active' : ''}"
+                    onclick="window.formationModule.selectLesson(${realIdx})">
+                    <span class="apercu-lesson-num">${v.order || idx + 1}</span>
+                    <span class="apercu-lesson-title">${v.title}</span>
+                    ${statusClass ? `<span class="apercu-lesson-status ${statusClass}">${statusClass === 'transcribed' ? 'T' : 'S'}</span>` : ''}
+                </li>
+            `;
+        }).join('');
+
+        sidebar.innerHTML = `
+            <div class="apercu-sidebar-header">
+                <h3>${this.skoolData.formation.name || 'Micro-SaaS Studio 05'}</h3>
+                <span class="apercu-week-info">${lessons.length} lecons</span>
+                <select class="apercu-week-select" onchange="window.formationModule.switchApercuWeek(parseInt(this.value))">
+                    ${weekOptions}
+                </select>
+            </div>
+            <ul class="apercu-lesson-list">${lessonItems}</ul>
+        `;
+
+        if (this.apercuActiveLesson === null && lessons.length > 0) {
+            this.selectLesson(week.videos.indexOf(lessons[0]));
+        }
+    }
+
+    switchApercuWeek(weekIdx) {
+        this.apercuWeek = weekIdx;
+        this.apercuActiveLesson = null;
+        this.renderApercuSidebar();
+    }
+
+    selectLesson(videoIdx) {
+        this.apercuActiveLesson = videoIdx;
+        this.apercuContentTab = 'description';
+        // Update sidebar active state
+        document.querySelectorAll('.apercu-lesson-item').forEach(el => el.classList.remove('active'));
+        const items = document.querySelectorAll('.apercu-lesson-item');
+        items.forEach(el => {
+            if (el.onclick && el.onclick.toString().includes(videoIdx)) {
+                el.classList.add('active');
+            }
+        });
+        this.renderApercuSidebar();
+        this.renderLessonDetail();
+    }
+
+    renderLessonDetail() {
+        const main = document.getElementById('apercu-main');
+        if (!main || !this.skoolData) return;
+
+        const week = this.skoolData.weeks[this.apercuWeek];
+        if (!week) return;
+
+        const video = week.videos[this.apercuActiveLesson];
+        if (!video) return;
+
+        const weekNum = week.number;
+        const videoOrder = video.order || (this.apercuActiveLesson + 1);
+        const mediaPath = `S${weekNum}/S${weekNum}_${String(videoOrder).padStart(2, '0')}_avatar.mp4`;
+        const mediaUrl = API.formation.getMediaUrl(mediaPath);
+
+        const resourcesHtml = (video.skool_links && video.skool_links.length > 0)
+            ? `<div class="apercu-resources">${video.skool_links.map(link =>
+                `<a href="${link.url}" target="_blank" class="apercu-resource-link">${link.label || this._resourceLabel(link.url)}</a>`
+              ).join('')}</div>`
+            : (video.resources && video.resources.length > 0)
+                ? `<div class="apercu-resources">${video.resources.map(url =>
+                    `<a href="${url}" target="_blank" class="apercu-resource-link">${this._resourceLabel(url)}</a>`
+                  ).join('')}</div>`
+                : '';
+
+        const descText = video.description || 'Pas de description disponible.';
+
+        main.innerHTML = `
+            <div class="apercu-video-container">
+                <video controls src="${mediaUrl}" preload="metadata">
+                    <p class="apercu-no-video">Video non disponible</p>
+                </video>
+            </div>
+            <div class="apercu-content">
+                <h2>${video.title}</h2>
+                <div class="apercu-content-tabs">
+                    <button class="apercu-content-tab active" onclick="window.formationModule.switchContentTab('description')">Description</button>
+                    <button class="apercu-content-tab" onclick="window.formationModule.switchContentTab('transcript')">Transcript</button>
+                </div>
+                <div class="apercu-tab-panel active" id="apercu-panel-description">
+                    <div class="apercu-description">${descText}</div>
+                    ${resourcesHtml}
+                </div>
+                <div class="apercu-tab-panel" id="apercu-panel-transcript">
+                    <div class="apercu-transcript-loading">Chargement du transcript...</div>
+                </div>
+            </div>
+        `;
+
+        // Handle video error (file not yet generated)
+        const videoEl = main.querySelector('video');
+        videoEl.addEventListener('error', () => {
+            videoEl.parentElement.innerHTML = `
+                <div class="apercu-no-video">
+                    <span class="play-icon">&#9654;</span>
+                    <span>Video en cours de generation...</span>
+                </div>
+            `;
+        });
+    }
+
+    switchContentTab(tabName) {
+        this.apercuContentTab = tabName;
+        document.querySelectorAll('.apercu-content-tab').forEach(btn => {
+            btn.classList.toggle('active', btn.textContent.trim().toLowerCase() === tabName);
+        });
+        document.querySelectorAll('.apercu-tab-panel').forEach(panel => {
+            panel.classList.toggle('active', panel.id === 'apercu-panel-' + tabName);
+        });
+
+        if (tabName === 'transcript') {
+            this.loadTranscript();
+        }
+    }
+
+    async loadTranscript() {
+        const panel = document.getElementById('apercu-panel-transcript');
+        if (!panel || !this.skoolData) return;
+
+        const week = this.skoolData.weeks[this.apercuWeek];
+        if (!week) return;
+        const video = week.videos[this.apercuActiveLesson];
+        if (!video) return;
+
+        const weekNum = week.number;
+        const videoOrder = video.order || (this.apercuActiveLesson + 1);
+
+        try {
+            const data = await API.formation.getTranscript(weekNum, videoOrder);
+            if (data.ok && data.transcript) {
+                panel.innerHTML = `<div class="apercu-transcript">${data.transcript}</div>`;
+            } else {
+                panel.innerHTML = '<div class="apercu-transcript">Transcript non disponible pour cette lecon.</div>';
+            }
+        } catch {
+            panel.innerHTML = '<div class="apercu-transcript">Erreur de chargement du transcript.</div>';
         }
     }
 
