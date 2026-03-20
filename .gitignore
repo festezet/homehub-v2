@@ -43,3 +43,12 @@ Thumbs.db
 # Backups
 .backups/
 *.backup-*
+
+# Node
+node_modules/
+
+# Environment
+.env
+
+# Python packaging
+*.egg-info/

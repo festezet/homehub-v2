@@ -87,6 +87,23 @@ Total estimé : ~4500 lignes réparties en ~25 fichiers (< 500 lignes chacun)
 - [ ] Phase 4 : Modèles SQLAlchemy
 - [ ] Phase 5 : Services métier
 
+## Installation
+
+```bash
+git clone <repo-url> /data/projects/homehub-v2
+cd /data/projects/homehub-v2
+pip install -r requirements.txt
+```
+
+## Usage
+
+```bash
+cd /data/projects/homehub-v2
+bash start.sh
+```
+
+L'application est accessible sur http://localhost:5000.
+
 ## 🚀 Démarrage
 
 ### Lancer l'application

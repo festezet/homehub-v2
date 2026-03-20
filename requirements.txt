@@ -12,3 +12,6 @@ google-api-python-client>=2.108.0
 
 # Shared lib (Google OAuth, etc.)
 -e /data/projects/shared-lib
+
+# Testing
+pytest>=8.0.0

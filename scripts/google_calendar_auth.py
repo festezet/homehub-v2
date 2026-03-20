@@ -43,7 +43,7 @@ def main():
     else:
         if not os.path.exists(CLIENT_SECRET_PATH):
             print(f"ERROR: client_secret.json not found at {CLIENT_SECRET_PATH}")
-            sys.exit(1)
+            raise SystemExit(1)
 
         print("Opening browser for Google Calendar authorization...")
         print(f"Scopes: {SCOPES}")
