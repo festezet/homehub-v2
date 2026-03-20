@@ -332,47 +332,56 @@ class SpecsService:
 
     def _count_deps(self, project_path):
         count = 0
+        count += self._count_python_deps(project_path)
+        count += self._count_node_deps(project_path)
+        count += self._count_flutter_deps(project_path)
+        return count
 
-        # Python requirements.txt
+    def _count_python_deps(self, project_path):
+        """Count dependencies from requirements.txt."""
         req_path = os.path.join(project_path, 'requirements.txt')
-        if os.path.exists(req_path):
-            try:
-                with open(req_path, 'r') as f:
-                    count += sum(1 for line in f if line.strip() and not line.startswith('#') and not line.startswith('-'))
-            except Exception:
-                pass
+        if not os.path.exists(req_path):
+            return 0
+        try:
+            with open(req_path, 'r') as f:
+                return sum(1 for line in f if line.strip() and not line.startswith('#') and not line.startswith('-'))
+        except Exception:
+            return 0
 
-        # Node package.json
+    def _count_node_deps(self, project_path):
+        """Count dependencies from package.json."""
         pkg_path = os.path.join(project_path, 'package.json')
-        if os.path.exists(pkg_path):
-            try:
-                with open(pkg_path, 'r') as f:
-                    pkg = json.load(f)
-                count += len(pkg.get('dependencies', {}))
-                count += len(pkg.get('devDependencies', {}))
-            except Exception:
-                pass
+        if not os.path.exists(pkg_path):
+            return 0
+        try:
+            with open(pkg_path, 'r') as f:
+                pkg = json.load(f)
+            return len(pkg.get('dependencies', {})) + len(pkg.get('devDependencies', {}))
+        except Exception:
+            return 0
 
-        # Flutter pubspec.yaml (simple line counting)
+    def _count_flutter_deps(self, project_path):
+        """Count dependencies from pubspec.yaml."""
         pubspec_path = os.path.join(project_path, 'pubspec.yaml')
-        if os.path.exists(pubspec_path):
-            try:
-                with open(pubspec_path, 'r') as f:
-                    in_deps = False
-                    for line in f:
-                        stripped = line.strip()
-                        if stripped in ('dependencies:', 'dev_dependencies:'):
-                            in_deps = True
-                            continue
-                        if in_deps:
-                            if (line.startswith('  ') or line.startswith('\t')) and ':' in stripped and not stripped.startswith('#'):
-                                if stripped != 'flutter:' and not stripped.startswith('sdk:'):
-                                    count += 1
-                            elif stripped and not stripped.startswith('#'):
-                                in_deps = False
-            except Exception:
-                pass
-
+        if not os.path.exists(pubspec_path):
+            return 0
+        count = 0
+        try:
+            with open(pubspec_path, 'r') as f:
+                in_deps = False
+                for line in f:
+                    stripped = line.strip()
+                    if stripped in ('dependencies:', 'dev_dependencies:'):
+                        in_deps = True
+                        continue
+                    if in_deps:
+                        if (line.startswith('  ') or line.startswith('\t')) and ':' in stripped and not stripped.startswith('#'):
+                            if stripped != 'flutter:' and not stripped.startswith('sdk:'):
+                                count += 1
+                        elif stripped and not stripped.startswith('#'):
+                            in_deps = False
+        except Exception:
+            pass
         return count
 
     def _last_commit(self, project_path):

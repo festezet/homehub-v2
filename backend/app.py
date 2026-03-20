@@ -173,9 +173,7 @@ def get_applications():
     return success(apps=apps, count=len(apps))
 
 def extract_description_from_readme(project_path):
-    """Extract description from README.md (first 15 lines)"""
-    import re
-
+    """Extract description from README.md (first 20 lines)"""
     readme_path = os.path.join(project_path, 'README.md')
     if not os.path.exists(readme_path):
         return None
@@ -185,50 +183,54 @@ def extract_description_from_readme(project_path):
             content = f.read()
             lines = content.split('\n')[:20]
 
-        description = None
+        description = _find_description_section(lines) or _find_description_after_h1(lines)
 
-        # Stratégie 1: Chercher section "## Description" ou "## 📝 Description"
-        for i, line in enumerate(lines):
-            if '## ' in line and 'description' in line.lower():
-                # Prendre la ligne suivante non vide
-                for j in range(i + 1, min(i + 5, len(lines))):
-                    candidate = lines[j].strip()
-                    if candidate and not candidate.startswith('#') and not candidate.startswith('*') and len(candidate) > 15:
-                        description = candidate
-                        break
-                break
-
-        # Stratégie 2: Ligne juste après le titre H1 (si pas de section Description)
-        if not description:
-            for i, line in enumerate(lines):
-                if line.startswith('# ') and i + 1 < len(lines):
-                    # Chercher première ligne de texte après le titre
-                    for j in range(i + 1, min(i + 6, len(lines))):
-                        candidate = lines[j].strip()
-                        # Ignorer métadonnées, lignes vides, badges, sous-titres
-                        if not candidate or candidate.startswith('#') or candidate.startswith('**') or candidate.startswith('[') or candidate.startswith('!') or candidate.startswith('-'):
-                            continue
-                        if len(candidate) > 20:
-                            description = candidate
-                            break
-                    break
-
-        # Nettoyer
         if description:
-            # Retirer markdown
-            description = re.sub(r'\*\*([^*]+)\*\*', r'\1', description)
-            description = re.sub(r'\*([^*]+)\*', r'\1', description)
-            description = re.sub(r'`([^`]+)`', r'\1', description)
-            description = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', description)
-            # Tronquer à 120 caractères
-            if len(description) > 120:
-                description = description[:117] + '...'
-            return description
+            return _clean_markdown_description(description)
 
     except Exception as e:
         logger.debug(f"Could not read README for {project_path}: {e}")
 
     return None
+
+
+def _find_description_section(lines):
+    """Find description in a ## Description section."""
+    for i, line in enumerate(lines):
+        if '## ' in line and 'description' in line.lower():
+            for j in range(i + 1, min(i + 5, len(lines))):
+                candidate = lines[j].strip()
+                if candidate and not candidate.startswith('#') and not candidate.startswith('*') and len(candidate) > 15:
+                    return candidate
+            break
+    return None
+
+
+def _find_description_after_h1(lines):
+    """Find description as first text line after H1 title."""
+    skip_prefixes = ('#', '**', '[', '!', '-')
+    for i, line in enumerate(lines):
+        if line.startswith('# ') and i + 1 < len(lines):
+            for j in range(i + 1, min(i + 6, len(lines))):
+                candidate = lines[j].strip()
+                if not candidate or candidate.startswith(skip_prefixes):
+                    continue
+                if len(candidate) > 20:
+                    return candidate
+            break
+    return None
+
+
+def _clean_markdown_description(description):
+    """Remove markdown formatting and truncate."""
+    import re
+    description = re.sub(r'\*\*([^*]+)\*\*', r'\1', description)
+    description = re.sub(r'\*([^*]+)\*', r'\1', description)
+    description = re.sub(r'`([^`]+)`', r'\1', description)
+    description = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', description)
+    if len(description) > 120:
+        description = description[:117] + '...'
+    return description
 
 def _row_to_project(row):
     """Convert a DB row to a project dict"""
