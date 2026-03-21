@@ -37,6 +37,8 @@ from services.modularity_service import modularity_service
 from services.claude_skills_service import ClaudeSkillsService
 from services.session_close_service import session_close_service
 from services.project_actions_service import project_actions_service
+from services.linkedin_service import linkedin_service
+from services.claude_session_service import claude_session_service
 # media_recommender_service removed — proxied to standalone project (port 5056)
 
 # Import API routes
@@ -55,6 +57,8 @@ from api.session_close_routes import session_close_bp, init_session_close_routes
 from api.project_actions_routes import project_actions_bp, init_project_actions_routes
 from api.media_recommender_routes import media_reco_bp
 from api.ai_profile_routes import ai_profile_bp
+from api.linkedin_routes import linkedin_bp, init_linkedin_routes
+from api.claude_session_routes import claude_session_bp, init_claude_session_routes
 
 # Configure logging
 logging.basicConfig(
@@ -89,6 +93,8 @@ init_modularity_routes(modularity_service)
 init_claude_skills_routes(ClaudeSkillsService())
 init_session_close_routes(session_close_service)
 init_project_actions_routes(project_actions_service)
+init_linkedin_routes(linkedin_service)
+init_claude_session_routes(claude_session_service)
 # media_reco routes are now a proxy — no init needed
 
 # Register blueprints
@@ -107,6 +113,8 @@ app.register_blueprint(session_close_bp)
 app.register_blueprint(project_actions_bp)
 app.register_blueprint(media_reco_bp)
 app.register_blueprint(ai_profile_bp)
+app.register_blueprint(linkedin_bp)
+app.register_blueprint(claude_session_bp)
 
 # ============================================
 # ROUTES - Pages
