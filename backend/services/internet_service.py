@@ -80,6 +80,34 @@ class InternetService:
         conn.close()
         return cats
 
+    def update_category(self, slug, **kwargs):
+        """Update a category's fields"""
+        valid_fields = {'name', 'icon', 'position'}
+        updates = {k: v for k, v in kwargs.items() if k in valid_fields}
+
+        if not updates:
+            raise ValueError(f"No valid fields to update. Valid: {valid_fields}")
+
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        set_clause = ", ".join(f"{k} = ?" for k in updates)
+        values = list(updates.values()) + [slug]
+
+        cursor.execute(
+            "UPDATE internet_categories SET " + set_clause + " WHERE slug = ?",
+            values
+        )
+
+        if cursor.rowcount == 0:
+            conn.close()
+            raise Exception(f"Category '{slug}' not found")
+
+        conn.commit()
+        conn.close()
+        logger.info(f"Category '{slug}' updated: {updates}")
+        return True
+
     def create_category(self, slug, name, icon='', position=0):
         """Create a new category"""
         conn = self._get_connection()

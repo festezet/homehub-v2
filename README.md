@@ -2,8 +2,8 @@
 
 **Version** : 2.0 (en cours de migration)
 **Basé sur** : Architecture Crypto Portfolio
-**Date** : 2025-11-25
-**Dernière mise à jour** : 2026-03-19
+**Date** : 2025-11-25 | **Derniere mise a jour** : 2026-03-22
+**Dernière mise à jour** : 2026-03-21
 
 ## 🎯 Objectif
 

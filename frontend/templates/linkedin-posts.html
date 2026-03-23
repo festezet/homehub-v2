@@ -1,0 +1,37 @@
+<div class="category">
+    <div id="linkedin-stats-row" style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;"></div>
+
+    <!-- Filters -->
+    <div style="display: flex; gap: 12px; margin-bottom: 20px; align-items: center; flex-wrap: wrap;">
+        <select id="linkedin-filter-type" style="background: var(--card-bg, #1e1e2e); color: var(--text-primary, #cdd6f4); border: 1px solid var(--border-color, #313244); border-radius: 8px; padding: 8px 12px; font-size: 0.85rem;">
+            <option value="">Tous les types</option>
+            <option value="article">Articles</option>
+            <option value="episode">Episodes</option>
+        </select>
+        <select id="linkedin-filter-status" style="background: var(--card-bg, #1e1e2e); color: var(--text-primary, #cdd6f4); border: 1px solid var(--border-color, #313244); border-radius: 8px; padding: 8px 12px; font-size: 0.85rem;">
+            <option value="">Tous les statuts</option>
+            <option value="draft">Draft</option>
+            <option value="ready">Ready</option>
+            <option value="review">Review</option>
+            <option value="published">Published</option>
+            <option value="archived">Archived</option>
+        </select>
+        <select id="linkedin-filter-serie" style="background: var(--card-bg, #1e1e2e); color: var(--text-primary, #cdd6f4); border: 1px solid var(--border-color, #313244); border-radius: 8px; padding: 8px 12px; font-size: 0.85rem;">
+            <option value="">Toutes les series</option>
+        </select>
+        <button id="linkedin-btn-sync" style="background: var(--accent-primary, #89b4fa); color: #1e1e2e; border: none; border-radius: 8px; padding: 8px 16px; cursor: pointer; font-size: 0.85rem; font-weight: 600;">Sync</button>
+    </div>
+
+    <!-- Posts grid -->
+    <div id="linkedin-posts-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px;">
+        <p style="color: #666; text-align: center; padding: 40px; grid-column: 1 / -1;">Chargement des posts LinkedIn...</p>
+    </div>
+</div>
+
+<!-- Detail Modal -->
+<div id="linkedin-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; overflow-y: auto;">
+    <div style="max-width: 800px; margin: 40px auto; background: var(--card-bg, #1e1e2e); border-radius: 12px; padding: 28px; position: relative;">
+        <button id="linkedin-modal-close" style="position: absolute; top: 12px; right: 16px; background: none; border: none; color: var(--text-secondary, #a6adc8); font-size: 1.5rem; cursor: pointer;">&times;</button>
+        <div id="linkedin-modal-content"></div>
+    </div>
+</div>

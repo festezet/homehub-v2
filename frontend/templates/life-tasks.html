@@ -1,0 +1,344 @@
+<!-- Life Tasks Page -->
+<div class="life-tasks-page">
+    <!-- Stats -->
+    <div class="grid grid-4" id="lt-stats">
+        <div class="card stat-card">
+            <div class="stat-value" id="lt-stat-active">-</div>
+            <div class="stat-label">Actives</div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-value" id="lt-stat-overdue" style="color: var(--danger, #f38ba8)">-</div>
+            <div class="stat-label">En retard</div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-value" id="lt-stat-completed" style="color: var(--success, #a6e3a1)">-</div>
+            <div class="stat-label">Completees</div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-value" id="lt-stat-total">-</div>
+            <div class="stat-label">Total</div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card" style="margin-bottom: 16px;">
+        <div class="card-body" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <select id="lt-filter-category" class="form-select" style="width: auto;">
+                <option value="">Toutes categories</option>
+                <option value="repair">Reparation/SAV</option>
+                <option value="travel">Voyage</option>
+                <option value="admin">Demarche admin</option>
+                <option value="health">Sante</option>
+                <option value="purchase">Achat</option>
+                <option value="event">Evenement</option>
+            </select>
+            <select id="lt-filter-status" class="form-select" style="width: auto;">
+                <option value="active">Actives</option>
+                <option value="">Toutes</option>
+                <option value="completed">Completees</option>
+                <option value="cancelled">Annulees</option>
+            </select>
+            <button class="btn btn-primary" onclick="window.LifeTasksModule.showCreateModal()">+ Nouvelle tache</button>
+        </div>
+    </div>
+
+    <!-- Tasks List -->
+    <div id="lt-tasks-container">
+        <p style="text-align: center; padding: 40px; color: #888;">Chargement...</p>
+    </div>
+</div>
+
+<!-- Create/Edit Modal -->
+<div id="lt-modal" class="lt-modal-overlay" style="display: none;" onclick="if(event.target===this) window.LifeTasksModule.closeModal()">
+    <div class="lt-modal">
+        <div class="lt-modal-header">
+            <h3 id="lt-modal-title">Nouvelle Life Task</h3>
+            <button class="btn btn-icon" onclick="window.LifeTasksModule.closeModal()">&times;</button>
+        </div>
+        <div class="lt-modal-body">
+            <input type="hidden" id="lt-edit-id">
+            <div class="form-group">
+                <label>Titre *</label>
+                <input type="text" id="lt-input-title" class="form-control" placeholder="Ex: Telephone casse, Voyage FOWT...">
+            </div>
+            <div class="form-group">
+                <label>Categorie *</label>
+                <div id="lt-category-grid" class="lt-category-grid"></div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="form-group">
+                    <label>Priorite</label>
+                    <select id="lt-input-priority" class="form-select">
+                        <option value="P1-Urgent">P1 - Urgent</option>
+                        <option value="P2-High">P2 - High</option>
+                        <option value="P3-Normal" selected>P3 - Normal</option>
+                        <option value="P4-Low">P4 - Low</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Deadline</label>
+                    <input type="date" id="lt-input-due-date" class="form-control">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="lt-input-description" class="form-control" rows="2" placeholder="Details optionnels..."></textarea>
+            </div>
+        </div>
+        <div class="lt-modal-footer">
+            <button class="btn" onclick="window.LifeTasksModule.closeModal()">Annuler</button>
+            <button class="btn btn-primary" onclick="window.LifeTasksModule.submitTask()">Creer</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.life-tasks-page .grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+}
+.life-tasks-page .stat-card {
+    text-align: center;
+    padding: 16px;
+}
+.life-tasks-page .stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+.life-tasks-page .stat-label {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    margin-top: 4px;
+}
+
+/* Task cards */
+.lt-task-card {
+    background: var(--card-bg, #1e1e2e);
+    border: 1px solid var(--border, #313244);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 10px;
+    transition: border-color 0.2s;
+}
+.lt-task-card:hover {
+    border-color: var(--primary, #89b4fa);
+}
+.lt-task-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+.lt-task-icon {
+    font-size: 1.3rem;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: var(--surface, #181825);
+    flex-shrink: 0;
+}
+.lt-task-title {
+    font-weight: 600;
+    font-size: 1rem;
+    flex: 1;
+}
+.lt-task-id {
+    font-size: 0.75rem;
+    opacity: 0.5;
+    font-family: monospace;
+}
+.lt-badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+.lt-badge-priority {
+    background: var(--surface, #181825);
+}
+.lt-badge-overdue {
+    background: rgba(243, 139, 168, 0.2);
+    color: #f38ba8;
+}
+.lt-badge-due {
+    background: rgba(249, 226, 175, 0.15);
+    color: #f9e2af;
+}
+
+/* Progress bar */
+.lt-progress-bar {
+    height: 6px;
+    background: var(--surface, #181825);
+    border-radius: 3px;
+    margin: 10px 0;
+    overflow: hidden;
+}
+.lt-progress-fill {
+    height: 100%;
+    background: var(--primary, #89b4fa);
+    border-radius: 3px;
+    transition: width 0.3s;
+}
+
+/* Steps checklist */
+.lt-steps {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0;
+}
+.lt-step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+.lt-step:hover {
+    opacity: 0.8;
+}
+.lt-step.done {
+    opacity: 0.5;
+    text-decoration: line-through;
+}
+.lt-step-check {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border, #313244);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.7rem;
+}
+.lt-step.done .lt-step-check {
+    background: var(--primary, #89b4fa);
+    border-color: var(--primary, #89b4fa);
+    color: var(--card-bg, #1e1e2e);
+}
+
+/* Expanded section */
+.lt-expanded {
+    display: none;
+    border-top: 1px solid var(--border, #313244);
+    margin-top: 10px;
+    padding-top: 10px;
+}
+.lt-task-card.expanded .lt-expanded {
+    display: block;
+}
+.lt-context-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.lt-context-field {
+    font-size: 0.8rem;
+}
+.lt-context-field label {
+    opacity: 0.6;
+    display: block;
+    font-size: 0.7rem;
+    margin-bottom: 2px;
+}
+.lt-context-field input {
+    width: 100%;
+    background: var(--surface, #181825);
+    border: 1px solid var(--border, #313244);
+    border-radius: 6px;
+    padding: 4px 8px;
+    color: inherit;
+    font-size: 0.8rem;
+}
+.lt-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+/* Modal */
+.lt-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+.lt-modal {
+    background: var(--card-bg, #1e1e2e);
+    border: 1px solid var(--border, #313244);
+    border-radius: 12px;
+    width: 500px;
+    max-width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+.lt-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border, #313244);
+}
+.lt-modal-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+.lt-modal-body {
+    padding: 20px;
+}
+.lt-modal-footer {
+    padding: 12px 20px;
+    border-top: 1px solid var(--border, #313244);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+.lt-modal-body .form-group {
+    margin-bottom: 14px;
+}
+.lt-modal-body label {
+    display: block;
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+    opacity: 0.8;
+}
+
+/* Category grid in modal */
+.lt-category-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+.lt-cat-option {
+    padding: 10px 8px;
+    border: 2px solid var(--border, #313244);
+    border-radius: 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    font-size: 0.8rem;
+}
+.lt-cat-option:hover {
+    border-color: var(--primary, #89b4fa);
+}
+.lt-cat-option.selected {
+    border-color: var(--primary, #89b4fa);
+    background: rgba(137, 180, 250, 0.1);
+}
+.lt-cat-option .lt-cat-icon {
+    font-size: 1.3rem;
+    display: block;
+    margin-bottom: 4px;
+}
+</style>

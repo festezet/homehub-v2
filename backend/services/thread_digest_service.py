@@ -79,12 +79,28 @@ class ThreadDigestService:
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
 
+            CREATE TABLE IF NOT EXISTS whatsapp_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                thread_id INTEGER NOT NULL REFERENCES thread_configs(id),
+                message_id TEXT NOT NULL UNIQUE,
+                author TEXT,
+                author_jid TEXT,
+                body TEXT,
+                timestamp INTEGER NOT NULL,
+                from_me INTEGER DEFAULT 0,
+                imported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
             CREATE INDEX IF NOT EXISTS idx_digests_thread
                 ON thread_digests(thread_id);
             CREATE INDEX IF NOT EXISTS idx_digests_created
                 ON thread_digests(created_at DESC);
             CREATE INDEX IF NOT EXISTS idx_analysis_log_thread
                 ON thread_analysis_log(thread_id);
+            CREATE INDEX IF NOT EXISTS idx_wa_messages_thread
+                ON whatsapp_messages(thread_id);
+            CREATE INDEX IF NOT EXISTS idx_wa_messages_ts
+                ON whatsapp_messages(timestamp);
         """)
         conn.commit()
 
@@ -269,6 +285,112 @@ class ThreadDigestService:
         conn.commit()
         conn.close()
         return result.rowcount > 0
+
+    # ------------------------------------------------------------------
+    # WhatsApp message persistence
+    # ------------------------------------------------------------------
+
+    def store_whatsapp_messages(self, thread_id, messages):
+        """Upsert WhatsApp messages into DB (dedup by message_id)
+
+        Args:
+            thread_id: thread config ID
+            messages: list of dicts from Evolution API proxy
+
+        Returns:
+            (inserted_count, total_in_db)
+        """
+        if not messages:
+            return 0, 0
+
+        conn = self._get_conn()
+        inserted = 0
+        for msg in messages:
+            msg_id = msg.get('message_id')
+            if not msg_id:
+                continue
+            try:
+                conn.execute(
+                    """INSERT OR IGNORE INTO whatsapp_messages
+                       (thread_id, message_id, author, author_jid,
+                        body, timestamp, from_me)
+                       VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        thread_id,
+                        msg_id,
+                        msg.get('author'),
+                        msg.get('author_jid'),
+                        msg.get('text') or msg.get('body'),
+                        msg.get('timestamp', 0),
+                        1 if msg.get('from_me') else 0
+                    )
+                )
+                inserted += conn.total_changes  # tracks if row was actually inserted
+            except sqlite3.IntegrityError:
+                pass
+
+        conn.commit()
+        total = conn.execute(
+            "SELECT COUNT(*) FROM whatsapp_messages WHERE thread_id = ?",
+            (thread_id,)
+        ).fetchone()[0]
+        conn.close()
+        logger.info(
+            f"WhatsApp messages stored for thread {thread_id}: "
+            f"{len(messages)} fetched, {total} total in DB")
+        return len(messages), total
+
+    def get_whatsapp_messages(self, thread_id, since=None, limit=500):
+        """Get WhatsApp messages from DB
+
+        Args:
+            thread_id: thread config ID
+            since: ISO date string to filter messages after this date
+            limit: max messages to return
+
+        Returns:
+            list of message dicts
+        """
+        conn = self._get_conn()
+        query = "SELECT * FROM whatsapp_messages WHERE thread_id = ?"
+        params = [thread_id]
+
+        if since:
+            try:
+                since_dt = datetime.fromisoformat(since)
+                since_ts = int(since_dt.timestamp())
+                query += " AND timestamp >= ?"
+                params.append(since_ts)
+            except (ValueError, TypeError):
+                pass
+
+        query += " ORDER BY timestamp ASC LIMIT ?"
+        params.append(limit)
+
+        rows = conn.execute(query, params).fetchall()
+        conn.close()
+
+        return [
+            {
+                'message_id': r['message_id'],
+                'author': r['author'],
+                'author_jid': r['author_jid'],
+                'text': r['body'],
+                'timestamp': r['timestamp'],
+                'from_me': bool(r['from_me'])
+            }
+            for r in rows
+        ]
+
+    def get_whatsapp_message_count(self, thread_id):
+        """Get total stored message count for a thread"""
+        conn = self._get_conn()
+        count = conn.execute(
+            "SELECT COUNT(*) FROM whatsapp_messages WHERE thread_id = ?",
+            (thread_id,)
+        ).fetchone()[0]
+        conn.close()
+        return count
 
     # ------------------------------------------------------------------
     # Digests

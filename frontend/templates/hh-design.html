@@ -1,0 +1,100 @@
+<!-- HH Design - Architecture & Feature Wishlist -->
+<div class="category">
+    <!-- Tab buttons -->
+    <div id="hhd-tabs" style="display: flex; gap: 8px; margin-bottom: 20px;">
+        <button class="btn btn-sm active" onclick="window.HHDesignModule.setTab('architecture')" id="hhd-tab-arch">Architecture</button>
+        <button class="btn btn-sm" onclick="window.HHDesignModule.setTab('features')" id="hhd-tab-feat">Features</button>
+    </div>
+
+    <!-- Architecture Tab -->
+    <div id="hhd-architecture" style="display: block;">
+        <div id="hhd-arch-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px;">
+            <p style="color: #666; text-align: center; padding: 20px; grid-column: 1/-1;">Chargement...</p>
+        </div>
+        <div id="hhd-arch-details"></div>
+    </div>
+
+    <!-- Features Tab -->
+    <div id="hhd-features" style="display: none;">
+        <!-- Filters + Add button -->
+        <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;">
+            <select id="hhd-filter-status" onchange="window.HHDesignModule.loadFeatures()" style="padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color, #ddd); background: var(--card-bg, #fff); font-size: 0.85em;">
+                <option value="">Tous les statuts</option>
+                <option value="idea">Idea</option>
+                <option value="planned">Planned</option>
+                <option value="in-progress">In Progress</option>
+                <option value="done">Done</option>
+                <option value="rejected">Rejected</option>
+            </select>
+            <select id="hhd-filter-category" onchange="window.HHDesignModule.loadFeatures()" style="padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color, #ddd); background: var(--card-bg, #fff); font-size: 0.85em;">
+                <option value="">Toutes les categories</option>
+                <option value="ui">UI</option>
+                <option value="backend">Backend</option>
+                <option value="integration">Integration</option>
+                <option value="ux">UX</option>
+            </select>
+            <button class="btn btn-sm" style="margin-left: auto; background: #10b981; color: white;" onclick="window.HHDesignModule.showModal()">+ Nouvelle Feature</button>
+        </div>
+        <div id="hhd-features-list">
+            <p style="color: #666; text-align: center; padding: 20px;">Chargement...</p>
+        </div>
+    </div>
+
+    <!-- Feature Modal -->
+    <div id="hhd-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: var(--card-bg, #fff); border-radius: 12px; padding: 24px; width: 480px; max-width: 90vw; max-height: 80vh; overflow-y: auto;">
+            <h3 id="hhd-modal-title" style="margin: 0 0 16px 0;">Nouvelle Feature</h3>
+            <form id="hhd-feature-form" onsubmit="window.HHDesignModule.saveFeature(event)">
+                <input type="hidden" id="hhd-f-id">
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 0.85em; margin-bottom: 4px; font-weight: 500;">Titre *</label>
+                    <input type="text" id="hhd-f-title" required style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color, #ddd); box-sizing: border-box;">
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 0.85em; margin-bottom: 4px; font-weight: 500;">Description</label>
+                    <textarea id="hhd-f-description" rows="3" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color, #ddd); box-sizing: border-box; resize: vertical;"></textarea>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <div>
+                        <label style="display: block; font-size: 0.85em; margin-bottom: 4px; font-weight: 500;">Categorie</label>
+                        <select id="hhd-f-category" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color, #ddd);">
+                            <option value="ux">UX</option>
+                            <option value="ui">UI</option>
+                            <option value="backend">Backend</option>
+                            <option value="integration">Integration</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.85em; margin-bottom: 4px; font-weight: 500;">Priorite</label>
+                        <select id="hhd-f-priority" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color, #ddd);">
+                            <option value="P3-Normal">P3-Normal</option>
+                            <option value="P1-Urgent">P1-Urgent</option>
+                            <option value="P2-High">P2-High</option>
+                            <option value="P4-Low">P4-Low</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                    <div>
+                        <label style="display: block; font-size: 0.85em; margin-bottom: 4px; font-weight: 500;">Statut</label>
+                        <select id="hhd-f-status" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color, #ddd);">
+                            <option value="idea">Idea</option>
+                            <option value="planned">Planned</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="done">Done</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.85em; margin-bottom: 4px; font-weight: 500;">Pain Point</label>
+                        <input type="text" id="hhd-f-painpoint" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color, #ddd); box-sizing: border-box;">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                    <button type="button" class="btn btn-sm" onclick="window.HHDesignModule.hideModal()">Annuler</button>
+                    <button type="submit" class="btn btn-sm" style="background: #6366f1; color: white;">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

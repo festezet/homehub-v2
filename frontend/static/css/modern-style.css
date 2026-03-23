@@ -732,6 +732,81 @@ tbody tr:hover {
     font-weight: 500;
 }
 
+/* Reorder arrows (edit mode) */
+.reorder-arrows {
+    display: none;
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 10;
+}
+
+.edit-mode .site-card:not(.add-link-card) .reorder-arrows {
+    display: flex;
+}
+
+.edit-mode .site-card:not(.add-link-card) {
+    position: relative;
+}
+
+.reorder-arrow {
+    width: 24px;
+    height: 20px;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    border-radius: 4px;
+    background: rgba(30, 41, 59, 0.9);
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
+    transition: all 0.15s ease;
+}
+
+.reorder-arrow:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+/* Category reorder arrows */
+.category-reorder {
+    display: none;
+    gap: 4px;
+    margin-left: auto;
+}
+
+.edit-mode .category-reorder {
+    display: flex;
+}
+
+.cat-reorder-arrow {
+    width: 28px;
+    height: 28px;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 6px;
+    background: rgba(30, 41, 59, 0.8);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all 0.15s ease;
+}
+
+.cat-reorder-arrow:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
 /* Modal */
 .modal-overlay {
     position: fixed;
@@ -803,12 +878,13 @@ tbody tr:hover {
     padding: 10px 12px;
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--bg-card-hover, #334155);
     color: var(--text-primary);
     font-size: 0.95rem;
     outline: none;
     transition: border-color 0.2s ease;
     box-sizing: border-box;
+    color-scheme: dark;
 }
 
 .modal-form input:focus,

@@ -112,6 +112,18 @@
                         <span class="label">AI Profile</span>
                     </a>
                 </li>
+                <li class="nav-item" data-page="linkedin-posts">
+                    <a href="#linkedin-posts">
+                        <span class="icon">📝</span>
+                        <span class="label">LinkedIn Posts</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="life-tasks">
+                    <a href="#life-tasks">
+                        <span class="icon">📌</span>
+                        <span class="label">Life Tasks</span>
+                    </a>
+                </li>
             </div>
 
             <!-- System Section -->
@@ -151,6 +163,18 @@
                     <a href="#claude-skills">
                         <span class="icon">⚡</span>
                         <span class="label">Claude Skills</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="claude-instructions">
+                    <a href="#claude-instructions">
+                        <span class="icon">📜</span>
+                        <span class="label">Claude Instructions</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="hh-design">
+                    <a href="#hh-design">
+                        <span class="icon">🏗</span>
+                        <span class="label">HH Design</span>
                     </a>
                 </li>
             </div>
@@ -268,6 +292,26 @@
             <div id="claude-skills-page" class="page-content" style="display: none;">
                 {% include 'claude-skills.html' %}
             </div>
+
+            <!-- LinkedIn Posts Tab -->
+            <div id="linkedin-posts-page" class="page-content" style="display: none;">
+                {% include 'linkedin-posts.html' %}
+            </div>
+
+            <!-- Life Tasks Tab -->
+            <div id="life-tasks-page" class="page-content" style="display: none;">
+                {% include 'life-tasks.html' %}
+            </div>
+
+            <!-- Claude Instructions Tab -->
+            <div id="claude-instructions-page" class="page-content" style="display: none;">
+                {% include 'claude-instructions.html' %}
+            </div>
+
+            <!-- HH Design Tab -->
+            <div id="hh-design-page" class="page-content" style="display: none;">
+                {% include 'hh-design.html' %}
+            </div>
             {% endblock %}
         </div>
     </main>
@@ -300,6 +344,10 @@
     <script type="module" src="{{ url_for('static', filename='js/media-recommender.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/ai-profile.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/claude-skills.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/linkedin-posts.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/life-tasks.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/claude-instructions.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/hh-design.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/app.js') }}"></script>
 
     <!-- Modern Navigation Script -->
@@ -327,7 +375,11 @@
                 'services-ports': { title: 'Services & Ports', subtitle: 'Registre central des ports reseau' },
                 'ai-profile': { title: 'AI Profile', subtitle: 'Draft emails & notifications' },
                 'prompting-disciplines': { title: 'Prompting Disciplines', subtitle: 'Framework d\'optimisation Claude Code' },
-                'claude-skills': { title: 'Claude Skills', subtitle: 'Skills, commands et extensions Claude Code' }
+                'claude-skills': { title: 'Claude Skills', subtitle: 'Skills, commands et extensions Claude Code' },
+                'linkedin-posts': { title: 'LinkedIn Posts', subtitle: 'Relecture et validation des posts' },
+                'life-tasks': { title: 'Life Tasks', subtitle: 'Projets de vie ephemeres' },
+                'claude-instructions': { title: 'Claude Instructions', subtitle: 'CLAUDE.md, rules, skills et cross-references' },
+                'hh-design': { title: 'HH Design', subtitle: 'Architecture HomeHub et feature wishlist' }
             };
 
             function switchPage(pageName) {

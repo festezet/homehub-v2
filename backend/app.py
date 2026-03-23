@@ -39,6 +39,9 @@ from services.session_close_service import session_close_service
 from services.project_actions_service import project_actions_service
 from services.linkedin_service import linkedin_service
 from services.claude_session_service import claude_session_service
+from services.life_tasks_service import life_tasks_service
+from services.claude_instructions_service import claude_instructions_service
+from services.hh_design_service import hh_design_service
 # media_recommender_service removed — proxied to standalone project (port 5056)
 
 # Import API routes
@@ -59,6 +62,9 @@ from api.media_recommender_routes import media_reco_bp
 from api.ai_profile_routes import ai_profile_bp
 from api.linkedin_routes import linkedin_bp, init_linkedin_routes
 from api.claude_session_routes import claude_session_bp, init_claude_session_routes
+from api.life_tasks_routes import life_tasks_bp, init_life_tasks_routes
+from api.claude_instructions_routes import claude_instructions_bp, init_claude_instructions_routes
+from api.hh_design_routes import hh_design_bp, init_hh_design_routes
 
 # Configure logging
 logging.basicConfig(
@@ -95,6 +101,9 @@ init_session_close_routes(session_close_service)
 init_project_actions_routes(project_actions_service)
 init_linkedin_routes(linkedin_service)
 init_claude_session_routes(claude_session_service)
+init_life_tasks_routes(life_tasks_service)
+init_claude_instructions_routes(claude_instructions_service)
+init_hh_design_routes(hh_design_service)
 # media_reco routes are now a proxy — no init needed
 
 # Register blueprints
@@ -115,6 +124,9 @@ app.register_blueprint(media_reco_bp)
 app.register_blueprint(ai_profile_bp)
 app.register_blueprint(linkedin_bp)
 app.register_blueprint(claude_session_bp)
+app.register_blueprint(life_tasks_bp)
+app.register_blueprint(claude_instructions_bp)
+app.register_blueprint(hh_design_bp)
 
 # ============================================
 # ROUTES - Pages

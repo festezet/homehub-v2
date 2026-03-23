@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.0] - 2026-03-20
+
+### Added
+- LinkedIn Posts Review page: browse, filter, and review LinkedIn posts (articles + episodes) before publication
+- Quality indicators: char count, hook detection, CTA, hashtags, emojis with color-coded badges
+- Review workflow with status management (draft/ready/review/published/archived) and notes
+- Multi-source reading: articles from ai-profile content.json, episodes from ai-video-studio markdown files
+
 ## [2.0.0] - 2026-03-19
 
 ### Added

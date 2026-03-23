@@ -38,6 +38,7 @@ class SessionCloseService:
                 - files_modified (list, optional): list of files modified
                 - duration_minutes (int, optional): session duration
                 - category (str, optional): dev, evaluation, gestion-doc, infra...
+                - status_snapshot (str, optional): project state at close time
 
         Returns:
             int: ID of created record
@@ -49,8 +50,8 @@ class SessionCloseService:
                 INSERT INTO session_close
                     (project_id, session_date, session_doc, summary,
                      decisions, next_steps, blockers, files_modified,
-                     duration_minutes, category)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     duration_minutes, category, status_snapshot)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 data['project_id'],
                 data['session_date'],
@@ -62,6 +63,7 @@ class SessionCloseService:
                 json.dumps(data.get('files_modified', []), ensure_ascii=False),
                 data.get('duration_minutes'),
                 data.get('category'),
+                data.get('status_snapshot'),
             ))
             conn.commit()
             close_id = cursor.lastrowid

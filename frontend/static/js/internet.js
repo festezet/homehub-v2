@@ -100,6 +100,10 @@ class InternetModule {
         <div class="category ${cat.slug}" data-category="${cat.slug}" style="margin-bottom: 40px;">
             <h2 style="font-size: 1.5rem; margin-bottom: 20px; color: var(--text-primary, #f8fafc); display: flex; align-items: center; gap: 12px;">
                 <span class="icon">${icon}</span> ${this.escapeHtml(cat.name)}
+                <span class="category-reorder">
+                    <button class="cat-reorder-arrow" data-cat-slug="${cat.slug}" data-dir="up" title="Monter">&uarr;</button>
+                    <button class="cat-reorder-arrow" data-cat-slug="${cat.slug}" data-dir="down" title="Descendre">&darr;</button>
+                </span>
             </h2>
             <div class="sites-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;">`;
 
@@ -126,6 +130,10 @@ class InternetModule {
         return `
             <a href="${this.escapeHtml(link.url)}" class="site-card" target="_blank"
                data-link-id="${link.id}" data-link-name="${this.escapeHtml(link.name)}">
+                <div class="reorder-arrows">
+                    <button class="reorder-arrow" data-link-id="${link.id}" data-dir="up" title="Monter">&larr;</button>
+                    <button class="reorder-arrow" data-link-id="${link.id}" data-dir="down" title="Descendre">&rarr;</button>
+                </div>
                 <div class="site-preview">
                     <div class="site-favicon">
                         <img src="https://www.google.com/s2/favicons?domain=${faviconDomain}&sz=64"
@@ -144,6 +152,28 @@ class InternetModule {
         document.getElementById('edit-mode-btn')?.addEventListener('click', () => this.toggleEditMode());
 
         container.addEventListener('click', (e) => {
+            // Reorder link arrow
+            const linkArrow = e.target.closest('.reorder-arrow');
+            if (linkArrow && this.editMode) {
+                e.preventDefault();
+                e.stopPropagation();
+                const linkId = parseInt(linkArrow.dataset.linkId);
+                const dir = linkArrow.dataset.dir;
+                this.moveLink(linkId, dir);
+                return;
+            }
+
+            // Reorder category arrow
+            const catArrow = e.target.closest('.cat-reorder-arrow');
+            if (catArrow && this.editMode) {
+                e.preventDefault();
+                e.stopPropagation();
+                const slug = catArrow.dataset.catSlug;
+                const dir = catArrow.dataset.dir;
+                this.moveCategory(slug, dir);
+                return;
+            }
+
             // Add card
             const addCard = e.target.closest('.add-link-card');
             if (addCard && this.editMode) {
@@ -188,6 +218,97 @@ class InternetModule {
         } finally {
             this._deleting = false;
         }
+    }
+
+    async moveLink(linkId, direction) {
+        // Find the link and its category
+        let cat = null;
+        let linkIdx = -1;
+        for (const c of this.data) {
+            const idx = c.links.findIndex(l => l.id === linkId);
+            if (idx !== -1) {
+                cat = c;
+                linkIdx = idx;
+                break;
+            }
+        }
+        if (!cat || linkIdx === -1) return;
+
+        const neighborIdx = direction === 'up' ? linkIdx - 1 : linkIdx + 1;
+        if (neighborIdx < 0 || neighborIdx >= cat.links.length) return;
+
+        const link = cat.links[linkIdx];
+        const neighbor = cat.links[neighborIdx];
+
+        // Swap positions in data
+        const tmpPos = link.position;
+        link.position = neighbor.position;
+        neighbor.position = tmpPos;
+
+        // If positions were equal, assign distinct values
+        if (link.position === neighbor.position) {
+            link.position = neighborIdx;
+            neighbor.position = linkIdx;
+        }
+
+        // Swap in array
+        cat.links[linkIdx] = neighbor;
+        cat.links[neighborIdx] = link;
+
+        // Update API
+        try {
+            await Promise.all([
+                API.internet.updateLink(link.id, { position: link.position }),
+                API.internet.updateLink(neighbor.id, { position: neighbor.position })
+            ]);
+        } catch (err) {
+            console.error('Failed to reorder links:', err);
+        }
+
+        // Re-render keeping edit mode
+        this.render(this.data);
+        this.editMode = false;
+        this.toggleEditMode();
+    }
+
+    async moveCategory(slug, direction) {
+        const catIdx = this.data.findIndex(c => c.slug === slug);
+        if (catIdx === -1) return;
+
+        const neighborIdx = direction === 'up' ? catIdx - 1 : catIdx + 1;
+        if (neighborIdx < 0 || neighborIdx >= this.data.length) return;
+
+        const cat = this.data[catIdx];
+        const neighbor = this.data[neighborIdx];
+
+        // Swap positions
+        const tmpPos = cat.position;
+        cat.position = neighbor.position;
+        neighbor.position = tmpPos;
+
+        if (cat.position === neighbor.position) {
+            cat.position = neighborIdx;
+            neighbor.position = catIdx;
+        }
+
+        // Swap in array
+        this.data[catIdx] = neighbor;
+        this.data[neighborIdx] = cat;
+
+        // Update API
+        try {
+            await Promise.all([
+                API.internet.updateCategory(cat.slug, { position: cat.position }),
+                API.internet.updateCategory(neighbor.slug, { position: neighbor.position })
+            ]);
+        } catch (err) {
+            console.error('Failed to reorder categories:', err);
+        }
+
+        // Re-render keeping edit mode
+        this.render(this.data);
+        this.editMode = false;
+        this.toggleEditMode();
     }
 
     showAddModal(categorySlug) {

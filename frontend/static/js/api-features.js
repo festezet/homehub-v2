@@ -366,3 +366,158 @@ API.aiProfile = {
         });
     }
 };
+
+/**
+ * Life Tasks API methods
+ */
+API.lifeTasks = {
+    async list(params = {}) {
+        const qs = new URLSearchParams();
+        if (params.status) qs.set('status', params.status);
+        if (params.category) qs.set('category', params.category);
+        const query = qs.toString();
+        return await API.fetch(`${API.BASE_URL}/life-tasks${query ? '?' + query : ''}`);
+    },
+
+    async get(id) {
+        return await API.fetch(`${API.BASE_URL}/life-tasks/${id}`);
+    },
+
+    async create(data) {
+        return await API.fetch(`${API.BASE_URL}/life-tasks`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    },
+
+    async update(id, data) {
+        return await API.fetch(`${API.BASE_URL}/life-tasks/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    },
+
+    async updateSteps(id, steps) {
+        return await API.fetch(`${API.BASE_URL}/life-tasks/${id}/steps`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ steps })
+        });
+    },
+
+    async resolve(id, resolution) {
+        return await API.fetch(`${API.BASE_URL}/life-tasks/${id}/resolve`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ resolution })
+        });
+    },
+
+    async delete(id) {
+        return await API.fetch(`${API.BASE_URL}/life-tasks/${id}`, {
+            method: 'DELETE'
+        });
+    },
+
+    async getTemplates() {
+        return await API.fetch(`${API.BASE_URL}/life-tasks/templates`);
+    },
+
+    async getStats() {
+        return await API.fetch(`${API.BASE_URL}/life-tasks/stats`);
+    }
+};
+
+/**
+ * LinkedIn Posts Review API methods
+ */
+/**
+ * Claude Instructions API methods
+ */
+API.claudeInstructions = {
+    async getTree() {
+        return await API.fetch(`${API.BASE_URL}/claude-instructions/tree`);
+    },
+
+    async getFile(path) {
+        return await API.fetch(`${API.BASE_URL}/claude-instructions/file?path=${encodeURIComponent(path)}`);
+    },
+
+    async getGraph() {
+        return await API.fetch(`${API.BASE_URL}/claude-instructions/graph`);
+    }
+};
+
+/**
+ * HH Design API methods
+ */
+API.hhDesign = {
+    async getArchitecture() {
+        return await API.fetch(`${API.BASE_URL}/hh-design/architecture`);
+    },
+
+    async getFeatures(status, category) {
+        const qs = new URLSearchParams();
+        if (status) qs.set('status', status);
+        if (category) qs.set('category', category);
+        const query = qs.toString();
+        return await API.fetch(`${API.BASE_URL}/hh-design/features${query ? '?' + query : ''}`);
+    },
+
+    async createFeature(data) {
+        return await API.fetch(`${API.BASE_URL}/hh-design/features`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    },
+
+    async updateFeature(id, data) {
+        return await API.fetch(`${API.BASE_URL}/hh-design/features/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    },
+
+    async deleteFeature(id) {
+        return await API.fetch(`${API.BASE_URL}/hh-design/features/${id}`, {
+            method: 'DELETE'
+        });
+    }
+};
+
+API.linkedin = {
+    async getPosts(params = {}) {
+        const qs = new URLSearchParams();
+        if (params.type) qs.set('type', params.type);
+        if (params.status) qs.set('status', params.status);
+        if (params.serie) qs.set('serie', params.serie);
+        const query = qs.toString();
+        return await API.fetch(`${API.BASE_URL}/linkedin/posts${query ? '?' + query : ''}`);
+    },
+
+    async getPost(id) {
+        return await API.fetch(`${API.BASE_URL}/linkedin/posts/${id}`);
+    },
+
+    async updateReview(id, data) {
+        return await API.fetch(`${API.BASE_URL}/linkedin/posts/${id}/review`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    },
+
+    async getStats() {
+        return await API.fetch(`${API.BASE_URL}/linkedin/stats`);
+    },
+
+    async sync() {
+        return await API.fetch(`${API.BASE_URL}/linkedin/sync`, {
+            method: 'POST'
+        });
+    }
+};

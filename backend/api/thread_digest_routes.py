@@ -126,22 +126,67 @@ def move_thread(thread_id):
 
 @thread_digest_bp.route('/api/threads/<int:thread_id>/messages')
 def get_messages(thread_id):
-    """Fetch messages via the appropriate platform proxy"""
+    """Fetch messages via platform proxy, persist WhatsApp messages, return from DB
+
+    For WhatsApp: fetches fresh messages from Evolution API, upserts into DB,
+    then returns full history from DB (not just the fresh batch).
+    For other platforms: proxies directly as before.
+
+    Query params:
+        limit: max messages to return (default 200)
+        since: ISO date string to filter messages after this date
+        skip_fetch: if '1', skip proxy fetch and return DB only (WhatsApp)
+    """
     try:
         thread = _digest_service.get_thread(thread_id)
         if not thread:
             return api_error(404, f'Thread {thread_id} not found')
 
+        limit = request.args.get('limit', 200, type=int)
+        since = request.args.get('since')
+        skip_fetch = request.args.get('skip_fetch', '0') == '1'
+
+        # WhatsApp: persist messages in DB for full history
+        if thread['platform'] == 'whatsapp':
+            fetched_count = 0
+            if not skip_fetch:
+                proxy = _get_proxy('whatsapp')
+                if proxy:
+                    try:
+                        fresh = proxy.find_messages(
+                            thread['jid'], limit=200)
+                        if fresh:
+                            fetched_count, _ = (
+                                _digest_service.store_whatsapp_messages(
+                                    thread_id, fresh))
+                    except Exception as e:
+                        logger.warning(
+                            f"Proxy fetch failed for thread {thread_id}, "
+                            f"returning DB data: {e}")
+
+            messages = _digest_service.get_whatsapp_messages(
+                thread_id, since=since, limit=limit)
+            total_stored = _digest_service.get_whatsapp_message_count(
+                thread_id)
+
+            return success(
+                thread_id=thread_id,
+                jid=thread['jid'],
+                name=thread['name'],
+                platform=thread['platform'],
+                messages=messages,
+                count=len(messages),
+                total_stored=total_stored,
+                fetched_from_proxy=fetched_count
+            )
+
+        # Other platforms: proxy directly (Signal, SMS already have persistence)
         proxy = _get_proxy(thread['platform'])
         if not proxy:
             return api_error(400, f"Unsupported platform: {thread['platform']}")
 
-        limit = request.args.get('limit', 50, type=int)
-        since = request.args.get('since')
-
         messages = proxy.find_messages(
-            thread['jid'], limit=limit, since=since
-        )
+            thread['jid'], limit=limit, since=since)
 
         return success(
             thread_id=thread_id,

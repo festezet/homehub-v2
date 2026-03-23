@@ -151,6 +151,24 @@ def create_category():
         return api_error(500, str(e))
 
 
+@internet_bp.route('/categories/<slug>', methods=['PUT'])
+def update_category(slug):
+    """Update a category (position, name, icon)"""
+    try:
+        data = request.get_json()
+        if not data:
+            return api_error(400, 'No data provided')
+
+        internet_service.update_category(slug, **data)
+        return success(message=f"Category '{slug}' updated successfully")
+
+    except ValueError as e:
+        return api_error(400, str(e))
+    except Exception as e:
+        logger.error(f"Error updating category {slug}: {e}")
+        return api_error(500, str(e))
+
+
 @internet_bp.route('/health', methods=['GET'])
 def health():
     """Health check"""

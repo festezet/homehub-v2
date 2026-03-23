@@ -277,3 +277,28 @@
     outline: none;
     border-color: #6366f1;
 }
+
+/* Skool text formatting */
+.apercu-description p {
+    margin: 0.4em 0;
+    line-height: 1.6;
+}
+
+.apercu-description .skool-numbered {
+    padding-left: 1.2em;
+    font-weight: 500;
+    margin-top: 0.8em;
+}
+
+.apercu-description .skool-bullet {
+    padding-left: 1em;
+    color: var(--color-text-secondary, #b0b0b0);
+}
+
+.apercu-description .skool-section-title {
+    margin-top: 1.2em;
+    font-weight: 600;
+    color: #6366f1;
+    border-top: 1px solid var(--color-border, #2e2e3e);
+    padding-top: 0.6em;
+}

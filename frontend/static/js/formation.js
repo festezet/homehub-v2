@@ -206,6 +206,18 @@ class FormationModule {
         }
     }
 
+    _formatSkoolText(text) {
+        if (!text) return '';
+        const lines = text.split('\n').filter(l => l.trim());
+        return lines.map(line => {
+            const trimmed = line.trim();
+            if (/^\d+[\.\)]\s/.test(trimmed)) return `<p class="skool-numbered">${trimmed}</p>`;
+            if (/^[•👉⚠️ℹ✅🟢📦]/.test(trimmed)) return `<p class="skool-bullet">${trimmed}</p>`;
+            if (/^Resources?/.test(trimmed)) return `<p class="skool-section-title">${trimmed}</p>`;
+            return `<p>${trimmed}</p>`;
+        }).join('');
+    }
+
     async loadApercuContent() {
         try {
             if (!this.skoolData) {
@@ -306,7 +318,7 @@ class FormationModule {
 
         const resourcesHtml = (video.skool_links && video.skool_links.length > 0)
             ? `<div class="apercu-resources">${video.skool_links.map(link =>
-                `<a href="${link.url}" target="_blank" class="apercu-resource-link">${link.label || this._resourceLabel(link.url)}</a>`
+                `<a href="${link.url}" target="_blank" class="apercu-resource-link">${link.text || this._resourceLabel(link.url)}</a>`
               ).join('')}</div>`
             : (video.resources && video.resources.length > 0)
                 ? `<div class="apercu-resources">${video.resources.map(url =>
@@ -314,7 +326,8 @@ class FormationModule {
                   ).join('')}</div>`
                 : '';
 
-        const descText = video.description || 'Pas de description disponible.';
+        const rawText = video.skool_text || video.description || 'Pas de description disponible.';
+        const descText = this._formatSkoolText(rawText);
 
         main.innerHTML = `
             <div class="apercu-video-container">

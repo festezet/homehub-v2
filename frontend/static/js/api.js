@@ -196,6 +196,14 @@ const API = {
 
         async getCategories() {
             return await API.fetch(`${API.BASE_URL}/internet/categories`);
+        },
+
+        async updateCategory(slug, data) {
+            return await API.fetch(`${API.BASE_URL}/internet/categories/${slug}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
         }
     },
 
