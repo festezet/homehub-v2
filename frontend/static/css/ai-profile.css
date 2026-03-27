@@ -544,6 +544,21 @@
 
 /* --- Project Map --- */
 
+/* Website iframe */
+.ai-profile-website-toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.ai-profile-website-frame {
+    width: 100%;
+    height: calc(100vh - 220px);
+    border: 1px solid var(--border-color, #334155);
+    border-radius: 8px;
+    background: #fff;
+}
+
 .ai-profile-map-toolbar {
     display: flex;
     justify-content: space-between;

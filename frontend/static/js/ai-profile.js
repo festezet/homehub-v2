@@ -56,6 +56,12 @@ const aiProfileModule = {
         if (tabName === 'dbmap') {
             this.renderDbMap();
         }
+        if (tabName === 'website') {
+            const iframe = document.getElementById('ai-profile-website-iframe');
+            if (iframe && iframe.src === 'about:blank') {
+                iframe.src = 'http://localhost:5100';
+            }
+        }
     },
 
     // --- Draft Generation ---

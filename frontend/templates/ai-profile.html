@@ -9,6 +9,10 @@
         Notifications
         <span id="ai-profile-notif-badge" class="ai-profile-badge" style="display:none;">0</span>
     </button>
+    <button class="ai-profile-subtab" data-subtab="website"
+            onclick="window.aiProfileModule.switchSubTab('website')">
+        festezet.dev
+    </button>
     <button class="ai-profile-subtab" data-subtab="projectmap"
             onclick="window.aiProfileModule.switchSubTab('projectmap')">
         Project Map
@@ -191,6 +195,22 @@
     <div id="ai-profile-notif-list" class="ai-profile-notif-list">
         <div class="ai-profile-loading">Chargement des notifications...</div>
     </div>
+</div>
+
+<!-- Website Sub-tab (festezet.dev) -->
+<div class="ai-profile-subtab-content" id="ai-profile-tab-website">
+    <div class="ai-profile-website-toolbar">
+        <a href="http://localhost:5100" target="_blank" class="ai-profile-btn-secondary">
+            Ouvrir dans un nouvel onglet
+        </a>
+        <a href="https://festezet.dev" target="_blank" class="ai-profile-btn-secondary">
+            festezet.dev (production)
+        </a>
+    </div>
+    <iframe id="ai-profile-website-iframe"
+            src="about:blank"
+            class="ai-profile-website-frame"
+            title="festezet.dev preview"></iframe>
 </div>
 
 <!-- Project Map Sub-tab -->
