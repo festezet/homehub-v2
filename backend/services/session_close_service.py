@@ -50,8 +50,8 @@ class SessionCloseService:
                 INSERT INTO session_close
                     (project_id, session_date, session_doc, summary,
                      decisions, next_steps, blockers, files_modified,
-                     duration_minutes, category, status_snapshot)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     duration_minutes, category, status_snapshot, agent)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 data['project_id'],
                 data['session_date'],
@@ -64,6 +64,7 @@ class SessionCloseService:
                 data.get('duration_minutes'),
                 data.get('category'),
                 data.get('status_snapshot'),
+                data.get('agent', 'claude'),
             ))
             conn.commit()
             close_id = cursor.lastrowid
@@ -86,6 +87,12 @@ class SessionCloseService:
 
         Resolves PRJ-XXX to integer project_id for the FK.
         Skips if a similar title already exists for this project.
+
+        Supports two formats:
+            - Plain string: "Do something" (backward compat)
+            - Structured dict: {"title": "Do something", "command": "...",
+              "approval_level": "confirm", "step_order": 1, "type": "action",
+              "priority": "medium"}
         """
         # Resolve PRJ-XXX to integer id
         cursor.execute(
@@ -103,16 +110,35 @@ class SessionCloseService:
         existing = {r['title'].lower() for r in cursor.fetchall()}
 
         created = 0
-        for step in next_steps:
-            if not step or not isinstance(step, str):
+        for i, step in enumerate(next_steps):
+            if not step:
                 continue
-            if step.lower() in existing:
+
+            # Normalize to dict
+            if isinstance(step, str):
+                step = {'title': step}
+            elif not isinstance(step, dict) or 'title' not in step:
                 continue
+
+            title = step['title']
+            if title.lower() in existing:
+                continue
+
             cursor.execute("""
                 INSERT INTO project_actions
-                    (project_id, type, title, status, priority, session_doc)
-                VALUES (?, 'action', ?, 'todo', 'medium', ?)
-            """, (int_project_id, step, session_doc))
+                    (project_id, type, title, status, priority, session_doc,
+                     command, approval_level, step_order)
+                VALUES (?, ?, ?, 'todo', ?, ?, ?, ?, ?)
+            """, (
+                int_project_id,
+                step.get('type', 'action'),
+                title,
+                step.get('priority', 'medium'),
+                session_doc,
+                step.get('command'),
+                step.get('approval_level', 'confirm'),
+                step.get('step_order', i + 1),
+            ))
             created += 1
 
         if created:
