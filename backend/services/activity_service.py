@@ -51,7 +51,7 @@ class ActivityService:
                 m.status, m.status_notes, m.source
             FROM project_milestones m
             LEFT JOIN projects p ON m.project_id = p.unique_id
-            WHERE 1=1
+            WHERE m.source != 'session_extraction'
         """
         params = []
         if project_id:
@@ -326,6 +326,7 @@ class ActivityService:
                 FROM project_milestones m
                 LEFT JOIN projects p ON m.project_id = p.unique_id
                 WHERE m.date >= date('now', '-90 days')
+                  AND m.source != 'session_extraction'
                   AND (p.status IS NULL OR p.status != 'archived')
                 GROUP BY m.project_id
                 ORDER BY score DESC
@@ -359,10 +360,11 @@ class ActivityService:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
 
-            # Count by type
+            # Count by type (exclude session extractions)
             cursor.execute("""
                 SELECT type, COUNT(*) as count
                 FROM project_milestones
+                WHERE source != 'session_extraction'
                 GROUP BY type
                 ORDER BY count DESC
             """)
@@ -375,6 +377,7 @@ class ActivityService:
                     COUNT(*) as count
                 FROM project_milestones
                 WHERE date >= date('now', '-56 days')
+                  AND source != 'session_extraction'
                 GROUP BY week
                 ORDER BY week DESC
             """)
@@ -387,16 +390,18 @@ class ActivityService:
             cursor.execute("""
                 SELECT COUNT(*) as total, MAX(date) as last_date
                 FROM project_milestones
+                WHERE source != 'session_extraction'
             """)
             row = cursor.fetchone()
             total = row['total']
             last_date = row['last_date']
 
-            # Active projects count (with milestones in last 30 days)
+            # Active projects count (with activity in last 30 days)
             cursor.execute("""
                 SELECT COUNT(DISTINCT project_id) as active
                 FROM project_milestones
                 WHERE date >= date('now', '-30 days')
+                  AND source != 'session_extraction'
             """)
             active_projects = cursor.fetchone()['active']
 

@@ -1,0 +1,107 @@
+<!-- Email Composer -->
+<div class="ai-profile-draft-container">
+    <div class="ai-profile-draft-form">
+        <div class="ai-profile-form-row">
+            <label>Messagerie</label>
+            <div id="email-draft-account-row" style="display:flex; gap:16px;">
+                <label style="display:flex; align-items:center; gap:4px; cursor:pointer; font-weight:normal;">
+                    <input type="radio" name="email-draft-account" value="gmail" checked> Gmail
+                </label>
+                <label style="display:flex; align-items:center; gap:4px; cursor:pointer; font-weight:normal;">
+                    <input type="radio" name="email-draft-account" value="hostinger"> Hostinger
+                </label>
+            </div>
+        </div>
+        <div class="ai-profile-form-row" style="position:relative;">
+            <label for="email-draft-contact">Destinataire</label>
+            <input type="text" id="email-draft-contact" autocomplete="off"
+                   placeholder="Nom ou email..."
+                   oninput="window.emailDraftModule._onInput()"
+                   onkeydown="window.emailDraftModule._onKeydown(event)"
+                   onfocus="window.emailDraftModule._onInput()">
+            <div id="email-draft-autocomplete" class="email-draft-autocomplete" style="display:none;"></div>
+        </div>
+        <div id="email-draft-contact-info" class="ai-profile-contact-info" style="display:none;">
+            <span id="email-draft-contact-lang" class="ai-profile-tag"></span>
+            <span id="email-draft-contact-account" class="ai-profile-tag"></span>
+            <span id="email-draft-contact-count" class="ai-profile-tag"></span>
+        </div>
+        <div class="ai-profile-form-row">
+            <label for="email-draft-subject">Sujet</label>
+            <input type="text" id="email-draft-subject" placeholder="Ex: Status update, Rendez-vous...">
+        </div>
+        <div class="ai-profile-form-row">
+            <label for="email-draft-body">Corps du mail</label>
+            <textarea id="email-draft-body" rows="10"
+                      placeholder="Redigez votre email ici..."></textarea>
+        </div>
+        <div class="ai-profile-form-actions" style="display:flex; gap:10px; align-items:center;">
+            <button id="email-draft-btn-send" class="ai-profile-btn-primary"
+                    onclick="window.emailDraftModule.sendEmail()">
+                Envoyer
+            </button>
+            <button class="ai-profile-btn-secondary"
+                    onclick="window.emailDraftModule.copyBody()">
+                Copier
+            </button>
+        </div>
+    </div>
+
+    <!-- Optional AI Assist -->
+    <details id="email-draft-ai-section" class="ai-profile-ai-assist">
+        <summary style="cursor:pointer; padding:10px 0; font-weight:600; color:#8b949e;">
+            Assistance IA (optionnel)
+        </summary>
+        <div style="padding:10px 0;">
+            <div class="ai-profile-form-row">
+                <label for="email-draft-context">Contexte / intention</label>
+                <textarea id="email-draft-context" rows="3"
+                          placeholder="Ex: Proposer un rdv la semaine prochaine pour discuter du projet"></textarea>
+            </div>
+            <div class="ai-profile-form-actions" style="display:flex; gap:10px; align-items:center;">
+                <button id="email-draft-btn-ai" class="ai-profile-btn-secondary"
+                        onclick="window.emailDraftModule.generateWithAI()">
+                    Generer avec IA
+                </button>
+                <span id="email-draft-ai-meta" style="color:#8b949e; font-size:0.85em;"></span>
+            </div>
+        </div>
+    </details>
+</div>
+
+<style>
+.email-draft-autocomplete {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #1c2128;
+    border: 1px solid #444c56;
+    border-radius: 6px;
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+.email-draft-ac-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #30363d;
+}
+.email-draft-ac-item:last-child { border-bottom: none; }
+.email-draft-ac-item:hover,
+.email-draft-ac-item.active {
+    background: #30363d;
+}
+.email-draft-ac-item .ac-name {
+    color: #e6edf3;
+    font-weight: 500;
+}
+.email-draft-ac-item .ac-meta {
+    color: #8b949e;
+    font-size: 0.82em;
+}
+</style>

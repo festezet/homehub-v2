@@ -51,6 +51,11 @@ class ClaudeSkillsService:
         local_skills = self._scan_local_skills()
         commands = self._scan_global_commands()
 
+        all_skills = list(global_skills)
+        for proj in local_skills:
+            all_skills.extend(proj['skills'])
+        imported = [s for s in all_skills if s.get('source', 'native') != 'native']
+
         return {
             'global_skills': global_skills,
             'local_skills': local_skills,
@@ -60,6 +65,7 @@ class ClaudeSkillsService:
                 'local_skills': sum(len(s['skills']) for s in local_skills),
                 'commands': len(commands),
                 'projects_with_skills': len(local_skills),
+                'imported_skills': len(imported),
             }
         }
 
@@ -141,9 +147,22 @@ class ClaudeSkillsService:
 
         name = fm.get('name', fallback_name)
         description = fm.get('description', heading or fallback_name)
-        # Truncate long descriptions
         if len(description) > 200:
             description = description[:197] + '...'
+
+        # Source classification (native/external/community)
+        source = fm.get('source', 'native')
+        source_repo = fm.get('source_repo', fm.get('source-repo', ''))
+
+        # Detect reference files in skill directory
+        ref_files = []
+        skill_dir = os.path.dirname(filepath)
+        if os.path.isdir(skill_dir):
+            for f in os.listdir(skill_dir):
+                if f.endswith('-reference.md'):
+                    ref_files.append(f)
+
+        line_count = content.count('\n') + 1
 
         return {
             'name': name,
@@ -152,4 +171,8 @@ class ClaudeSkillsService:
             'allowed_tools': fm.get('allowed-tools', ''),
             'user_invocable': fm.get('user-invocable', 'true') != 'false',
             'file': filepath,
+            'source': source,
+            'source_repo': source_repo,
+            'reference_files': ref_files,
+            'line_count': line_count,
         }

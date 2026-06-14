@@ -114,15 +114,6 @@ const API = {
     },
 
     /**
-     * Infrastructure API methods
-     */
-    infrastructure: {
-        async getDashboard() {
-            return await API.fetch(`${API.BASE_URL}/infrastructure/dashboard`);
-        }
-    },
-
-    /**
      * Activity Timeline API methods
      */
     activity: {

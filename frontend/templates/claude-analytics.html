@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Analytics</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern-style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/claude-analytics.css') }}?v=3">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <div id="claude-analytics-container">
+        <!-- Sub-tabs -->
+        <div class="sub-tabs">
+            <button class="sub-tab-btn active" data-subtab="dashboard">📊 Dashboard</button>
+            <button class="sub-tab-btn" data-subtab="search">🔍 Search</button>
+            <button class="sub-tab-btn" data-subtab="sessions">📝 Sessions</button>
+            <button class="sub-tab-btn" data-subtab="quality">🎯 Quality Analysis</button>
+            <button class="sub-tab-btn" data-subtab="patterns">🔄 Patterns</button>
+            <button class="sub-tab-btn" data-subtab="skills">⚙️ Skills Analysis</button>
+            <button class="sub-tab-btn" data-subtab="reprise">🔄 Reprise</button>
+        </div>
+
+        <!-- Dashboard Sub-tab -->
+        <div id="dashboard-subtab" class="sub-tab-content active">
+            <div class="section-header">
+                <h2>Claude Code Analytics Dashboard</h2>
+                <button id="import-btn" class="btn btn-primary">Import History</button>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-messages">-</div>
+                    <div class="stat-label">Total Messages</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-sessions">-</div>
+                    <div class="stat-label">Sessions</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-projects">-</div>
+                    <div class="stat-label">Projects</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="days-active">-</div>
+                    <div class="stat-label">Days Active</div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3>Messages Over Time</h3>
+                    <div class="chart-controls">
+                        <button class="granularity-btn active" data-granularity="day">Daily</button>
+                        <button class="granularity-btn" data-granularity="week">Weekly</button>
+                        <button class="granularity-btn" data-granularity="month">Monthly</button>
+                    </div>
+                    <div id="timeline-chart"></div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>Top 10 Projects</h3>
+                    <div id="projects-chart"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Sub-tab -->
+        <div id="search-subtab" class="sub-tab-content">
+            <div class="section-header">
+                <h2>Search Messages</h2>
+            </div>
+
+            <!-- Search Filters -->
+            <div class="filters-panel">
+                <input type="text" id="search-input" placeholder="Search messages..." class="search-input">
+
+                <select id="project-filter" class="filter-select">
+                    <option value="">All Projects</option>
+                </select>
+
+                <input type="date" id="start-date-filter" class="filter-input">
+                <input type="date" id="end-date-filter" class="filter-input">
+
+                <button id="search-btn" class="btn btn-primary">Search</button>
+                <button id="clear-filters-btn" class="btn btn-secondary">Clear</button>
+            </div>
+
+            <!-- Results -->
+            <div id="search-results">
+                <div id="results-info" class="results-info"></div>
+                <div id="messages-list" class="messages-list"></div>
+                <div id="pagination" class="pagination"></div>
+            </div>
+        </div>
+
+        <!-- Sessions Sub-tab -->
+        <div id="sessions-subtab" class="sub-tab-content">
+            <div class="section-header">
+                <h2>Sessions</h2>
+            </div>
+
+            <!-- Sessions Filters -->
+            <div class="filters-panel">
+                <select id="sessions-project-filter" class="filter-select">
+                    <option value="">All Projects</option>
+                </select>
+                <button id="sessions-filter-btn" class="btn btn-primary">Filter</button>
+            </div>
+
+            <!-- Sessions List -->
+            <div id="sessions-results">
+                <div id="sessions-info" class="results-info"></div>
+                <div id="sessions-list" class="sessions-list"></div>
+                <div id="sessions-pagination" class="pagination"></div>
+            </div>
+        </div>
+
+        <!-- Quality Analysis Sub-tab -->
+        <div id="quality-subtab" class="sub-tab-content">
+            <div class="section-header">
+                <h2>Prompting Quality Analysis</h2>
+                <button id="analyze-quality-btn" class="btn btn-primary">Analyze Session Quality</button>
+            </div>
+
+            <div class="filters-panel">
+                <input type="number" id="quality-sample-size" placeholder="Sample size" class="filter-input" min="10" max="1000" value="100">
+                <span style="margin-left: 10px; color: #8b949e;">Sessions à analyser</span>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="stats-grid" id="quality-stats" style="display: none;">
+                <div class="stat-card">
+                    <div class="stat-value" id="quality-total-sessions">-</div>
+                    <div class="stat-label">Sessions Analysées</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #c62828 0%, #e53935 100%);">
+                    <div class="stat-value" id="quality-problematic">-</div>
+                    <div class="stat-label">Problématiques</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #f57c00 0%, #ff9800 100%);">
+                    <div class="stat-value" id="quality-needs-improvement">-</div>
+                    <div class="stat-label">À Améliorer</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #2e7d32 0%, #43a047 100%);">
+                    <div class="stat-value" id="quality-good">-</div>
+                    <div class="stat-label">Bonnes</div>
+                </div>
+            </div>
+
+            <!-- Additional Stats -->
+            <div id="quality-metrics" style="display: none; margin-top: 20px; padding: 15px; background: #161b22; border: 1px solid #30363d; border-radius: 8px;">
+                <h3 style="margin-bottom: 10px;">Métriques Globales</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div>
+                        <strong>Score Problème Moyen:</strong> <span id="quality-avg-problem-score">-</span>
+                    </div>
+                    <div>
+                        <strong>Corrections/Session:</strong> <span id="quality-avg-corrections">-</span>
+                    </div>
+                    <div>
+                        <strong>Messages/Session:</strong> <span id="quality-avg-messages">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Worst Sessions -->
+            <div id="quality-worst-sessions" style="display: none; margin-top: 30px;">
+                <h3>Sessions les Plus Problématiques</h3>
+                <div id="worst-sessions-list"></div>
+            </div>
+
+            <!-- Best Sessions -->
+            <div id="quality-best-sessions" style="display: none; margin-top: 30px;">
+                <h3>Meilleures Sessions (Exemples à Suivre)</h3>
+                <div id="best-sessions-list"></div>
+            </div>
+        </div>
+
+        <!-- Patterns Sub-tab -->
+        <div id="patterns-subtab" class="sub-tab-content">
+            <div class="section-header">
+                <h2>Recurring Patterns</h2>
+                <button id="detect-patterns-btn" class="btn btn-primary">Detect Patterns</button>
+            </div>
+
+            <!-- Pattern Filters -->
+            <div class="filters-panel">
+                <select id="pattern-status-filter" class="filter-select">
+                    <option value="">All Statuses</option>
+                    <option value="new">New</option>
+                    <option value="reviewed">Reviewed</option>
+                    <option value="implemented">Implemented</option>
+                    <option value="dismissed">Dismissed</option>
+                </select>
+
+                <select id="pattern-category-filter" class="filter-select">
+                    <option value="">All Categories</option>
+                    <option value="question">Questions</option>
+                    <option value="command">Commands</option>
+                    <option value="code_reference">Code References</option>
+                    <option value="error_report">Error Reports</option>
+                    <option value="polite_request">Polite Requests</option>
+                    <option value="general">General</option>
+                </select>
+
+                <input type="number" id="pattern-min-frequency" placeholder="Min frequency" class="filter-input" min="1" value="3">
+
+                <button id="pattern-filter-btn" class="btn btn-primary">Filter</button>
+                <button id="pattern-clear-btn" class="btn btn-secondary">Clear</button>
+            </div>
+
+            <!-- Patterns List -->
+            <div id="patterns-results">
+                <div id="patterns-info" class="results-info"></div>
+                <div id="patterns-list" class="patterns-list"></div>
+                <div id="patterns-pagination" class="pagination"></div>
+            </div>
+
+            <!-- Pattern Details Modal -->
+            <div id="pattern-modal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 id="pattern-modal-title">Pattern Details</h3>
+                        <button class="modal-close">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="pattern-detail">
+                            <strong>Pattern:</strong> <span id="pattern-detail-text"></span>
+                        </div>
+                        <div class="pattern-detail">
+                            <strong>Frequency:</strong> <span id="pattern-detail-frequency"></span>
+                        </div>
+                        <div class="pattern-detail">
+                            <strong>Category:</strong> <span id="pattern-detail-category"></span>
+                        </div>
+                        <div class="pattern-detail">
+                            <strong>First Seen:</strong> <span id="pattern-detail-first"></span>
+                        </div>
+                        <div class="pattern-detail">
+                            <strong>Last Seen:</strong> <span id="pattern-detail-last"></span>
+                        </div>
+                        <div class="pattern-detail">
+                            <strong>Status:</strong>
+                            <select id="pattern-detail-status" class="filter-select">
+                                <option value="new">New</option>
+                                <option value="reviewed">Reviewed</option>
+                                <option value="implemented">Implemented</option>
+                                <option value="dismissed">Dismissed</option>
+                            </select>
+                        </div>
+                        <div class="pattern-detail">
+                            <strong>Notes:</strong>
+                            <textarea id="pattern-detail-notes" rows="4" placeholder="Add notes..." class="notes-textarea"></textarea>
+                        </div>
+                        <div class="pattern-detail">
+                            <strong>Skill Suggestion:</strong> <span id="pattern-detail-skill"></span>
+                        </div>
+                        <div class="pattern-detail">
+                            <strong>Example Messages:</strong>
+                            <div id="pattern-detail-examples" class="examples-list"></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button id="pattern-save-btn" class="btn btn-primary">Save</button>
+                        <button class="btn btn-secondary modal-close">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Skills Analysis Sub-tab -->
+        <div id="skills-subtab" class="sub-tab-content">
+            <div class="section-header">
+                <h2>Skills D1-D4 Analysis</h2>
+                <button id="analyze-skills-btn" class="btn btn-primary">Analyze All Skills</button>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters-panel">
+                <select id="skills-type-filter" class="filter-select">
+                    <option value="">All Types</option>
+                    <option value="global">Global</option>
+                    <option value="local">Local</option>
+                </select>
+                <select id="skills-score-filter" class="filter-select">
+                    <option value="">All Scores</option>
+                    <option value="80-100">Excellent (80-100)</option>
+                    <option value="60-79">Good (60-79)</option>
+                    <option value="0-59">Needs Improvement (0-59)</option>
+                </select>
+                <button id="skills-clear-filters-btn" class="btn btn-secondary btn-small">Clear Filters</button>
+            </div>
+
+            <div class="results-info" id="skills-results-info"></div>
+
+            <!-- Skills Table -->
+            <div class="skills-list">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Skill Name</th>
+                            <th>Type</th>
+                            <th>D1</th>
+                            <th>D2</th>
+                            <th>D3</th>
+                            <th>D4</th>
+                            <th>Overall</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="skills-table-body">
+                        <tr><td colspan="8" class="no-results">No skills analyzed yet. Click "Analyze All Skills" to begin.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination" id="skills-pagination" style="display: none;">
+                <button id="skills-prev-btn" class="btn btn-secondary">Previous</button>
+                <span class="page-info" id="skills-page-info"></span>
+                <button id="skills-next-btn" class="btn btn-secondary">Next</button>
+            </div>
+
+            <!-- Skill Detail Modal -->
+            <div id="skill-modal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 id="skill-detail-name"></h3>
+                        <button class="modal-close">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="pattern-detail">
+                            <strong>Skill Type:</strong> <span id="skill-detail-type"></span>
+                        </div>
+                        <div class="pattern-detail">
+                            <strong>Skill Path:</strong> <code id="skill-detail-path"></code>
+                        </div>
+                        <div class="pattern-detail">
+                            <strong>Overall Score:</strong> <span id="skill-detail-overall"></span>
+                        </div>
+
+                        <h4 style="margin-top: 20px; margin-bottom: 10px;">Discipline Scores</h4>
+                        <div class="stats-grid" style="margin-bottom: 20px;">
+                            <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                <div class="stat-value" id="skill-detail-d1">-</div>
+                                <div class="stat-label">D1: Prompt Craft</div>
+                            </div>
+                            <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                <div class="stat-value" id="skill-detail-d2">-</div>
+                                <div class="stat-label">D2: Context</div>
+                            </div>
+                            <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                                <div class="stat-value" id="skill-detail-d3">-</div>
+                                <div class="stat-label">D3: Intent</div>
+                            </div>
+                            <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                                <div class="stat-value" id="skill-detail-d4">-</div>
+                                <div class="stat-label">D4: Specification</div>
+                            </div>
+                        </div>
+
+                        <div class="pattern-detail">
+                            <strong>Recommendations:</strong>
+                            <div id="skill-detail-recommendations" style="margin-top: 10px;"></div>
+                        </div>
+
+                        <div class="pattern-detail">
+                            <strong>Details:</strong>
+                            <div id="skill-detail-details" style="margin-top: 10px; background: #21262d; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; max-height: 300px; overflow-y: auto; color: #e6edf3;"></div>
+                        </div>
+
+                        <div class="pattern-detail">
+                            <strong>Analyzed At:</strong> <span id="skill-detail-analyzed"></span>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button id="skill-reanalyze-btn" class="btn btn-primary">Reanalyze</button>
+                        <button class="btn btn-secondary modal-close">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reprise Sub-tab -->
+        <div id="reprise-subtab" class="sub-tab-content">
+            <div class="section-header">
+                <h2>Reprendre une Session</h2>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <select id="reprise-days-filter" class="filter-select" style="width: auto;">
+                        <option value="1">Aujourd'hui</option>
+                        <option value="2" selected>2 jours</option>
+                        <option value="3">3 jours</option>
+                        <option value="7">7 jours</option>
+                        <option value="14">14 jours</option>
+                        <option value="30">30 jours</option>
+                        <option value="90">3 mois</option>
+                    </select>
+                    <button id="reprise-refresh-btn" class="btn btn-primary">Rafraichir</button>
+                </div>
+            </div>
+
+            <div id="reprise-loading" style="display: none; text-align: center; padding: 40px; color: #8b949e;">
+                Chargement des sessions...
+            </div>
+
+            <div id="reprise-results">
+                <div id="reprise-info" class="results-info"></div>
+                <div id="reprise-list"></div>
+            </div>
+        </div>
+    </div>

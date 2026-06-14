@@ -67,17 +67,11 @@ class TabsManager {
     onTabSwitch(tabName) {
         // Import modules dynamically when needed
         switch(tabName) {
-            case 'local':
-                import('./local.js').then(module => module.default.load());
-                break;
             case 'dashboard':
                 import('./todo.js').then(module => module.default.init());
                 break;
             case 'markets':
                 // TradingView widgets load automatically
-                break;
-            case 'infrastructure':
-                import('./infrastructure.js').then(module => module.default.load());
                 break;
         }
     }

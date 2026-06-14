@@ -13,7 +13,17 @@ from shared_lib.flask_helpers import error as api_error
 ai_profile_bp = Blueprint('ai_profile', __name__, url_prefix='/api/ai-profile')
 
 BACKEND_URL = "http://127.0.0.1:5100/api"
+
+# Load API secret: env var first, then ai-profile credentials.env as fallback
 API_SECRET = os.environ.get('AI_PROFILE_API_SECRET', '')
+if not API_SECRET:
+    _cred_path = '/data/projects/ai-profile/data/private/credentials.env'
+    if os.path.exists(_cred_path):
+        with open(_cred_path) as _f:
+            for _line in _f:
+                if _line.startswith('export API_SECRET='):
+                    API_SECRET = _line.split('=', 1)[1].strip().strip('"').strip("'")
+                    break
 
 
 def _proxy(path, method="GET", data=None, timeout=60):
@@ -135,6 +145,27 @@ def messaging_linkedin_send():
 @ai_profile_bp.route('/introspect/map-data')
 def introspect_map_data():
     return _proxy("introspect/map-data")
+
+
+# --- Content Intelligence (Veille IA) ---
+
+@ai_profile_bp.route('/content/items')
+def content_items():
+    params = request.query_string.decode()
+    path = f"content/items?{params}" if params else "content/items"
+    return _proxy(path)
+
+
+@ai_profile_bp.route('/content/stats')
+def content_stats():
+    return _proxy("content/stats")
+
+
+@ai_profile_bp.route('/content/search')
+def content_search():
+    params = request.query_string.decode()
+    path = f"content/search?{params}" if params else "content/search"
+    return _proxy(path)
 
 
 # --- Health ---

@@ -131,8 +131,20 @@ API.mediaReco = {
         });
     },
 
-    async listRecommendations() {
-        return await API.fetch(`${API.BASE_URL}/media-reco/recommendations`);
+    async submitRecommendations(text, batch_id) {
+        return await API.fetch(`${API.BASE_URL}/media-reco/recommendations/submit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text, batch_id })
+        });
+    },
+
+    async listRecommendations(outcome, limit = 20) {
+        const params = new URLSearchParams();
+        if (outcome) params.set('outcome', outcome);
+        if (limit) params.set('limit', limit);
+        const qs = params.toString();
+        return await API.fetch(`${API.BASE_URL}/media-reco/recommendations${qs ? '?' + qs : ''}`);
     },
 
     async resolveRecommendation(id, outcome) {
@@ -156,11 +168,14 @@ API.mediaReco = {
     },
 
     async addTitle(data) {
-        return await API.fetch(`${API.BASE_URL}/media-reco/add`, {
+        // Custom fetch to expose 409 (already exists) and error messages without throwing
+        const resp = await fetch(`${API.BASE_URL}/media-reco/add`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
+        const body = await resp.json().catch(() => ({}));
+        return { ...body, _status: resp.status };
     },
 
     async createInteraction(data) {
@@ -489,6 +504,187 @@ API.hhDesign = {
     }
 };
 
+/**
+ * Gmail Knowledge API methods
+ */
+API.gmailKnowledge = {
+    async getStats() {
+        return await API.fetch(`${API.BASE_URL}/gmail-knowledge/stats`);
+    },
+
+    async getAccounts(params = '') {
+        return await API.fetch(`${API.BASE_URL}/gmail-knowledge/accounts${params}`);
+    },
+
+    async getContacts(params = '') {
+        return await API.fetch(`${API.BASE_URL}/gmail-knowledge/contacts${params}`);
+    },
+
+    async getAnnuaire(params = '') {
+        return await API.fetch(`${API.BASE_URL}/gmail-knowledge/annuaire${params}`);
+    },
+
+    async getDocuments(params = '') {
+        return await API.fetch(`${API.BASE_URL}/gmail-knowledge/documents${params}`);
+    },
+
+    async getEvents(params = '') {
+        return await API.fetch(`${API.BASE_URL}/gmail-knowledge/events${params}`);
+    },
+
+    async getFinancial(params = '') {
+        return await API.fetch(`${API.BASE_URL}/gmail-knowledge/financial${params}`);
+    },
+
+    async search(q) {
+        return await API.fetch(`${API.BASE_URL}/gmail-knowledge/search?q=${encodeURIComponent(q)}`);
+    }
+};
+
+/**
+ * Invites API methods
+ */
+API.invites = {
+    async send(data) {
+        return await API.fetch(`${API.BASE_URL}/invites/send`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    },
+
+    async preview(data) {
+        return await API.fetch(`${API.BASE_URL}/invites/preview`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    },
+
+    async searchContact(query) {
+        return await API.fetch(`${API.BASE_URL}/invites/search-contact`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query })
+        });
+    }
+};
+
+/**
+ * Veille IA (Content Intelligence) API methods
+ */
+API.veille = {
+    async getItems(params = {}) {
+        const qs = new URLSearchParams();
+        if (params.min_relevance) qs.set('min_relevance', params.min_relevance);
+        if (params.status) qs.set('status', params.status);
+        if (params.type) qs.set('type', params.type);
+        if (params.theme) qs.set('theme', params.theme);
+        if (params.limit) qs.set('limit', params.limit);
+        if (params.offset) qs.set('offset', params.offset);
+        const query = qs.toString();
+        return await API.fetch(`${API.BASE_URL}/ai-profile/content/items${query ? '?' + query : ''}`);
+    },
+
+    async getStats() {
+        return await API.fetch(`${API.BASE_URL}/ai-profile/content/stats`);
+    },
+
+    async search(q) {
+        return await API.fetch(`${API.BASE_URL}/ai-profile/content/search?q=${encodeURIComponent(q)}`);
+    }
+};
+
+/**
+ * Session Bookmarks API methods
+ */
+API.sessionBookmarks = {
+    async list(params = {}) {
+        const qs = new URLSearchParams();
+        if (params.status) qs.set('status', params.status);
+        if (params.project_id) qs.set('project_id', params.project_id);
+        const query = qs.toString();
+        return await API.fetch(`${API.BASE_URL}/session-bookmarks${query ? '?' + query : ''}`);
+    },
+
+    async get(id) {
+        return await API.fetch(`${API.BASE_URL}/session-bookmarks/${id}`);
+    },
+
+    async create(data) {
+        return await API.fetch(`${API.BASE_URL}/session-bookmarks`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    },
+
+    async update(id, data) {
+        return await API.fetch(`${API.BASE_URL}/session-bookmarks/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    },
+
+    async delete(id) {
+        return await API.fetch(`${API.BASE_URL}/session-bookmarks/${id}`, {
+            method: 'DELETE'
+        });
+    },
+
+    async stats() {
+        return await API.fetch(`${API.BASE_URL}/session-bookmarks/stats`);
+    }
+};
+
+/**
+ * Claude Analytics API methods
+ */
+API.claudeAnalytics = {
+    async importHistory(incremental = true) {
+        return await API.fetch(`${API.BASE_URL}/claude-analytics/import`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ incremental })
+        });
+    },
+
+    async getStats() {
+        return await API.fetch(`${API.BASE_URL}/claude-analytics/stats`);
+    },
+
+    async getMessages(params = {}) {
+        const qs = new URLSearchParams();
+        if (params.project) qs.set('project', params.project);
+        if (params.session_id) qs.set('session_id', params.session_id);
+        if (params.start_date) qs.set('start_date', params.start_date);
+        if (params.end_date) qs.set('end_date', params.end_date);
+        if (params.search) qs.set('search', params.search);
+        if (params.limit) qs.set('limit', params.limit);
+        if (params.offset) qs.set('offset', params.offset);
+        const query = qs.toString();
+        return await API.fetch(`${API.BASE_URL}/claude-analytics/messages${query ? '?' + query : ''}`);
+    },
+
+    async getSessions(params = {}) {
+        const qs = new URLSearchParams();
+        if (params.project) qs.set('project', params.project);
+        if (params.limit) qs.set('limit', params.limit);
+        if (params.offset) qs.set('offset', params.offset);
+        const query = qs.toString();
+        return await API.fetch(`${API.BASE_URL}/claude-analytics/sessions${query ? '?' + query : ''}`);
+    },
+
+    async getTimeline(granularity = 'day') {
+        return await API.fetch(`${API.BASE_URL}/claude-analytics/timeline?granularity=${granularity}`);
+    },
+
+    async getProjects() {
+        return await API.fetch(`${API.BASE_URL}/claude-analytics/projects`);
+    }
+};
+
 API.linkedin = {
     async getPosts(params = {}) {
         const qs = new URLSearchParams();
@@ -518,6 +714,278 @@ API.linkedin = {
     async sync() {
         return await API.fetch(`${API.BASE_URL}/linkedin/sync`, {
             method: 'POST'
+        });
+    }
+};
+
+// ---- Patrimoine ----
+API.patrimoine = {
+    async getTable() {
+        return await API.fetch(`${API.BASE_URL}/patrimoine/table`);
+    },
+    async getSummary() {
+        return await API.fetch(`${API.BASE_URL}/patrimoine/summary`);
+    },
+    async getCategories() {
+        return await API.fetch(`${API.BASE_URL}/patrimoine/categories`);
+    },
+    async getAccounts(categoryId) {
+        const qs = categoryId ? `?category_id=${categoryId}` : '';
+        return await API.fetch(`${API.BASE_URL}/patrimoine/accounts${qs}`);
+    },
+    async createAccount(data) {
+        return await API.fetch(`${API.BASE_URL}/patrimoine/accounts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    },
+    async updateAccount(id, data) {
+        return await API.fetch(`${API.BASE_URL}/patrimoine/accounts/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    },
+    async deleteAccount(id) {
+        return await API.fetch(`${API.BASE_URL}/patrimoine/accounts/${id}`, {
+            method: 'DELETE'
+        });
+    },
+    async getSnapshots() {
+        return await API.fetch(`${API.BASE_URL}/patrimoine/snapshots`);
+    },
+    async createSnapshot(data) {
+        return await API.fetch(`${API.BASE_URL}/patrimoine/snapshots`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    },
+    async deleteSnapshot(id) {
+        return await API.fetch(`${API.BASE_URL}/patrimoine/snapshots/${id}`, {
+            method: 'DELETE'
+        });
+    },
+    async getBalances(snapshotId) {
+        const qs = snapshotId ? `?snapshot_id=${snapshotId}` : '';
+        return await API.fetch(`${API.BASE_URL}/patrimoine/balances${qs}`);
+    },
+    async upsertBalance(data) {
+        return await API.fetch(`${API.BASE_URL}/patrimoine/balances`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    },
+    async batchUpsertBalances(balances) {
+        return await API.fetch(`${API.BASE_URL}/patrimoine/balances/batch`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ balances })
+        });
+    },
+    async getAnalysis() {
+        return await API.fetch(`${API.BASE_URL}/patrimoine/analysis`);
+    }
+};
+
+// ---- Claude Analytics ----
+API.claudeAnalytics = {
+    async importHistory(incremental = true) {
+        return await API.fetch(`${API.BASE_URL}/claude-analytics/import`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ incremental })
+        });
+    },
+
+    async getStats() {
+        return await API.fetch(`${API.BASE_URL}/claude-analytics/stats`);
+    },
+
+    async getMessages(params = {}) {
+        const qs = new URLSearchParams();
+        if (params.project) qs.set('project', params.project);
+        if (params.session_id) qs.set('session_id', params.session_id);
+        if (params.start_date) qs.set('start_date', params.start_date);
+        if (params.end_date) qs.set('end_date', params.end_date);
+        if (params.search) qs.set('search', params.search);
+        if (params.limit) qs.set('limit', params.limit);
+        if (params.offset) qs.set('offset', params.offset);
+        const query = qs.toString();
+        return await API.fetch(`${API.BASE_URL}/claude-analytics/messages${query ? '?' + query : ''}`);
+    },
+
+    async getSessions(params = {}) {
+        const qs = new URLSearchParams();
+        if (params.project) qs.set('project', params.project);
+        if (params.limit) qs.set('limit', params.limit);
+        if (params.offset) qs.set('offset', params.offset);
+        const query = qs.toString();
+        return await API.fetch(`${API.BASE_URL}/claude-analytics/sessions${query ? '?' + query : ''}`);
+    },
+
+    async getTimeline(granularity = 'day') {
+        return await API.fetch(`${API.BASE_URL}/claude-analytics/timeline?granularity=${granularity}`);
+    },
+
+    async getProjects() {
+        return await API.fetch(`${API.BASE_URL}/claude-analytics/projects`);
+    },
+
+    async detectPatterns(min_frequency = 3) {
+        return await API.fetch(`${API.BASE_URL}/claude-analytics/patterns/detect`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ min_frequency })
+        });
+    },
+
+    async getPatterns(params = {}) {
+        const qs = new URLSearchParams();
+        if (params.status) qs.set('status', params.status);
+        if (params.min_frequency) qs.set('min_frequency', params.min_frequency);
+        if (params.category) qs.set('category', params.category);
+        if (params.limit) qs.set('limit', params.limit);
+        if (params.offset) qs.set('offset', params.offset);
+        const query = qs.toString();
+        return await API.fetch(`${API.BASE_URL}/claude-analytics/patterns${query ? '?' + query : ''}`);
+    },
+
+    async updatePattern(id, updates) {
+        return await API.fetch(`${API.BASE_URL}/claude-analytics/patterns/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates)
+        });
+    },
+
+    async analyzeAllSkills() {
+        return await API.fetch(`${API.BASE_URL}/claude-analytics/skills/analyze`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        });
+    },
+
+    async getSkills(params = {}) {
+        const qs = new URLSearchParams();
+        if (params.min_overall_score) qs.set('min_overall_score', params.min_overall_score);
+        if (params.max_overall_score) qs.set('max_overall_score', params.max_overall_score);
+        if (params.skill_type) qs.set('skill_type', params.skill_type);
+        if (params.limit) qs.set('limit', params.limit);
+        if (params.offset) qs.set('offset', params.offset);
+        const query = qs.toString();
+        return await API.fetch(`${API.BASE_URL}/claude-analytics/skills${query ? '?' + query : ''}`);
+    },
+
+    async reanalyzeSkill(skill_path) {
+        return await API.fetch(`${API.BASE_URL}/claude-analytics/skills/reanalyze`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ skill_path })
+        });
+    }
+};
+
+// ---- Sidebar ----
+API.sidebar = {
+    async getLayout() {
+        return await API.fetch(`${API.BASE_URL}/sidebar/layout`);
+    },
+    async updateSection(id, data) {
+        return await API.fetch(`${API.BASE_URL}/sidebar/sections/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    },
+    async updateTab(id, data) {
+        return await API.fetch(`${API.BASE_URL}/sidebar/tabs/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    },
+    async moveSection(id, direction) {
+        return await API.fetch(`${API.BASE_URL}/sidebar/sections/${id}/move`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ direction })
+        });
+    },
+    async moveTab(id, direction) {
+        return await API.fetch(`${API.BASE_URL}/sidebar/tabs/${id}/move`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ direction })
+        });
+    },
+    async createSection(data) {
+        return await API.fetch(`${API.BASE_URL}/sidebar/sections`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    },
+    async deleteSection(id) {
+        return await API.fetch(`${API.BASE_URL}/sidebar/sections/${id}`, {
+            method: 'DELETE'
+        });
+    },
+    async reassignTab(tabId, data) {
+        return await API.fetch(`${API.BASE_URL}/sidebar/tabs/${tabId}/reassign`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    },
+    async getAllTabs() {
+        return await API.fetch(`${API.BASE_URL}/sidebar/tabs`);
+    },
+    async addTabToSection(sectionId, pageKey) {
+        return await API.fetch(`${API.BASE_URL}/sidebar/sections/${sectionId}/add-tab`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ page_key: pageKey })
+        });
+    },
+    async deleteTab(tabId) {
+        return await API.fetch(`${API.BASE_URL}/sidebar/tabs/${tabId}`, {
+            method: 'DELETE'
+        });
+    },
+    async reset() {
+        return await API.fetch(`${API.BASE_URL}/sidebar/reset`, {
+            method: 'POST'
+        });
+    }
+};
+
+// ---- Dynamic Pages ----
+API.dynamicPages = {
+    async list() {
+        return await API.fetch(`${API.BASE_URL}/dynamic-pages`);
+    },
+    async get(id) {
+        return await API.fetch(`${API.BASE_URL}/dynamic-pages/${id}`);
+    },
+    async create(data) {
+        return await API.fetch(`${API.BASE_URL}/dynamic-pages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    },
+    async pin(id) {
+        return await API.fetch(`${API.BASE_URL}/dynamic-pages/${id}/pin`, {
+            method: 'POST'
+        });
+    },
+    async delete(id) {
+        return await API.fetch(`${API.BASE_URL}/dynamic-pages/${id}`, {
+            method: 'DELETE'
         });
     }
 };

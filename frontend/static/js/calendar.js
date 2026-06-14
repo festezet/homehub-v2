@@ -6,6 +6,23 @@
 
 import { initGcalMixin } from './calendar-gcal.js';
 
+// Google Calendar colorId → background color (official palette, dark theme adjusted)
+const GCAL_COLORS = {
+    '1': '#7986cb',  // Lavande
+    '2': '#33b679',  // Sauge
+    '3': '#8e24aa',  // Raisin
+    '4': '#e67c73',  // Flamant
+    '5': '#f6bf26',  // Banane
+    '6': '#f4511e',  // Mandarine
+    '7': '#039be5',  // Paon
+    '8': '#616161',  // Graphite
+    '9': '#3f51b5',  // Myrtille
+    '10': '#0b8043', // Basilic
+    '11': '#d50000', // Tomate
+};
+const GCAL_DEFAULT_COLOR = '#1565c0';
+const GCAL_BIRTHDAY_COLOR = '#ab47bc';
+
 class CalendarModule {
     constructor() {
         this.currentWeekStart = this.getMonday(new Date());
@@ -354,6 +371,10 @@ class CalendarModule {
             hours.push(`${h.toString().padStart(2, '0')}:00`);
         }
 
+        const hasAllDay = days.some(day =>
+            (this.googleEvents[day] || []).some(e => e.allDay)
+        );
+
         return `
             <div class="calendar-grid">
                 <div class="grid-header">
@@ -370,6 +391,7 @@ class CalendarModule {
                         `;
                     }).join('')}
                 </div>
+                ${hasAllDay ? this.renderAllDayRow(days) : ''}
                 <div class="grid-body">
                     <div class="time-column">
                         ${hours.map(h => `<div class="time-slot">${h}</div>`).join('')}
@@ -384,10 +406,68 @@ class CalendarModule {
         `;
     }
 
+    getEventColor(event) {
+        if (event.eventType === 'birthday') return GCAL_BIRTHDAY_COLOR;
+        const title = (event.summary || '').toLowerCase();
+        if (title.includes('anniversaire') || title.includes('birthday')) return GCAL_BIRTHDAY_COLOR;
+        if (event.colorId && GCAL_COLORS[event.colorId]) return GCAL_COLORS[event.colorId];
+        return GCAL_DEFAULT_COLOR;
+    }
+
+    renderAllDayRow(days) {
+        // Collect unique events with column spans
+        const uniqueEvents = new Map();
+        days.forEach((day, i) => {
+            const dayEvents = (this.googleEvents[day] || []).filter(e => e.allDay);
+            dayEvents.forEach(e => {
+                if (!uniqueEvents.has(e.id)) {
+                    uniqueEvents.set(e.id, { event: e, startCol: i, endCol: i + 1 });
+                } else {
+                    uniqueEvents.get(e.id).endCol = i + 1;
+                }
+            });
+        });
+
+        if (uniqueEvents.size === 0) return '';
+        const events = Array.from(uniqueEvents.values());
+
+        // Assign rows (greedy non-overlapping)
+        const rows = [];
+        events.forEach(ev => {
+            let placed = false;
+            for (let r = 0; r < rows.length; r++) {
+                if (!rows[r].some(o => !(ev.endCol <= o.startCol || ev.startCol >= o.endCol))) {
+                    rows[r].push(ev);
+                    ev.row = r;
+                    placed = true;
+                    break;
+                }
+            }
+            if (!placed) {
+                ev.row = rows.length;
+                rows.push([ev]);
+            }
+        });
+
+        // grid-column +2 because col 1 is the label
+        return `
+            <div class="all-day-row" style="grid-template-rows: repeat(${rows.length}, auto);">
+                <div class="all-day-label">Journee</div>
+                ${events.map(ev => `
+                    <div class="all-day-event"
+                         style="grid-column: ${ev.startCol + 2} / ${ev.endCol + 2}; grid-row: ${ev.row + 1}; background: ${this.getEventColor(ev.event)};"
+                         title="${ev.event.summary || 'Sans titre'}">
+                        ${ev.event.summary || 'Sans titre'}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
     renderDayColumn(dayName, dayDate) {
         const dateStr = this.formatDate(dayDate);
         const isToday = this.isToday(dayDate);
-        const dayEvents = this.googleEvents[dayName] || [];
+        const dayEvents = (this.googleEvents[dayName] || []).filter(e => !e.allDay);
         const dayScheduled = this.scheduledTodos.filter(t => t.scheduled_date === dateStr);
 
         return `
@@ -407,8 +487,9 @@ class CalendarModule {
         const top = this.timeToPosition(startTime);
         const height = endTime ? this.durationToHeight(startTime, endTime) : 30;
 
+        const color = this.getEventColor(event);
         return `
-            <div class="google-event" style="top: ${top}px; height: ${Math.max(height, 25)}px;">
+            <div class="google-event" style="top: ${top}px; height: ${Math.max(height, 25)}px; background: ${color}; border-left-color: ${color};">
                 <span class="event-title">${event.summary || 'Sans titre'}</span>
                 <span class="event-time">${startTime}${endTime ? '-' + endTime : ''}</span>
             </div>

@@ -1,0 +1,91 @@
+<!-- Gmail Knowledge Tab -->
+<div class="gmail-knowledge-container">
+    <!-- Sub-tabs -->
+    <div class="gmail-knowledge-subtabs">
+        <button class="gmail-knowledge-subtab active" data-subtab="overview" onclick="window._gmailKnowledge.switchSubTab('overview')">Vue d'ensemble</button>
+        <button class="gmail-knowledge-subtab" data-subtab="annuaire" onclick="window._gmailKnowledge.switchSubTab('annuaire')">Annuaire</button>
+        <button class="gmail-knowledge-subtab" data-subtab="documents" onclick="window._gmailKnowledge.switchSubTab('documents')">Documents</button>
+        <button class="gmail-knowledge-subtab" data-subtab="events" onclick="window._gmailKnowledge.switchSubTab('events')">Evenements</button>
+        <button class="gmail-knowledge-subtab" data-subtab="financial" onclick="window._gmailKnowledge.switchSubTab('financial')">Finances</button>
+        <button class="gmail-knowledge-subtab" data-subtab="search" onclick="window._gmailKnowledge.switchSubTab('search')">Recherche</button>
+    </div>
+
+    <!-- Overview -->
+    <div id="gmail-knowledge-tab-overview" class="gmail-knowledge-subtab-content active">
+        <div id="gmail-knowledge-stats" class="gmail-knowledge-stats-grid">
+            <div class="gmail-knowledge-loading">Chargement...</div>
+        </div>
+        <div class="gmail-knowledge-charts-row">
+            <div class="gmail-knowledge-chart-card">
+                <h3>Annuaire par categorie</h3>
+                <div id="gmail-knowledge-chart-accounts"></div>
+            </div>
+            <div class="gmail-knowledge-chart-card">
+                <h3>Documents par type</h3>
+                <div id="gmail-knowledge-chart-documents"></div>
+            </div>
+            <div class="gmail-knowledge-chart-card">
+                <h3>Evenements par type</h3>
+                <div id="gmail-knowledge-chart-events"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Annuaire (merged accounts + contacts) -->
+    <div id="gmail-knowledge-tab-annuaire" class="gmail-knowledge-subtab-content">
+        <div class="gmail-knowledge-toolbar">
+            <input id="gmail-knowledge-annuaire-search" type="text" placeholder="Rechercher..."
+                   onkeyup="window._gmailKnowledge.debounceAnnuaire()">
+            <select id="gmail-knowledge-annuaire-type" onchange="window._gmailKnowledge.loadAnnuaire()">
+                <option value="">Tous</option>
+                <option value="compte">Comptes</option>
+                <option value="contact">Contacts</option>
+            </select>
+        </div>
+        <div id="gmail-knowledge-annuaire-list" class="gmail-knowledge-table-wrap">
+            <div class="gmail-knowledge-loading">Chargement...</div>
+        </div>
+    </div>
+
+    <!-- Documents -->
+    <div id="gmail-knowledge-tab-documents" class="gmail-knowledge-subtab-content">
+        <div class="gmail-knowledge-toolbar">
+            <select id="gmail-knowledge-docs-filter" onchange="window._gmailKnowledge.loadDocuments()">
+                <option value="">Tous types</option>
+            </select>
+        </div>
+        <div id="gmail-knowledge-docs-list" class="gmail-knowledge-table-wrap">
+            <div class="gmail-knowledge-loading">Chargement...</div>
+        </div>
+    </div>
+
+    <!-- Events -->
+    <div id="gmail-knowledge-tab-events" class="gmail-knowledge-subtab-content">
+        <div class="gmail-knowledge-toolbar">
+            <select id="gmail-knowledge-events-filter" onchange="window._gmailKnowledge.loadEvents()">
+                <option value="">Tous types</option>
+            </select>
+        </div>
+        <div id="gmail-knowledge-events-list" class="gmail-knowledge-table-wrap">
+            <div class="gmail-knowledge-loading">Chargement...</div>
+        </div>
+    </div>
+
+    <!-- Financial -->
+    <div id="gmail-knowledge-tab-financial" class="gmail-knowledge-subtab-content">
+        <div id="gmail-knowledge-financial-list" class="gmail-knowledge-table-wrap">
+            <div class="gmail-knowledge-loading">Chargement...</div>
+        </div>
+    </div>
+
+    <!-- Search -->
+    <div id="gmail-knowledge-tab-search" class="gmail-knowledge-subtab-content">
+        <div class="gmail-knowledge-toolbar">
+            <input id="gmail-knowledge-search-input" type="text" placeholder="Rechercher dans toute la base..."
+                   onkeyup="window._gmailKnowledge.debounceSearch()">
+        </div>
+        <div id="gmail-knowledge-search-results" class="gmail-knowledge-table-wrap">
+            <p class="gmail-knowledge-hint">Tapez au moins 2 caracteres pour lancer la recherche.</p>
+        </div>
+    </div>
+</div>

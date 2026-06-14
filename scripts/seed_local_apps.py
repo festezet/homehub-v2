@@ -169,10 +169,10 @@ def _seed_app_list(cursor, conn, app_list, label):
         values = {f: app.get(f, '') for f in fields}
         cols = [k for k, v in values.items() if v != '' or k in ('name', 'description', 'category_slug', 'icon', 'app_type', 'project_id', 'position')]
         placeholders = ', '.join(['?'] * len(cols))
-        cursor.execute(
-            "INSERT INTO app_entries (" + ', '.join(cols) + ") VALUES (" + placeholders + ")",
-            tuple(values[c] for c in cols)
+        sql = "INSERT INTO app_entries ({}) VALUES ({})".format(
+            ', '.join(cols), placeholders
         )
+        cursor.execute(sql, tuple(values[c] for c in cols))
         added += 1
     conn.commit()
     print(f"{label}: {added} added")

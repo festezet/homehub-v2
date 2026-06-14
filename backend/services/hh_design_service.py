@@ -84,7 +84,7 @@ class HHDesignService:
         }
 
     def _scan_pages(self):
-        """Extract pages from base.html data-page attributes."""
+        """Extract pages from base.html data-page attributes with descriptions."""
         base_html = os.path.join(HOMEHUB_ROOT, 'frontend', 'templates', 'base.html')
         pages = []
         if not os.path.isfile(base_html):
@@ -92,14 +92,25 @@ class HHDesignService:
         try:
             with open(base_html, 'r', encoding='utf-8') as f:
                 content = f.read()
+            # Extract page config for descriptions
+            page_descs = {}
+            for m in re.finditer(
+                r"'([^']+)'\s*:\s*\{\s*title:\s*'([^']*)',\s*subtitle:\s*'([^']*)'",
+                content
+            ):
+                page_descs[m.group(1)] = m.group(3)
             for match in re.finditer(r'data-page="([^"]+)"', content):
-                pages.append(match.group(1))
+                name = match.group(1)
+                pages.append({
+                    'name': name,
+                    'description': page_descs.get(name, ''),
+                })
         except Exception as e:
             logger.error(f"Error scanning pages: {e}")
         return pages
 
     def _scan_api_routes(self):
-        """Scan backend/api/*.py for route definitions."""
+        """Scan backend/api/*.py for route definitions with docstrings."""
         results = []
         api_dir = os.path.join(HOMEHUB_ROOT, 'backend', 'api')
         if not os.path.isdir(api_dir):
@@ -113,18 +124,20 @@ class HHDesignService:
                     content = fh.read()
                 routes = re.findall(r"@\w+\.route\(['\"]([^'\"]+)['\"]", content)
                 loc = content.count('\n') + 1
+                desc = self._extract_module_docstring(content)
                 results.append({
                     'file': f,
                     'routes': routes,
                     'route_count': len(routes),
                     'loc': loc,
+                    'description': desc,
                 })
             except Exception:
                 continue
         return results
 
     def _scan_services(self):
-        """Scan backend/services/*.py for service classes."""
+        """Scan backend/services/*.py for service classes with docstrings."""
         results = []
         svc_dir = os.path.join(HOMEHUB_ROOT, 'backend', 'services')
         if not os.path.isdir(svc_dir):
@@ -138,17 +151,19 @@ class HHDesignService:
                     content = fh.read()
                 classes = re.findall(r'class\s+(\w+)', content)
                 loc = content.count('\n') + 1
+                desc = self._extract_module_docstring(content)
                 results.append({
                     'file': f,
                     'classes': classes,
                     'loc': loc,
+                    'description': desc,
                 })
             except Exception:
                 continue
         return results
 
     def _scan_js_modules(self):
-        """Scan frontend/static/js/*.js for modules."""
+        """Scan frontend/static/js/*.js for modules with descriptions."""
         results = []
         js_dir = os.path.join(HOMEHUB_ROOT, 'frontend', 'static', 'js')
         if not os.path.isdir(js_dir):
@@ -161,7 +176,8 @@ class HHDesignService:
                 with open(fpath, 'r', encoding='utf-8') as fh:
                     content = fh.read()
                 loc = content.count('\n') + 1
-                results.append({'file': f, 'loc': loc})
+                desc = self._extract_js_description(content)
+                results.append({'file': f, 'loc': loc, 'description': desc})
             except Exception:
                 continue
         return results
@@ -182,6 +198,27 @@ class HHDesignService:
             except Exception:
                 continue
         return results
+
+    @staticmethod
+    def _extract_module_docstring(content):
+        """Extract first line of module docstring from Python file."""
+        m = re.match(r'\s*(?:#.*\n)*\s*(?:\'\'\'|""")(.+?)(?:\'\'\'|""")', content, re.DOTALL)
+        if m:
+            lines = m.group(1).strip().splitlines()
+            # Return first meaningful line (skip module name if it's just a title)
+            for line in lines:
+                line = line.strip().rstrip('.')
+                if line and len(line) > 5:
+                    return line
+        return ''
+
+    @staticmethod
+    def _extract_js_description(content):
+        """Extract description from JS file header comment."""
+        m = re.match(r'\s*/\*\*?\s*\n?\s*\*?\s*(.+?)[\n*]', content)
+        if m:
+            return m.group(1).strip().rstrip('.')
+        return ''
 
     # ========== Feature CRUD ==========
 
@@ -260,7 +297,8 @@ class HHDesignService:
             set_clause = ', '.join(f"{k} = ?" for k in updates)
             values = list(updates.values()) + [int(feature_id)]
             cursor = conn.cursor()
-            cursor.execute(f"UPDATE features SET {set_clause} WHERE id = ?", values)
+            sql = "UPDATE features SET {} WHERE id = ?".format(set_clause)
+            cursor.execute(sql, values)
             conn.commit()
             return cursor.rowcount > 0
         finally:

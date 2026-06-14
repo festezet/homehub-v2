@@ -1,0 +1,271 @@
+<!-- LinkedIn Prospection — partiel HomeHub -->
+<div class="lp-app">
+
+    <!-- Mini-nav interne LP + filtre compte -->
+    <div class="lp-topbar">
+        <ul class="lp-nav-links">
+            <li><a href="#" data-lp-page="dashboard" class="active">Dashboard</a></li>
+            <li><a href="#" data-lp-page="leads">Leads</a></li>
+            <li><a href="#" data-lp-page="signals">Signals</a></li>
+            <li><a href="#" data-lp-page="messages">Messages</a></li>
+            <li><a href="#" data-lp-page="content">Content</a></li>
+            <li><a href="#" data-lp-page="icebreakers">Icebreakers</a></li>
+            <li><a href="#" data-lp-page="pipeline">Pipeline</a></li>
+            <li><a href="#" data-lp-page="prospection">Prospection</a></li>
+        </ul>
+        <div class="lp-account-filter">
+            <label>Account</label>
+            <select id="lp-accountFilter">
+                <option value="">All</option>
+                <option value="en-offshore">EN Offshore</option>
+                <option value="fr-ai">FR AI</option>
+            </select>
+        </div>
+    </div>
+
+    <main class="lp-content">
+        <!-- Dashboard -->
+        <section id="lp-page-dashboard" class="lp-page active">
+            <h1>Pipeline Dashboard</h1>
+            <div class="lp-metrics-row" id="lp-scoreCards"></div>
+            <div class="lp-grid-2col">
+                <div class="lp-card">
+                    <h3>Pipeline Funnel</h3>
+                    <div id="lp-pipelineFunnel" class="lp-funnel-list"></div>
+                </div>
+                <div class="lp-card">
+                    <h3>Messages</h3>
+                    <div id="lp-messageStats" class="lp-stat-list"></div>
+                </div>
+            </div>
+            <div class="lp-grid-2col">
+                <div class="lp-card">
+                    <h3>Content</h3>
+                    <div id="lp-contentStats" class="lp-stat-list"></div>
+                </div>
+                <div class="lp-card">
+                    <h3>Signals (7 days)</h3>
+                    <div id="lp-signalStat" class="lp-stat-list"></div>
+                </div>
+            </div>
+            <div class="lp-card">
+                <h3>Top Leads</h3>
+                <table id="lp-topLeadsTable" class="lp-data-table">
+                    <thead>
+                        <tr><th>Name</th><th>Company</th><th>DeepSignal</th><th>Pierre</th><th>Status</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Leads -->
+        <section id="lp-page-leads" class="lp-page">
+            <h1>Leads</h1>
+            <div class="lp-filters-bar">
+                <input type="text" id="lp-leadSearch" placeholder="Search name, company, title...">
+                <select id="lp-tierFilter">
+                    <option value="">All tiers</option>
+                    <option value="hot">HOT (&ge;70)</option>
+                    <option value="warm">WARM (40-69)</option>
+                    <option value="cold">COLD (&lt;40)</option>
+                </select>
+                <button id="lp-btnSearchLeads" class="lp-btn lp-btn-primary">Search</button>
+            </div>
+            <div id="lp-leadsCount" class="lp-result-count"></div>
+            <table id="lp-leadsTable" class="lp-data-table">
+                <thead>
+                    <tr>
+                        <th class="lp-sortable" data-sort="name">Name</th>
+                        <th class="lp-sortable" data-sort="company">Company</th>
+                        <th class="lp-sortable" data-sort="title">Title</th>
+                        <th class="lp-sortable" data-sort="deepsignal">DeepSignal</th>
+                        <th class="lp-sortable" data-sort="pierre">Pierre</th>
+                        <th class="lp-sortable" data-sort="status">Status</th>
+                        <th class="lp-sortable" data-sort="account">Account</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <div class="lp-pagination" id="lp-leadsPagination"></div>
+        </section>
+
+        <!-- Lead Detail -->
+        <section id="lp-page-lead-detail" class="lp-page">
+            <button class="lp-btn lp-btn-back" id="lp-btnBackLeads">&larr; Back to Leads</button>
+            <div id="lp-leadDetailHeader" class="lp-lead-header"></div>
+            <div class="lp-grid-2col">
+                <div class="lp-card">
+                    <h3>Messages</h3>
+                    <div id="lp-leadMessages" class="lp-message-list"></div>
+                </div>
+                <div class="lp-card">
+                    <h3>Signals</h3>
+                    <div id="lp-leadSignals" class="lp-signal-list"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Signals -->
+        <section id="lp-page-signals" class="lp-page">
+            <h1>Signals</h1>
+            <div class="lp-filters-bar">
+                <select id="lp-signalDays">
+                    <option value="7">Last 7 days</option>
+                    <option value="30" selected>Last 30 days</option>
+                    <option value="90">Last 90 days</option>
+                </select>
+                <button id="lp-btnRefreshSignals" class="lp-btn lp-btn-primary">Refresh</button>
+            </div>
+            <div id="lp-signalsCount" class="lp-result-count"></div>
+            <table id="lp-signalsTable" class="lp-data-table">
+                <thead>
+                    <tr>
+                        <th>Date</th><th>Title</th><th>Company</th>
+                        <th>Project</th><th>MW</th><th>Type</th><th>Source</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+
+        <!-- Messages -->
+        <section id="lp-page-messages" class="lp-page">
+            <h1>Message Queue</h1>
+            <div class="lp-filters-bar">
+                <select id="lp-msgStatusFilter">
+                    <option value="draft">Drafts</option>
+                    <option value="approved">Approved</option>
+                    <option value="sent">Sent</option>
+                </select>
+                <button id="lp-btnRefreshMessages" class="lp-btn lp-btn-primary">Refresh</button>
+            </div>
+            <div id="lp-messagesList" class="lp-message-queue"></div>
+        </section>
+
+        <!-- Content -->
+        <section id="lp-page-content" class="lp-page">
+            <h1>Content Queue</h1>
+            <div class="lp-filters-bar">
+                <select id="lp-contentStatusFilter">
+                    <option value="draft">Drafts</option>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="published">Published</option>
+                </select>
+                <button id="lp-btnRefreshContent" class="lp-btn lp-btn-primary">Refresh</button>
+            </div>
+            <div id="lp-contentList" class="lp-content-queue"></div>
+        </section>
+
+        <!-- Prospection -->
+        <section id="lp-page-prospection" class="lp-page">
+            <h1>Prospection</h1>
+
+            <!-- Sources -->
+            <div class="lp-card">
+                <div class="lp-card-header-row">
+                    <h3>Scraping Sources</h3>
+                    <button class="lp-btn lp-btn-primary lp-btn-sm" id="lp-btnToggleSourceForm">+ Add Source</button>
+                </div>
+                <div id="lp-sourceForm" class="lp-source-form lp-hidden">
+                    <div class="lp-form-row">
+                        <input type="text" id="lp-srcName" placeholder="Source name">
+                        <select id="lp-srcType">
+                            <option value="search_url">Search URL</option>
+                            <option value="post_url">Post URL</option>
+                            <option value="sn_list">SN List</option>
+                            <option value="post_likers">Post Likers</option>
+                            <option value="profile_scraper">Profile Scraper</option>
+                        </select>
+                        <select id="lp-srcAccount">
+                            <option value="en-offshore">EN Offshore</option>
+                            <option value="fr-ai">FR AI</option>
+                        </select>
+                    </div>
+                    <div class="lp-form-row">
+                        <input type="text" id="lp-srcUrl" placeholder="LinkedIn URL" class="lp-input-wide">
+                        <input type="text" id="lp-srcPhantomId" placeholder="Phantom ID (optional)">
+                    </div>
+                    <div class="lp-form-row">
+                        <button class="lp-btn lp-btn-primary" id="lp-btnCreateSource">Create Source</button>
+                        <button class="lp-btn lp-btn-secondary" id="lp-btnCancelSource">Cancel</button>
+                    </div>
+                </div>
+                <table id="lp-sourcesTable" class="lp-data-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th><th>Type</th><th>Account</th>
+                            <th>URL</th><th>Runs</th><th>Last Run</th><th></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <!-- Phantom Runs -->
+            <div class="lp-card">
+                <div class="lp-card-header-row">
+                    <h3>Phantom Runs</h3>
+                    <button class="lp-btn lp-btn-secondary lp-btn-sm" id="lp-btnRefreshRuns">Refresh</button>
+                </div>
+                <table id="lp-runsTable" class="lp-data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th><th>Type</th><th>Account</th>
+                            <th>Status</th><th>Launched</th><th>Results</th><th>Imported</th><th></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Pipeline -->
+        <section id="lp-page-pipeline" class="lp-page">
+            <h1>Pipeline du processus</h1>
+            <p class="lp-page-subtitle">
+                De la source de scraping a l'icebreaker — DB partagee :
+                <code id="lp-pipelineDbPath">/data/projects/infrastructure/data/crm.db</code>
+            </p>
+
+            <div class="lp-pipeline-diagram-wrap">
+                <div id="lp-pipelineDiagram" class="lp-pipeline-diagram"></div>
+            </div>
+
+            <div class="lp-card" style="margin-top: 24px;">
+                <h3>Tables crm.db utilisees</h3>
+                <table class="lp-data-table">
+                    <thead>
+                        <tr><th>Table</th><th>Role</th><th>Etape</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>scraping_sources</code></td><td>Sources de scraping (URLs PB, type)</td><td>1</td></tr>
+                        <tr><td><code>phantombuster_runs</code></td><td>Historique des executions PB (quota)</td><td>1, 5</td></tr>
+                        <tr><td><code>contacts</code></td><td>Contacts unifies</td><td>2 → 10</td></tr>
+                        <tr><td><code>signals</code></td><td>Articles RSS detectes</td><td>4</td></tr>
+                        <tr><td><code>signal_matches</code></td><td>Lien signal ↔ contact</td><td>4</td></tr>
+                        <tr><td><code>linkedin_messages</code></td><td>Messages generes (draft/approved/sent)</td><td>7, 8, 9</td></tr>
+                        <tr><td><code>linkedin_queue</code></td><td>File d'envoi automatise (futur)</td><td>9</td></tr>
+                        <tr><td><code>linkedin_content</code></td><td>Posts LinkedIn (Content Engine)</td><td>(parallele)</td></tr>
+                        <tr><td><code>templates</code></td><td>Templates messages reutilisables</td><td>7</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Icebreakers -->
+        <section id="lp-page-icebreakers" class="lp-page">
+            <h2>Icebreakers <span id="lp-icebreakerCount" class="lp-count-badge"></span></h2>
+            <p class="lp-page-subtitle">HOT contacts — copy and send via LinkedIn</p>
+            <div class="lp-ib-toolbar">
+                <label for="lp-icebreakerBatchFilter">Batch :</label>
+                <select id="lp-icebreakerBatchFilter">
+                    <option value="all">Tous les batchs</option>
+                </select>
+                <span id="lp-icebreakerBatchSummary" class="lp-ib-batch-summary"></span>
+            </div>
+            <div id="lp-icebreakerList" class="lp-icebreaker-grid"></div>
+        </section>
+    </main>
+</div>

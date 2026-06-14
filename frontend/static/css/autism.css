@@ -1,0 +1,1023 @@
+.autism-container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* Sub-tabs */
+.autism-subtabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 24px;
+    background: var(--color-card, #1e1e2e);
+    border-radius: 10px;
+    padding: 4px;
+    border: 1px solid var(--color-border, #2e2e3e);
+}
+
+.autism-subtab {
+    flex: 1;
+    padding: 10px 12px;
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary, #888);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.autism-subtab:hover {
+    color: var(--color-text, #e0e0e0);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.autism-subtab.active {
+    background: rgba(99, 102, 241, 0.2);
+    color: #818cf8;
+}
+
+.autism-subtab-content {
+    display: none;
+}
+
+.autism-subtab-content.active {
+    display: block;
+}
+
+/* Sections */
+.autism-section {
+    margin-bottom: 28px;
+}
+
+.autism-section-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--color-text-secondary, #999);
+    margin: 0 0 10px 4px;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+/* Links Grid (for platforms/formations) */
+.autism-links-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+}
+
+.autism-link-card {
+    background: var(--color-card, #1e1e2e);
+    border: 1px solid var(--color-border, #2e2e3e);
+    border-radius: 10px;
+    padding: 16px;
+    transition: all 0.2s;
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+}
+
+.autism-link-card:hover {
+    border-color: #818cf8;
+    background: rgba(99, 102, 241, 0.05);
+    transform: translateY(-1px);
+}
+
+.autism-link-card-icon {
+    font-size: 1.4rem;
+    margin-bottom: 8px;
+}
+
+.autism-link-card-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--color-text, #e0e0e0);
+    margin-bottom: 4px;
+}
+
+.autism-link-card-desc {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary, #888);
+    line-height: 1.4;
+}
+
+.autism-link-card-tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-top: 8px;
+    font-weight: 500;
+}
+
+.autism-link-card-tag.formation {
+    background: rgba(99, 102, 241, 0.15);
+    color: #818cf8;
+}
+
+.autism-link-card-tag.community {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+}
+
+.autism-link-card-tag.newsletter {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+}
+
+/* Links List (for articles, references) */
+.autism-links-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.autism-link-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--color-card, #1e1e2e);
+    border: 1px solid var(--color-border, #2e2e3e);
+    border-radius: 10px;
+    text-decoration: none;
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+}
+
+.autism-link-row:hover {
+    border-color: var(--color-border, #2e2e3e);
+    border-left-color: #818cf8;
+    background: rgba(99, 102, 241, 0.04);
+    transform: translateX(2px);
+}
+
+.autism-link-row-icon {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(99, 102, 241, 0.08);
+    border-radius: 8px;
+}
+
+.autism-link-row-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.autism-link-row-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--color-text, #e0e0e0);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+}
+
+.autism-link-row-meta {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary, #888);
+    margin-top: 3px;
+}
+
+.autism-link-row-date {
+    font-size: 0.72rem;
+    color: var(--color-text-secondary, #777);
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.autism-link-row-arrow {
+    color: var(--color-text-secondary, #555);
+    flex-shrink: 0;
+    font-size: 0.8rem;
+    transition: transform 0.2s;
+}
+
+.autism-link-row:hover .autism-link-row-arrow {
+    transform: translate(2px, -2px);
+    color: #818cf8;
+}
+
+/* Contacts */
+.autism-contacts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.autism-contact-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--color-card, #1e1e2e);
+    border: 1px solid var(--color-border, #2e2e3e);
+    border-radius: 8px;
+}
+
+.autism-contact-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    width: 28px;
+    text-align: center;
+}
+
+.autism-contact-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.autism-contact-name {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--color-text, #e0e0e0);
+}
+
+.autism-contact-role {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary, #888);
+    margin-top: 2px;
+}
+
+.autism-contact-detail {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary, #666);
+    flex-shrink: 0;
+}
+
+.autism-contact-detail a {
+    color: #818cf8;
+    text-decoration: none;
+}
+
+.autism-contact-detail a:hover {
+    text-decoration: underline;
+}
+
+/* ========== Specialists ========== */
+.autism-specialist-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.autism-specialist-row {
+    display: grid;
+    grid-template-columns: 180px 180px 1fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 14px;
+    background: var(--color-card, #1e1e2e);
+    border: 1px solid var(--color-border, #2e2e3e);
+    border-radius: 8px;
+    transition: border-color 0.2s;
+}
+
+.autism-specialist-row:hover {
+    border-color: var(--color-border-hover, #4e4e5e);
+}
+
+.autism-specialist-name {
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: var(--color-text, #e0e0e0);
+}
+
+.autism-specialist-inst {
+    font-size: 0.78rem;
+    color: #818cf8;
+}
+
+.autism-specialist-contrib {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary, #aaa);
+    line-height: 1.4;
+}
+
+.autism-specialist-pubs {
+    font-size: 0.72rem;
+    color: var(--color-text-secondary, #666);
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* ========== Books ========== */
+.autism-books-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.autism-book-card {
+    display: flex;
+    gap: 16px;
+    background: var(--color-card, #1e1e2e);
+    border: 1px solid var(--color-border, #2e2e3e);
+    border-radius: 10px;
+    padding: 16px;
+    transition: border-color 0.2s;
+}
+
+.autism-book-card:hover {
+    border-color: var(--color-border-hover, #4e4e5e);
+}
+
+.autism-book-cover {
+    width: 50px;
+    height: 66px;
+    background: rgba(99, 102, 241, 0.1);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+
+.autism-book-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.autism-book-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--color-text, #e0e0e0);
+    margin-bottom: 2px;
+}
+
+.autism-book-author {
+    font-size: 0.82rem;
+    color: #818cf8;
+    margin-bottom: 6px;
+}
+
+.autism-book-desc {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary, #888);
+    line-height: 1.4;
+}
+
+/* ========== Publications ========== */
+.autism-pub-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.autism-pub-row {
+    display: grid;
+    grid-template-columns: 1fr 180px auto;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 14px;
+    background: var(--color-card, #1e1e2e);
+    border: 1px solid var(--color-border, #2e2e3e);
+    border-radius: 8px;
+    transition: border-color 0.2s;
+}
+
+.autism-pub-row:hover {
+    border-color: var(--color-border-hover, #4e4e5e);
+}
+
+.autism-pub-info {
+    min-width: 0;
+}
+
+.autism-pub-title {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--color-text, #e0e0e0);
+    line-height: 1.3;
+}
+
+.autism-pub-authors {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary, #888);
+    margin-top: 2px;
+}
+
+.autism-pub-journal {
+    font-size: 0.78rem;
+    color: #818cf8;
+    font-style: italic;
+}
+
+.autism-pub-metric {
+    font-size: 0.72rem;
+    color: var(--color-text-secondary, #aaa);
+    background: rgba(99, 102, 241, 0.08);
+    padding: 3px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    text-align: center;
+}
+
+/* Journals Grid */
+.autism-journals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px;
+}
+
+.autism-journal-card {
+    background: var(--color-card, #1e1e2e);
+    border: 1px solid var(--color-border, #2e2e3e);
+    border-radius: 10px;
+    padding: 14px;
+    transition: border-color 0.2s;
+}
+
+.autism-journal-card:hover {
+    border-color: var(--color-border-hover, #4e4e5e);
+}
+
+.autism-journal-name {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--color-text, #e0e0e0);
+    margin-bottom: 4px;
+}
+
+.autism-journal-stat {
+    font-size: 0.78rem;
+    color: var(--color-text-secondary, #888);
+    margin-bottom: 8px;
+}
+
+.autism-journal-tag {
+    display: inline-block;
+    font-size: 0.68rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.autism-journal-tag.top {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+}
+
+.autism-journal-tag.new {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+}
+
+.autism-journal-tag.high-if {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+}
+
+/* ========== Web Resources ========== */
+.autism-web-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.autism-web-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--color-card, #1e1e2e);
+    border: 1px solid var(--color-border, #2e2e3e);
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.autism-web-row:hover {
+    border-color: #818cf8;
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.autism-web-name {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--color-text, #e0e0e0);
+    flex-shrink: 0;
+    min-width: 200px;
+}
+
+.autism-web-desc {
+    font-size: 0.78rem;
+    color: var(--color-text-secondary, #888);
+    flex: 1;
+    min-width: 0;
+}
+
+/* Empty state */
+.autism-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--color-text-secondary, #666);
+    font-size: 0.9rem;
+}
+
+/* ========== Review Controls ========== */
+.autism-review-entry {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.autism-review-content {
+    min-width: 0;
+}
+
+.autism-review-controls {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+    margin-bottom: 3px;
+}
+
+.autism-radio {
+    cursor: pointer;
+    font-size: 0.68rem;
+    width: 20px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    border: 1px solid transparent;
+    color: #6b7280;
+    background: rgba(255, 255, 255, 0.03);
+    transition: all 0.15s;
+    user-select: none;
+    opacity: 0.5;
+}
+
+.autism-review-entry:hover .autism-radio {
+    opacity: 1;
+    border-color: #3a3a5a;
+}
+
+.autism-radio:hover {
+    border-color: #7c7caa;
+    background: rgba(255, 255, 255, 0.08);
+    opacity: 1;
+}
+
+.autism-radio input {
+    display: none;
+}
+
+.autism-radio.selected {
+    opacity: 1;
+}
+
+.autism-radio.ok.selected {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border-color: rgba(16, 185, 129, 0.4);
+}
+
+.autism-radio.nok.selected {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.4);
+}
+
+.autism-radio.idk.selected {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.4);
+}
+
+.autism-comment-btn {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid transparent;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.68rem;
+    width: 20px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    transition: all 0.15s;
+    position: relative;
+    z-index: 2;
+    pointer-events: auto;
+    opacity: 0.5;
+}
+
+.autism-review-entry:hover .autism-comment-btn {
+    opacity: 1;
+    border-color: #3a3a5a;
+}
+
+.autism-comment-btn:hover {
+    border-color: #7c7caa;
+    background: rgba(255, 255, 255, 0.08);
+    opacity: 1;
+}
+
+.autism-comment-btn.has-comment {
+    color: #818cf8;
+    border-color: rgba(99, 102, 241, 0.4);
+    background: rgba(99, 102, 241, 0.1);
+    opacity: 1;
+}
+
+/* ========== Inline Comment ========== */
+.autism-review-body {
+    min-width: 0;
+}
+
+.autism-inline-comment {
+    margin-top: 6px;
+    padding: 0 4px;
+}
+
+.autism-inline-textarea {
+    width: 100%;
+    background: var(--color-bg, #0f0f1a);
+    border: 1px solid var(--color-border, #2e2e3e);
+    border-radius: 6px;
+    padding: 8px 10px;
+    color: var(--color-text, #e0e0e0);
+    font-size: 0.82rem;
+    resize: vertical;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.autism-inline-textarea:focus {
+    outline: none;
+    border-color: #818cf8;
+}
+
+/* ========== Save Flash ========== */
+.autism-save-flash {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid #34d399;
+    color: #34d399;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 900;
+    transition: opacity 0.3s ease;
+}
+
+.autism-save-flash.visible {
+    animation: autism-flash-in-out 1.4s ease forwards;
+}
+
+@keyframes autism-flash-in-out {
+    0%   { opacity: 0; transform: translateY(8px); }
+    15%  { opacity: 1; transform: translateY(0); }
+    70%  { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-4px); }
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 768px) {
+    .autism-specialist-row {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+    .autism-specialist-pubs {
+        text-align: left;
+    }
+    .autism-pub-row {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+    .autism-pub-journal {
+        font-size: 0.75rem;
+    }
+    .autism-web-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    .autism-web-name {
+        min-width: 0;
+    }
+}
+
+/* --- Ennui tab --- */
+
+.autism-ennui-intro {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(168, 85, 247, 0.08));
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+}
+.autism-ennui-intro-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--color-text, #e0e0e0);
+    margin: 0 0 8px 0;
+}
+.autism-ennui-intro-desc {
+    font-size: 0.88rem;
+    color: var(--color-text-secondary, #a0a0b0);
+    line-height: 1.55;
+    margin: 0;
+}
+
+.autism-ennui-strategies {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.autism-ennui-card {
+    background: var(--color-card, #1e1e2e);
+    border: 1px solid var(--color-border, #2e2e3e);
+    border-radius: 10px;
+    padding: 14px 16px;
+    transition: border-color 0.2s;
+}
+.autism-ennui-card:hover {
+    border-color: rgba(99, 102, 241, 0.4);
+}
+.autism-ennui-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+.autism-ennui-card-name {
+    font-weight: 600;
+    font-size: 0.92rem;
+    color: var(--color-text, #e0e0e0);
+}
+.autism-ennui-card-desc {
+    font-size: 0.84rem;
+    color: var(--color-text-secondary, #a0a0b0);
+    line-height: 1.5;
+    margin-bottom: 8px;
+}
+.autism-ennui-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+.autism-ennui-card-source {
+    font-size: 0.75rem;
+    color: var(--color-text-muted, #707080);
+    font-style: italic;
+}
+.autism-ennui-link {
+    font-size: 0.78rem;
+    color: #818cf8;
+    text-decoration: none;
+}
+.autism-ennui-link:hover {
+    text-decoration: underline;
+}
+
+/* Ennui tags */
+.autism-ennui-tag {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.autism-ennui-tag.theorie { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+.autism-ennui-tag.vecu { background: rgba(251, 146, 60, 0.15); color: #fb923c; }
+.autism-ennui-tag.corps { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+.autism-ennui-tag.interet { background: rgba(250, 204, 21, 0.15); color: #fbbf24; }
+.autism-ennui-tag.outil { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+.autism-ennui-tag.env { background: rgba(20, 184, 166, 0.15); color: #2dd4bf; }
+.autism-ennui-tag.piege { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+
+/* Ennui resources grid */
+.autism-ennui-resources {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px;
+}
+.autism-ennui-resource-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 14px;
+    background: var(--color-card, #1e1e2e);
+    border: 1px solid var(--color-border, #2e2e3e);
+    border-radius: 10px;
+    text-decoration: none;
+    color: inherit;
+    position: relative;
+    transition: border-color 0.2s;
+}
+.autism-ennui-resource-card:hover {
+    border-color: rgba(99, 102, 241, 0.4);
+}
+.autism-ennui-resource-name {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--color-text, #e0e0e0);
+}
+.autism-ennui-resource-desc {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary, #a0a0b0);
+    line-height: 1.4;
+}
+.autism-ennui-resource-card .autism-link-row-arrow {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    font-size: 0.8rem;
+    color: var(--color-text-muted, #707080);
+}
+
+/* --- Techniques tab --- */
+
+.autism-tech-intro {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(239, 68, 68, 0.08));
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+}
+.autism-tech-intro-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--color-text, #e0e0e0);
+    margin: 0 0 8px 0;
+}
+.autism-tech-intro-desc {
+    font-size: 0.88rem;
+    color: var(--color-text-secondary, #a0a0b0);
+    line-height: 1.55;
+    margin: 0;
+}
+
+.autism-tech-strategies {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.autism-tech-card {
+    background: var(--color-card, #1e1e2e);
+    border: 1px solid var(--color-border, #2e2e3e);
+    border-radius: 10px;
+    padding: 14px 16px;
+    transition: border-color 0.2s;
+}
+.autism-tech-card:hover {
+    border-color: rgba(245, 158, 11, 0.4);
+}
+.autism-tech-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+.autism-tech-card-name {
+    font-weight: 600;
+    font-size: 0.92rem;
+    color: var(--color-text, #e0e0e0);
+}
+.autism-tech-card-desc {
+    font-size: 0.84rem;
+    color: var(--color-text-secondary, #a0a0b0);
+    line-height: 1.5;
+    margin-bottom: 8px;
+}
+.autism-tech-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+.autism-tech-card-source {
+    font-size: 0.75rem;
+    color: var(--color-text-muted, #707080);
+    font-style: italic;
+}
+.autism-tech-link {
+    font-size: 0.78rem;
+    color: #fbbf24;
+    text-decoration: none;
+}
+.autism-tech-link:hover {
+    text-decoration: underline;
+}
+
+/* Techniques tags */
+.autism-tech-tag {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.autism-tech-tag.cognitif { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+.autism-tech-tag.corps { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+.autism-tech-tag.externe { background: rgba(251, 146, 60, 0.15); color: #fb923c; }
+.autism-tech-tag.sensoriel { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+.autism-tech-tag.env { background: rgba(20, 184, 166, 0.15); color: #2dd4bf; }
+.autism-tech-tag.outil { background: rgba(250, 204, 21, 0.15); color: #fbbf24; }
+.autism-tech-tag.routine { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
+
+/* Techniques resources grid */
+.autism-tech-resources {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px;
+}
+.autism-tech-resource-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 14px;
+    background: var(--color-card, #1e1e2e);
+    border: 1px solid var(--color-border, #2e2e3e);
+    border-radius: 10px;
+    text-decoration: none;
+    color: inherit;
+    position: relative;
+    transition: border-color 0.2s;
+}
+.autism-tech-resource-card:hover {
+    border-color: rgba(245, 158, 11, 0.4);
+}
+.autism-tech-resource-name {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--color-text, #e0e0e0);
+}
+.autism-tech-resource-desc {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary, #a0a0b0);
+    line-height: 1.4;
+}
+.autism-tech-resource-card .autism-link-row-arrow {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    font-size: 0.8rem;
+    color: var(--color-text-muted, #707080);
+}
+
+@media (max-width: 600px) {
+    .autism-links-grid,
+    .autism-journals-grid {
+        grid-template-columns: 1fr;
+    }
+    .autism-link-row-title {
+        white-space: normal;
+    }
+    .autism-book-card {
+        flex-direction: column;
+    }
+    .autism-subtab {
+        padding: 8px 6px;
+        font-size: 0.78rem;
+    }
+    .autism-ennui-resources {
+        grid-template-columns: 1fr;
+    }
+    .autism-ennui-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    .autism-tech-resources {
+        grid-template-columns: 1fr;
+    }
+    .autism-tech-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+}

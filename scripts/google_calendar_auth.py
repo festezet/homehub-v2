@@ -39,15 +39,20 @@ def main():
 
     if creds and creds.expired and creds.refresh_token:
         print("Token expired, refreshing...")
-        creds.refresh(Request())
-    else:
+        try:
+            creds.refresh(Request())
+        except Exception as e:
+            print(f"Refresh failed ({e}), re-authorizing...")
+            creds = None
+
+    if not creds or not creds.valid:
         if not os.path.exists(CLIENT_SECRET_PATH):
             print(f"ERROR: client_secret.json not found at {CLIENT_SECRET_PATH}")
             raise SystemExit(1)
 
         print("Opening browser for Google Calendar authorization...")
         print(f"Scopes: {SCOPES}")
-        flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRET, SCOPES)
+        flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRET_PATH, SCOPES)
         creds = flow.run_local_server(port=8090)
 
     # Save token

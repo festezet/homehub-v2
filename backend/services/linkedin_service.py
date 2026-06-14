@@ -38,6 +38,12 @@ class LinkedInService:
                 updated_at TEXT DEFAULT (datetime('now'))
             )
         """)
+        # Migration: add stage column if missing (idea = brouillon/idee, in_progress = en cours)
+        cols = [r[1] for r in conn.execute("PRAGMA table_info(post_reviews)").fetchall()]
+        if 'stage' not in cols:
+            conn.execute("ALTER TABLE post_reviews ADD COLUMN stage TEXT DEFAULT 'idea'")
+        if 'scheduled_at' not in cols:
+            conn.execute("ALTER TABLE post_reviews ADD COLUMN scheduled_at TEXT")
         conn.commit()
         conn.close()
 
@@ -58,13 +64,22 @@ class LinkedInService:
             body = item.get('articleBody', '')
             article_id = item.get('id', '')
             status_map = {'published': 'published', 'ready': 'ready'}
+            # Resolve image: content.json image field can be an ImageObject (with 'url') or a string path
+            image_field = item.get('image')
+            image_path = None
+            if isinstance(image_field, dict):
+                image_path = image_field.get('url')
+            elif isinstance(image_field, str):
+                image_path = image_field
             articles.append({
                 'id': article_id,
                 'type': 'article',
+                'account': 'offshore-wind',
                 'serie': None,
                 'episode': None,
                 'title': item.get('headline', ''),
                 'body': body,
+                'image_path': image_path,
                 'date_created': item.get('dateCreated'),
                 'date_published': item.get('datePublished'),
                 'keywords': item.get('keywords', []),
@@ -79,7 +94,6 @@ class LinkedInService:
         episodes = []
         for serie_dir in sorted(glob.glob(os.path.join(EPISODES_BASE, 'serie*'))):
             serie_name = os.path.basename(serie_dir)
-            serie_num = serie_name.replace('serie', '')
 
             for ep_path in sorted(glob.glob(os.path.join(serie_dir, 'episode_*.md'))):
                 ep_file = os.path.basename(ep_path)
@@ -90,13 +104,20 @@ class LinkedInService:
                 post_id = f"{serie_name}-ep{ep_num:02d}"
 
                 title, body = self._parse_episode(ep_path)
+                # Read raw content for image extraction (body skips metadata)
+                with open(ep_path, 'r', encoding='utf-8') as f:
+                    raw_content = f.read()
+                image_path = self._extract_image_path(raw_content, serie_dir)
+
                 episodes.append({
                     'id': post_id,
                     'type': 'episode',
+                    'account': 'ai',
                     'serie': serie_name,
                     'episode': ep_num,
                     'title': title,
                     'body': body,
+                    'image_path': image_path,
                     'date_created': None,
                     'date_published': None,
                     'keywords': [],
@@ -105,6 +126,35 @@ class LinkedInService:
                     'quality': self._compute_quality(body),
                 })
         return episodes
+
+    @staticmethod
+    def _extract_image_path(content, base_dir):
+        """Extract first image reference from markdown content.
+
+        Matches:
+        - Markdown image syntax: ![alt](path)
+        - Inline references like `images/xxx.png` (in metadata blocks)
+
+        Returns absolute filesystem path or None.
+        """
+        # Markdown image syntax
+        md_match = re.search(r'!\[[^\]]*\]\(([^)]+\.(?:png|jpg|jpeg|webp|gif))\)', content, re.IGNORECASE)
+        if md_match:
+            rel = md_match.group(1).strip().strip('`').strip()
+        else:
+            # Inline path in code-fence or text
+            inline_match = re.search(r'(images/[\w./-]+\.(?:png|jpg|jpeg|webp|gif))', content, re.IGNORECASE)
+            if not inline_match:
+                return None
+            rel = inline_match.group(1)
+
+        # Resolve relative to the markdown file's directory
+        if rel.startswith('/'):
+            abs_path = rel
+        else:
+            abs_path = os.path.normpath(os.path.join(base_dir, rel))
+
+        return abs_path if os.path.isfile(abs_path) else None
 
     @staticmethod
     def _parse_episode(filepath):
@@ -126,12 +176,23 @@ class LinkedInService:
                 # H1 = serie identifier, skip it
                 continue
 
-        # Body = everything after title line, skip leading separators
+        # Body = everything after title line, skip leading separators and image lines
+        import re as _re
         body_lines = lines[body_start:]
-        while body_lines and body_lines[0].strip() in ('', '---'):
-            body_lines.pop(0)
+        # Strip leading empty/separator/image-only lines
+        while body_lines:
+            stripped = body_lines[0].strip()
+            if stripped in ('', '---'):
+                body_lines.pop(0)
+                continue
+            if _re.fullmatch(r'!\[[^\]]*\]\([^)]+\)', stripped):
+                body_lines.pop(0)
+                continue
+            break
 
         body = '\n'.join(body_lines).strip()
+        # Remove inline markdown image syntax anywhere in body
+        body = _re.sub(r'!\[[^\]]*\]\([^)]+\)\s*', '', body).strip()
         return title, body
 
     # ------------------------------------------------------------------
@@ -261,6 +322,9 @@ class LinkedInService:
             post['review_notes'] = state.get('notes', '')
             post['reviewed_at'] = state.get('reviewed_at')
             post['published_at'] = state.get('published_at')
+            post['stage'] = state.get('stage') or 'idea'
+            post['scheduled_at'] = state.get('scheduled_at')
+            post['has_image'] = bool(post.get('image_path'))
             # Override with source status if published
             if post['source_status'] == 'published':
                 post['review_status'] = 'published'
@@ -275,10 +339,14 @@ class LinkedInService:
                 return post
         return None
 
-    def update_review(self, post_id, status=None, notes=None):
-        """Update review status and/or notes for a post"""
+    def update_review(self, post_id, status=None, notes=None, stage=None,
+                      scheduled_at=None, published_at=None):
+        """Update review fields for a post"""
         valid_statuses = ('draft', 'ready', 'review', 'published', 'archived')
+        valid_stages = ('idea', 'in_progress')
         if status and status not in valid_statuses:
+            return None
+        if stage and stage not in valid_stages:
             return None
 
         conn = self._get_connection()
@@ -291,19 +359,30 @@ class LinkedInService:
             params.append(status)
             if status == 'review':
                 updates.append("reviewed_at = datetime('now')")
-            elif status == 'published':
+            elif status == 'published' and not published_at:
                 updates.append("published_at = datetime('now')")
         if notes is not None:
             updates.append("notes = ?")
             params.append(notes)
+        if stage:
+            updates.append("stage = ?")
+            params.append(stage)
+        if scheduled_at is not None:
+            updates.append("scheduled_at = ?")
+            params.append(scheduled_at or None)
+        if published_at is not None:
+            updates.append("published_at = ?")
+            params.append(published_at or None)
+
+        if not updates:
+            conn.close()
+            return True
 
         updates.append("updated_at = datetime('now')")
         params.append(post_id)
 
-        conn.execute(
-            f"UPDATE post_reviews SET {', '.join(updates)} WHERE id = ?",
-            params
-        )
+        sql = "UPDATE post_reviews SET {} WHERE id = ?".format(', '.join(updates))
+        conn.execute(sql, params)
         conn.commit()
         conn.close()
         return True
@@ -316,6 +395,9 @@ class LinkedInService:
             'by_status': {},
             'by_type': {},
             'by_serie': {},
+            'by_account': {},
+            'by_stage': {},
+            'per_account': {},
         }
 
         for post in all_posts:
@@ -327,6 +409,23 @@ class LinkedInService:
 
             serie = post.get('serie') or 'articles'
             stats['by_serie'][serie] = stats['by_serie'].get(serie, 0) + 1
+
+            acc = post.get('account') or 'unknown'
+            stats['by_account'][acc] = stats['by_account'].get(acc, 0) + 1
+
+            stage = post.get('stage') or 'idea'
+            stats['by_stage'][stage] = stats['by_stage'].get(stage, 0) + 1
+
+            # Per-account breakdown (status + stage)
+            if acc not in stats['per_account']:
+                stats['per_account'][acc] = {'total': 0, 'by_status': {}, 'by_stage': {}}
+            stats['per_account'][acc]['total'] += 1
+            stats['per_account'][acc]['by_status'][s] = (
+                stats['per_account'][acc]['by_status'].get(s, 0) + 1
+            )
+            stats['per_account'][acc]['by_stage'][stage] = (
+                stats['per_account'][acc]['by_stage'].get(stage, 0) + 1
+            )
 
         return stats
 

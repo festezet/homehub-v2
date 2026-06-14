@@ -13,6 +13,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/prompting-disciplines.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/media-recommender.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/ai-profile.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/gmail-knowledge.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/autism.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/linkedin-prospection.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dynamic-pages.css') }}">
 
     <!-- D3.js for visualizations -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -27,157 +31,20 @@
             <h1>HomeHub</h1>
         </div>
 
-        <ul class="nav-menu">
-            <!-- Main Section -->
-            <div class="nav-section">
-                <div class="nav-section-title">Principal</div>
-                <li class="nav-item" data-page="internet">
-                    <a href="#internet">
-                        <span class="icon">🌐</span>
-                        <span class="label">Internet</span>
+        <ul class="nav-menu" id="nav-menu">
+            {% for section in sidebar_layout %}
+            <div class="nav-section" data-section-id="{{ section.id }}">
+                <div class="nav-section-title">{{ section.name }}</div>
+                {% for tab in section.tabs %}
+                <li class="nav-item" data-page="{{ tab.page_key }}" data-tab-id="{{ tab.id }}">
+                    <a href="#{{ tab.page_key }}">
+                        <span class="icon">{{ tab.icon }}</span>
+                        <span class="label">{{ tab.label }}</span>
                     </a>
                 </li>
-                <li class="nav-item" data-page="local">
-                    <a href="#local">
-                        <span class="icon">🖥️</span>
-                        <span class="label">Applications</span>
-                    </a>
-                </li>
+                {% endfor %}
             </div>
-
-            <!-- Tools Section -->
-            <div class="nav-section">
-                <div class="nav-section-title">Outils</div>
-                <li class="nav-item" data-page="formation">
-                    <a href="#formation">
-                        <span class="icon">🎓</span>
-                        <span class="label">Formation</span>
-                    </a>
-                </li>
-                <li class="nav-item" data-page="dashboard">
-                    <a href="#dashboard">
-                        <span class="icon">✅</span>
-                        <span class="label">TODOs</span>
-                    </a>
-                </li>
-                <li class="nav-item" data-page="thread-digest">
-                    <a href="#thread-digest">
-                        <span class="icon">💬</span>
-                        <span class="label">Thread Digest</span>
-                    </a>
-                </li>
-                <li class="nav-item" data-page="calendar">
-                    <a href="#calendar">
-                        <span class="icon">📅</span>
-                        <span class="label">Agenda</span>
-                    </a>
-                </li>
-                <li class="nav-item" data-page="markets">
-                    <a href="#markets">
-                        <span class="icon">📈</span>
-                        <span class="label">Marches</span>
-                    </a>
-                </li>
-            </div>
-
-            <!-- Media Section -->
-            <div class="nav-section">
-                <div class="nav-section-title">Média</div>
-                <li class="nav-item" data-page="mediastack">
-                    <a href="#mediastack">
-                        <span class="icon">🎬</span>
-                        <span class="label">Media Stack</span>
-                    </a>
-                </li>
-                <li class="nav-item" data-page="media-reco">
-                    <a href="#media-reco">
-                        <span class="icon">🎯</span>
-                        <span class="label">Recommandations</span>
-                    </a>
-                </li>
-            </div>
-
-            <!-- Apps Section -->
-            <div class="nav-section">
-                <div class="nav-section-title">Apps</div>
-                <li class="nav-item" data-page="local-apps">
-                    <a href="#local-apps">
-                        <span class="icon">📱</span>
-                        <span class="label">Applications Locales</span>
-                    </a>
-                </li>
-                <li class="nav-item" data-page="ai-profile">
-                    <a href="#ai-profile">
-                        <span class="icon">🤖</span>
-                        <span class="label">AI Profile</span>
-                    </a>
-                </li>
-                <li class="nav-item" data-page="linkedin-posts">
-                    <a href="#linkedin-posts">
-                        <span class="icon">📝</span>
-                        <span class="label">LinkedIn Posts</span>
-                    </a>
-                </li>
-                <li class="nav-item" data-page="life-tasks">
-                    <a href="#life-tasks">
-                        <span class="icon">📌</span>
-                        <span class="label">Life Tasks</span>
-                    </a>
-                </li>
-            </div>
-
-            <!-- System Section -->
-            <div class="nav-section">
-                <div class="nav-section-title">Systeme</div>
-                <li class="nav-item" data-page="system-monitor">
-                    <a href="#system-monitor">
-                        <span class="icon">📊</span>
-                        <span class="label">System Monitor</span>
-                    </a>
-                </li>
-                <li class="nav-item" data-page="project-status">
-                    <a href="#project-status">
-                        <span class="icon">📋</span>
-                        <span class="label">Project Status</span>
-                    </a>
-                </li>
-                <li class="nav-item" data-page="infrastructure">
-                    <a href="#infrastructure">
-                        <span class="icon">🛠</span>
-                        <span class="label">Infrastructure</span>
-                    </a>
-                </li>
-                <li class="nav-item" data-page="services-ports">
-                    <a href="#services-ports">
-                        <span class="icon">🔌</span>
-                        <span class="label">Services & Ports</span>
-                    </a>
-                </li>
-                <li class="nav-item" data-page="prompting-disciplines">
-                    <a href="#prompting-disciplines">
-                        <span class="icon">🧠</span>
-                        <span class="label">Prompting Disciplines</span>
-                    </a>
-                </li>
-                <li class="nav-item" data-page="claude-skills">
-                    <a href="#claude-skills">
-                        <span class="icon">⚡</span>
-                        <span class="label">Claude Skills</span>
-                    </a>
-                </li>
-                <li class="nav-item" data-page="claude-instructions">
-                    <a href="#claude-instructions">
-                        <span class="icon">📜</span>
-                        <span class="label">Claude Instructions</span>
-                    </a>
-                </li>
-                <li class="nav-item" data-page="hh-design">
-                    <a href="#hh-design">
-                        <span class="icon">🏗</span>
-                        <span class="label">HH Design</span>
-                    </a>
-                </li>
-            </div>
+            {% endfor %}
         </ul>
 
         <div class="sidebar-footer">
@@ -213,11 +80,6 @@
                 {% include 'internet.html' %}
             </div>
 
-            <!-- Local Tab -->
-            <div id="local-page" class="page-content" style="display: none;">
-                {% include 'local.html' %}
-            </div>
-
             <!-- Formation Tab -->
             <div id="formation-page" class="page-content" style="display: none;">
                 {% include 'formation.html' %}
@@ -231,6 +93,11 @@
             <!-- Markets Tab -->
             <div id="markets-page" class="page-content" style="display: none;">
                 {% include 'markets.html' %}
+            </div>
+
+            <!-- Crypto Tracker Tab -->
+            <div id="crypto-page" class="page-content" style="display: none;">
+                {% include 'crypto.html' %}
             </div>
 
             <!-- Thread Digest Tab -->
@@ -255,11 +122,6 @@
             <!-- Media Recommender Tab -->
             <div id="media-reco-page" class="page-content" style="display: none;">
                 {% include 'media-recommender.html' %}
-            </div>
-
-            <!-- Infrastructure Tab -->
-            <div id="infrastructure-page" class="page-content" style="display: none;">
-                {% include 'infrastructure.html' %}
             </div>
 
             <!-- Local Apps Tab -->
@@ -288,9 +150,9 @@
                 {% include 'prompting-disciplines.html' %}
             </div>
 
-            <!-- Claude Skills Tab -->
-            <div id="claude-skills-page" class="page-content" style="display: none;">
-                {% include 'claude-skills.html' %}
+            <!-- Claude Config Tab (unified: Skills, Analysis, Browser, Logigramme) -->
+            <div id="claude-config-page" class="page-content" style="display: none;">
+                {% include 'claude-config.html' %}
             </div>
 
             <!-- LinkedIn Posts Tab -->
@@ -298,20 +160,69 @@
                 {% include 'linkedin-posts.html' %}
             </div>
 
+            <!-- LinkedIn Prospection Tab -->
+            <div id="linkedin-prospection-page" class="page-content" style="display: none;">
+                {% include 'linkedin-prospection.html' %}
+            </div>
+
             <!-- Life Tasks Tab -->
             <div id="life-tasks-page" class="page-content" style="display: none;">
                 {% include 'life-tasks.html' %}
             </div>
 
-            <!-- Claude Instructions Tab -->
-            <div id="claude-instructions-page" class="page-content" style="display: none;">
-                {% include 'claude-instructions.html' %}
+            <!-- Veille IA Tab -->
+            <div id="veille-ia-page" class="page-content" style="display: none;">
+                {% include 'veille-ia.html' %}
             </div>
+
+            <!-- Gmail Knowledge Tab -->
+            <div id="gmail-knowledge-page" class="page-content" style="display: none;">
+                {% include 'gmail-knowledge.html' %}
+            </div>
+
 
             <!-- HH Design Tab -->
             <div id="hh-design-page" class="page-content" style="display: none;">
                 {% include 'hh-design.html' %}
             </div>
+
+            <!-- Invites Tab -->
+            <div id="invites-page" class="page-content" style="display: none;">
+                {% include 'invites.html' %}
+            </div>
+
+            <!-- Session Bookmarks Tab -->
+            <div id="session-bookmarks-page" class="page-content" style="display: none;">
+                {% include 'session-bookmarks.html' %}
+            </div>
+
+            <!-- Claude Analytics Tab -->
+            <div id="claude-analytics-page" class="page-content" style="display: none;">
+                {% include 'claude-analytics.html' %}
+            </div>
+
+            <!-- Autism Companion Tab -->
+            <div id="autism-page" class="page-content" style="display: none;">
+                {% include 'autism.html' %}
+            </div>
+
+            <!-- Patrimoine Tab -->
+            <div id="patrimoine-page" class="page-content" style="display: none;">
+                {% include 'patrimoine.html' %}
+            </div>
+
+            <!-- Patrimoine Analyse Tab -->
+            <div id="patrimoine-analyse-page" class="page-content" style="display: none;">
+                {% include 'patrimoine-analyse.html' %}
+            </div>
+
+            <!-- Email Draft Tab -->
+            <div id="email-draft-page" class="page-content" style="display: none;">
+                {% include 'email-draft.html' %}
+            </div>
+
+            <!-- Dynamic Pages Container (Claude-generated pages) -->
+            <div id="dynamic-page-container" class="page-content" style="display: none;"></div>
             {% endblock %}
         </div>
     </main>
@@ -324,17 +235,15 @@
     <script type="module" src="{{ url_for('static', filename='js/api-features.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/utils.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/todo.js') }}"></script>
-    <script type="module" src="{{ url_for('static', filename='js/docker.js') }}"></script>
-    <script type="module" src="{{ url_for('static', filename='js/local.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/internet.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/mediastack.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/markets.js') }}"></script>
-    <script type="module" src="{{ url_for('static', filename='js/infrastructure.js') }}"></script>
-    <script type="module" src="{{ url_for('static', filename='js/local-apps-docker.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/crypto.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/local-apps-docker.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/local-apps.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/system-monitor.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/projects-list.js') }}"></script>
-    <script type="module" src="{{ url_for('static', filename='js/thread-digest.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/thread-digest.js') }}?v=17"></script>
     <script type="module" src="{{ url_for('static', filename='js/calendar-gcal.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/calendar.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/formation.js') }}"></script>
@@ -343,84 +252,91 @@
     <script type="module" src="{{ url_for('static', filename='js/project-status.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/media-recommender.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/ai-profile.js') }}"></script>
-    <script type="module" src="{{ url_for('static', filename='js/claude-skills.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/claude-config.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/linkedin-posts.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/linkedin-prospection.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/life-tasks.js') }}"></script>
-    <script type="module" src="{{ url_for('static', filename='js/claude-instructions.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/hh-design.js') }}"></script>
-    <script type="module" src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/gmail-knowledge.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/invites.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/veille-ia.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/session-bookmarks.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/claude-analytics.js') }}?v=4"></script>
+    <script type="module" src="{{ url_for('static', filename='js/autism.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/patrimoine.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/patrimoine-analyse.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/email-draft.js') }}?v=3"></script>
+    <script type="module" src="{{ url_for('static', filename='js/dynamic-pages.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/sidebar-edit.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js') }}?v=4"></script>
 
     <!-- Modern Navigation Script -->
     <script>
+        // Page titles from DB (dynamic — updated by dynamic-pages.js and sidebar-edit.js)
+        window._pageTitles = {{ sidebar_layout | tojson }}.reduce((acc, section) => {
+            section.tabs.forEach(tab => {
+                acc[tab.page_key] = { title: tab.title || tab.label, subtitle: tab.subtitle || '' };
+            });
+            return acc;
+        }, {});
+
         // Modern sidebar navigation
         document.addEventListener('DOMContentLoaded', function() {
-            const navItems = document.querySelectorAll('.nav-item');
-            const pages = document.querySelectorAll('.page-content');
-
-            // Page titles mapping
-            const pageTitles = {
-                'internet': { title: 'Internet', subtitle: 'Acces rapide a vos sites favoris' },
-                'local': { title: 'Applications', subtitle: 'Gestion des applications locales' },
-                'formation': { title: 'Formation', subtitle: 'Plan d\'action DeepSignal V1' },
-                'dashboard': { title: 'TODOs', subtitle: 'Gestion des taches' },
-                'thread-digest': { title: 'Thread Digest', subtitle: 'Digests WhatsApp par Claude' },
-                'calendar': { title: 'Agenda', subtitle: 'Planning hebdomadaire et Google Calendar' },
-                'markets': { title: 'Marches', subtitle: 'Suivi des marches financiers' },
-                'mediastack': { title: 'Media Stack', subtitle: 'Streaming & Telechargement' },
-                'media-reco': { title: 'Recommandations', subtitle: 'Films & Series recommandes par IA' },
-                'infrastructure': { title: 'Infrastructure', subtitle: 'Monitoring systeme' },
-                'local-apps': { title: 'Applications Locales', subtitle: 'Projets developpes localement' },
-                'system-monitor': { title: 'System Monitor', subtitle: 'CPU / GPU / RAM / Stockage' },
-                'project-status': { title: 'Project Status', subtitle: 'Vue unifiee des projets et activites' },
-                'services-ports': { title: 'Services & Ports', subtitle: 'Registre central des ports reseau' },
-                'ai-profile': { title: 'AI Profile', subtitle: 'Draft emails & notifications' },
-                'prompting-disciplines': { title: 'Prompting Disciplines', subtitle: 'Framework d\'optimisation Claude Code' },
-                'claude-skills': { title: 'Claude Skills', subtitle: 'Skills, commands et extensions Claude Code' },
-                'linkedin-posts': { title: 'LinkedIn Posts', subtitle: 'Relecture et validation des posts' },
-                'life-tasks': { title: 'Life Tasks', subtitle: 'Projets de vie ephemeres' },
-                'claude-instructions': { title: 'Claude Instructions', subtitle: 'CLAUDE.md, rules, skills et cross-references' },
-                'hh-design': { title: 'HH Design', subtitle: 'Architecture HomeHub et feature wishlist' }
-            };
 
             function switchPage(pageName) {
+                // Live queries (supports dynamically added tabs)
+                const navItems = document.querySelectorAll('.nav-item');
+                const pages = document.querySelectorAll('.page-content');
+                const dynamicContainer = document.getElementById('dynamic-page-container');
+                const isDynamic = pageName.startsWith('dp-');
+
                 // Update active nav item
                 navItems.forEach(item => {
-                    if (item.dataset.page === pageName) {
-                        item.classList.add('active');
-                    } else {
-                        item.classList.remove('active');
-                    }
+                    item.classList.toggle('active', item.dataset.page === pageName);
                 });
 
                 // Update visible page
-                pages.forEach(page => {
-                    if (page.id === pageName + '-page') {
-                        page.style.display = 'block';
-                        page.classList.add('fade-in');
-                    } else {
-                        page.style.display = 'none';
-                    }
-                });
+                if (isDynamic) {
+                    pages.forEach(page => { page.style.display = 'none'; });
+                    dynamicContainer.style.display = 'block';
+                    dynamicContainer.classList.add('fade-in');
+                    window.dynamicPages?.loadPage(pageName);
+                } else {
+                    dynamicContainer.style.display = 'none';
+                    pages.forEach(page => {
+                        if (page.id === pageName + '-page') {
+                            page.style.display = 'block';
+                            page.classList.add('fade-in');
+                        } else if (page.id !== 'dynamic-page-container') {
+                            page.style.display = 'none';
+                        }
+                    });
+                }
 
                 // Update page title and subtitle
-                if (pageTitles[pageName]) {
-                    document.getElementById('page-title-text').textContent = pageTitles[pageName].title;
-                    document.getElementById('page-subtitle').textContent = pageTitles[pageName].subtitle;
+                const titles = window._pageTitles[pageName];
+                if (titles) {
+                    document.getElementById('page-title-text').textContent = titles.title;
+                    document.getElementById('page-subtitle').textContent = titles.subtitle;
                 }
 
                 // Update URL hash
                 window.location.hash = pageName;
 
-                // Trigger module load
-                window.homeHub?.loadPage(pageName);
+                // Trigger module load (for non-dynamic pages)
+                if (!isDynamic) {
+                    window.homeHub?.loadPage(pageName);
+                }
             }
 
-            // Add click handlers
-            navItems.forEach(item => {
+            // Expose globally for sidebar-edit.js and dynamic-pages.js
+            window.switchPage = switchPage;
+
+            // Add click handlers (initial set)
+            document.querySelectorAll('.nav-item').forEach(item => {
                 item.addEventListener('click', function(e) {
                     e.preventDefault();
-                    const pageName = this.dataset.page;
-                    switchPage(pageName);
+                    switchPage(this.dataset.page);
                 });
             });
 
@@ -428,7 +344,9 @@
             const hashRedirects = {
                 'projects-list': 'project-status',
                 'specs': 'project-status',
-                'activity': 'project-status'
+                'activity': 'project-status',
+                'claude-skills': 'claude-config',
+                'claude-instructions': 'claude-config'
             };
             let initialPage = window.location.hash.slice(1) || 'internet';
             if (hashRedirects[initialPage]) {
@@ -437,26 +355,39 @@
             }
 
             // Show page immediately for visual feedback
-            const page = document.getElementById(initialPage + '-page');
-            if (page) page.style.display = 'block';
-            navItems.forEach(item => {
+            if (initialPage.startsWith('dp-')) {
+                document.getElementById('dynamic-page-container').style.display = 'block';
+            } else {
+                const page = document.getElementById(initialPage + '-page');
+                if (page) page.style.display = 'block';
+            }
+            document.querySelectorAll('.nav-item').forEach(item => {
                 item.classList.toggle('active', item.dataset.page === initialPage);
             });
-            if (pageTitles[initialPage]) {
-                document.getElementById('page-title-text').textContent = pageTitles[initialPage].title;
-                document.getElementById('page-subtitle').textContent = pageTitles[initialPage].subtitle;
+            const initTitles = window._pageTitles[initialPage];
+            if (initTitles) {
+                document.getElementById('page-title-text').textContent = initTitles.title;
+                document.getElementById('page-subtitle').textContent = initTitles.subtitle;
             }
 
             // Load data when app is ready
             window.addEventListener('homehub-ready', () => {
-                window.homeHub?.loadPage(initialPage);
+                if (initialPage.startsWith('dp-')) {
+                    window.dynamicPages?.loadPage(initialPage);
+                } else {
+                    window.homeHub?.loadPage(initialPage);
+                }
             }, { once: true });
 
             // Refresh button
             document.getElementById('btn-refresh')?.addEventListener('click', function() {
                 const currentPage = document.querySelector('.nav-item.active')?.dataset.page;
                 if (currentPage) {
-                    window.homeHub?.loadPage(currentPage);
+                    if (currentPage.startsWith('dp-')) {
+                        window.dynamicPages?.loadPage(currentPage);
+                    } else {
+                        window.homeHub?.loadPage(currentPage);
+                    }
                 }
             });
         });

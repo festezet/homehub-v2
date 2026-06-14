@@ -1,0 +1,582 @@
+#!/usr/bin/env python3
+"""
+HomeHub v2 - Flask Backend
+Main application entry point with unified API
+"""
+
+from flask import Flask, render_template, jsonify, send_file
+from flask_cors import CORS
+from shared_lib.flask_helpers import success, error as api_error
+import logging
+import sys
+import os
+
+# Add backend directory to path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# Import system utilities (extracted from app.py for modularity)
+from system_utils import (
+    get_x11_env, get_storage_data,
+    _resolve_launch_command, _execute_launch
+)
+
+# Import services
+from services.docker_service import docker_service
+from services.todo_service import todo_service
+from services.internet_service import internet_service
+from services.activity_service import activity_service
+from services.infrastructure_service import infrastructure_service
+from services.formation_service import formation_service
+from services.local_apps_service import local_apps_service
+from services.specs_service import specs_service
+from services.thread_digest_service import thread_digest_service
+from services.whatsapp_proxy_service import whatsapp_proxy_service
+from services.whatsapp_chat_service import WhatsAppChatService
+from services.signal_proxy_service import signal_proxy_service
+from services.sms_proxy_service import sms_proxy_service
+from services.modularity_service import modularity_service
+from services.claude_skills_service import ClaudeSkillsService
+from services.session_close_service import session_close_service
+from services.project_actions_service import project_actions_service
+from services.linkedin_service import linkedin_service
+from services.claude_session_service import claude_session_service
+from services.life_tasks_service import life_tasks_service
+from services.claude_instructions_service import claude_instructions_service
+from services.hh_design_service import hh_design_service
+from services.session_bookmarks_service import session_bookmarks_service
+from services.patrimoine_service import patrimoine_service
+from services.claude_analytics_service import claude_analytics_service
+from services.sidebar_service import sidebar_service
+from services.dynamic_pages_service import dynamic_pages_service
+# media_recommender_service removed — proxied to standalone project (port 5056)
+
+# Import API routes
+from api.docker_routes import docker_bp, init_docker_routes
+from api.todo_routes import todo_bp, init_todo_routes
+from api.internet_routes import internet_bp, init_internet_routes
+from api.calendar_routes import calendar_bp, init_calendar_routes
+from api.formation_routes import formation_bp, init_formation_routes
+from api.local_apps_routes import local_apps_bp, init_local_apps_routes
+from api.specs_routes import specs_bp, init_specs_routes
+from api.activity_routes import activity_bp, init_activity_routes
+from api.thread_digest_routes import thread_digest_bp, init_thread_digest_routes
+from api.whatsapp_chat_routes import whatsapp_chat_bp, init_whatsapp_chat_routes
+from api.modularity_routes import modularity_bp, init_modularity_routes
+from api.claude_skills_routes import claude_skills_bp, init_claude_skills_routes
+from api.session_close_routes import session_close_bp, init_session_close_routes
+from api.project_actions_routes import project_actions_bp, init_project_actions_routes
+from api.media_recommender_routes import media_reco_bp
+from api.ai_profile_routes import ai_profile_bp
+from api.gmail_knowledge_routes import gmail_knowledge_bp
+from api.linkedin_routes import linkedin_bp, init_linkedin_routes
+from api.claude_session_routes import claude_session_bp, init_claude_session_routes
+from api.life_tasks_routes import life_tasks_bp, init_life_tasks_routes
+from api.claude_instructions_routes import claude_instructions_bp, init_claude_instructions_routes
+from api.hh_design_routes import hh_design_bp, init_hh_design_routes
+from api.invite_routes import invite_bp
+from api.session_bookmarks_routes import session_bookmarks_bp, init_session_bookmarks_routes
+from api.patrimoine_routes import patrimoine_bp, init_patrimoine_routes
+from api.claude_analytics_routes import claude_analytics_bp, init_claude_analytics_routes
+from api.sidebar_routes import sidebar_bp, init_sidebar_routes
+from api.dynamic_pages_routes import dynamic_pages_bp, init_dynamic_pages_routes
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Create Flask app
+app = Flask(__name__,
+            template_folder='../frontend/templates',
+            static_folder='../frontend/static')
+
+# Enable CORS for API endpoints
+CORS(app)
+
+# Initialize services with routes
+init_docker_routes(docker_service)
+init_todo_routes(todo_service)
+init_internet_routes(internet_service)
+init_formation_routes(formation_service)
+init_local_apps_routes(local_apps_service)
+init_specs_routes(specs_service)
+init_activity_routes(activity_service)
+platform_proxies = {
+    'whatsapp': whatsapp_proxy_service,
+    'signal': signal_proxy_service,
+    'sms': sms_proxy_service,
+}
+init_thread_digest_routes(thread_digest_service, platform_proxies)
+whatsapp_chat_service = WhatsAppChatService()
+init_whatsapp_chat_routes(whatsapp_chat_service, whatsapp_proxy_service)
+init_modularity_routes(modularity_service)
+init_claude_skills_routes(ClaudeSkillsService())
+init_session_close_routes(session_close_service)
+init_project_actions_routes(project_actions_service)
+init_linkedin_routes(linkedin_service)
+init_claude_session_routes(claude_session_service)
+init_life_tasks_routes(life_tasks_service)
+init_claude_instructions_routes(claude_instructions_service)
+init_hh_design_routes(hh_design_service)
+init_session_bookmarks_routes(session_bookmarks_service)
+init_patrimoine_routes(patrimoine_service)
+init_claude_analytics_routes(claude_analytics_service)
+init_sidebar_routes(sidebar_service)
+init_dynamic_pages_routes(dynamic_pages_service)
+# media_reco routes are now a proxy — no init needed
+
+# Register blueprints
+app.register_blueprint(docker_bp)
+app.register_blueprint(todo_bp)
+app.register_blueprint(internet_bp)
+app.register_blueprint(calendar_bp)
+app.register_blueprint(formation_bp)
+app.register_blueprint(local_apps_bp)
+app.register_blueprint(specs_bp)
+app.register_blueprint(activity_bp)
+app.register_blueprint(thread_digest_bp)
+app.register_blueprint(whatsapp_chat_bp)
+app.register_blueprint(modularity_bp)
+app.register_blueprint(claude_skills_bp)
+app.register_blueprint(session_close_bp)
+app.register_blueprint(project_actions_bp)
+app.register_blueprint(media_reco_bp)
+app.register_blueprint(ai_profile_bp)
+app.register_blueprint(linkedin_bp)
+app.register_blueprint(claude_session_bp)
+app.register_blueprint(life_tasks_bp)
+app.register_blueprint(claude_instructions_bp)
+app.register_blueprint(hh_design_bp)
+app.register_blueprint(gmail_knowledge_bp)
+app.register_blueprint(invite_bp)
+app.register_blueprint(session_bookmarks_bp)
+app.register_blueprint(patrimoine_bp)
+app.register_blueprint(claude_analytics_bp)
+app.register_blueprint(sidebar_bp)
+app.register_blueprint(dynamic_pages_bp)
+
+# ============================================
+# ROUTES - Pages
+# ============================================
+
+@app.route('/')
+def index():
+    """Main HomeHub page"""
+    return render_template('base.html', sidebar_layout=sidebar_service.get_layout())
+
+# ============================================
+# ROUTES - API
+# ============================================
+
+@app.route('/api/health')
+def health():
+    """Health check endpoint"""
+    return success(service='HomeHub v2', version='2.0.0', apis={
+        'docker': docker_service.available,
+        'todo': True
+    })
+
+@app.route('/api/infrastructure/dashboard')
+def get_infrastructure_dashboard():
+    """Get infrastructure monitoring data"""
+    try:
+        data = infrastructure_service.get_dashboard_data()
+        return success(data)
+    except Exception as e:
+        logger.error(f"Error getting infrastructure data: {e}")
+        return api_error(500, str(e))
+
+@app.route('/api/services/ports')
+def get_services_ports():
+    """Get port registry from infrastructure data"""
+    import json
+
+    registry_path = '/data/projects/infrastructure/data/port_registry.json'
+    try:
+        with open(registry_path, 'r') as f:
+            data = json.load(f)
+        return success(
+            ports=data.get('ports', []),
+            stacks=data.get('stacks', {}),
+            allocation_ranges=data.get('allocation_ranges', {})
+        )
+    except FileNotFoundError:
+        return api_error(404, 'port_registry.json not found')
+    except Exception as e:
+        logger.error(f"Error reading port registry: {e}")
+        return api_error(500, str(e))
+
+@app.route('/api/apps')
+def get_applications():
+    """Get list of installed applications"""
+    # Static list for now - could be extended with dynamic detection
+    apps = [
+        {'id': 'APP-001', 'name': 'GIMP', 'icon': '🎨', 'command': 'gimp'},
+        {'id': 'APP-002', 'name': 'Kdenlive', 'icon': '🎬', 'command': 'kdenlive'},
+        {'id': 'APP-003', 'name': 'Sublime Text', 'icon': '📝', 'command': 'subl'},
+        {'id': 'APP-004', 'name': 'Firefox', 'icon': '🦊', 'command': 'firefox'},
+        {'id': 'APP-006', 'name': 'Cursor', 'icon': '⌨️', 'command': 'cursor'}
+    ]
+    return success(apps=apps, count=len(apps))
+
+def extract_description_from_readme(project_path):
+    """Extract description from README.md (first 20 lines)"""
+    readme_path = os.path.join(project_path, 'README.md')
+    if not os.path.exists(readme_path):
+        return None
+
+    try:
+        with open(readme_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+            lines = content.split('\n')[:20]
+
+        description = _find_description_section(lines) or _find_description_after_h1(lines)
+
+        if description:
+            return _clean_markdown_description(description)
+
+    except Exception as e:
+        logger.debug(f"Could not read README for {project_path}: {e}")
+
+    return None
+
+
+def _find_description_section(lines):
+    """Find description in a ## Description section."""
+    for i, line in enumerate(lines):
+        if '## ' in line and 'description' in line.lower():
+            for j in range(i + 1, min(i + 5, len(lines))):
+                candidate = lines[j].strip()
+                if candidate and not candidate.startswith('#') and not candidate.startswith('*') and len(candidate) > 15:
+                    return candidate
+            break
+    return None
+
+
+def _find_description_after_h1(lines):
+    """Find description as first text line after H1 title."""
+    skip_prefixes = ('#', '**', '[', '!', '-')
+    for i, line in enumerate(lines):
+        if line.startswith('# ') and i + 1 < len(lines):
+            for j in range(i + 1, min(i + 6, len(lines))):
+                candidate = lines[j].strip()
+                if not candidate or candidate.startswith(skip_prefixes):
+                    continue
+                if len(candidate) > 20:
+                    return candidate
+            break
+    return None
+
+
+def _clean_markdown_description(description):
+    """Remove markdown formatting and truncate."""
+    import re
+    description = re.sub(r'\*\*([^*]+)\*\*', r'\1', description)
+    description = re.sub(r'\*([^*]+)\*', r'\1', description)
+    description = re.sub(r'`([^`]+)`', r'\1', description)
+    description = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', description)
+    if len(description) > 120:
+        description = description[:117] + '...'
+    return description
+
+def _row_to_project(row):
+    """Convert a DB row to a project dict"""
+    return {
+        'id': row['unique_id'], 'name': row['name'],
+        'category': row['category'], 'status': row['status'],
+        'path': row['path'], 'description': row['description'] or row['name'],
+        'tags': row['features'] or '', 'launcher_path': row['launcher_path'],
+        'launcher_type': row['launcher_type'], 'web_url': row['web_url']
+    }
+
+
+def _fetch_projects_from_db():
+    """Fetch active projects from projects.db"""
+    from shared_lib.db import get_connection
+    db_path = '/data/projects/project-management/data/projects.db'
+    try:
+        conn = get_connection(db_path)
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT unique_id, name, category, status, path, description,
+                   features, launcher_path, launcher_type, web_url
+            FROM projects WHERE status != 'archived' ORDER BY name
+        ''')
+        projects = [_row_to_project(row) for row in cursor.fetchall()]
+        conn.close()
+        return projects
+    except Exception as e:
+        logger.error(f"Error fetching projects: {e}")
+        return []
+
+
+ADDITIONAL_APPS = [
+    {
+        'id': 'APP-005', 'name': 'Claude Voice Input',
+        'category': 'development', 'status': 'active',
+        'path': '/data/projects/voice-dictation',
+        'description': 'Entree vocale pour Claude Code - Transcription Whisper GPU',
+        'tags': 'voice,whisper,claude,transcription',
+        'launcher_path': '/data/projects/voice-dictation/scripts/start_claude_voice_input.sh',
+        'launcher_type': 'bash'
+    },
+]
+
+
+@app.route('/api/projects')
+def get_projects():
+    """Get list of projects from projects.db"""
+    projects = _fetch_projects_from_db()
+    projects.extend(ADDITIONAL_APPS)
+    return success(projects=projects, count=len(projects))
+
+@app.route('/api/system/storage')
+def get_storage_info():
+    """Get disk storage information in hierarchical format by disk"""
+    storage = get_storage_data()
+    if storage:
+        return success(**storage)
+    return api_error(500, 'Failed to get storage data')
+
+@app.route('/api/apps/launch/<app_id>', methods=['POST'])
+def launch_application(app_id):
+    """Launch an application by ID"""
+    import subprocess
+
+    # Map app IDs to commands
+    apps_map = {
+        'APP-001': {'name': 'GIMP', 'command': 'gimp'},
+        'APP-002': {'name': 'Kdenlive', 'command': 'kdenlive'},
+        'APP-003': {'name': 'Sublime Text', 'command': 'subl'},
+        'APP-004': {'name': 'Firefox', 'command': 'firefox'},
+        'APP-006': {'name': 'Cursor', 'command': 'cursor'}
+    }
+
+    if app_id not in apps_map:
+        return api_error(404, f'Application {app_id} not found')
+
+    app = apps_map[app_id]
+
+    try:
+        env = get_x11_env()
+
+        # Launch application using setsid to fully detach from parent process
+        subprocess.Popen(
+            ['setsid', '-f', app['command']],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            env=env,
+            close_fds=True
+        )
+
+        logger.info(f"✅ Launched application: {app['name']} ({app['command']})")
+
+        return success(message=f"{app['name']} launched successfully", app_id=app_id)
+
+    except FileNotFoundError:
+        logger.error(f"Application not found: {app['command']}")
+        return api_error(404, f"Application {app['name']} not installed")
+
+    except Exception as e:
+        logger.error(f"Error launching {app['name']}: {e}")
+        return api_error(500, f"Failed to launch {app['name']}: {str(e)}")
+
+@app.route('/api/projects/launch/<project_id>', methods=['POST'])
+def launch_project(project_id):
+    """Launch a project by its ID (PRJ-XXX or APP-XXX)"""
+    # Applications additionnelles (APP-XXX) non dans la DB
+    additional_apps = {
+        'APP-005': {
+            'name': 'Claude Voice Input',
+            'path': '/data/projects/voice-dictation',
+            'launcher_path': '/data/projects/voice-dictation/scripts/start_claude_voice_input.sh'
+        },
+    }
+
+    try:
+        project_info, err = _resolve_launch_command(project_id, additional_apps)
+        if err:
+            return jsonify(err[0]), err[1]
+
+        result = _execute_launch(project_id, project_info)
+        return jsonify(result)
+
+    except Exception as e:
+        logger.error(f"Error launching project {project_id}: {e}")
+        return api_error(500, str(e))
+
+@app.route('/api/projects/open/<project_id>', methods=['POST'])
+def open_project_folder(project_id):
+    """Open project folder in file manager"""
+    import subprocess
+    from shared_lib.db import get_connection
+
+    db_path = '/data/projects/project-management/data/projects.db'
+
+    try:
+        conn = get_connection(db_path)
+        cursor = conn.cursor()
+
+        cursor.execute('SELECT name, path FROM projects WHERE unique_id = ?', (project_id,))
+        row = cursor.fetchone()
+        conn.close()
+
+        if not row:
+            return api_error(404, f'Project {project_id} not found')
+
+        # Open folder with default file manager
+        env = get_x11_env()
+
+        subprocess.Popen(
+            ['xdg-open', row['path']],
+            env=env,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True
+        )
+
+        logger.info(f"Opened folder: {row['path']}")
+
+        return success(message=f"Opened {row['name']} folder", path=row['path'])
+
+    except Exception as e:
+        logger.error(f"Error opening project folder {project_id}: {e}")
+        return api_error(500, str(e))
+
+# ============================================
+# FILE SERVING - Generated files
+# ============================================
+
+@app.route('/api/files/calendar')
+def serve_calendar():
+    """Serve the generated location calendar HTML file"""
+    calendar_path = os.path.expanduser('~/Downloads/calendrier_location_2025.html')
+    if os.path.exists(calendar_path):
+        return send_file(calendar_path, mimetype='text/html')
+    return api_error(404, 'Calendar not generated yet')
+
+# ============================================
+# ERROR HANDLERS
+# ============================================
+
+@app.errorhandler(404)
+def not_found(e):
+    return api_error(404, 'Not found')
+
+@app.errorhandler(500)
+def internal_error(e):
+    logger.error(f'Internal error: {e}')
+    return api_error(500, 'Internal server error')
+
+# ============================================
+# MAIN
+# ============================================
+
+def _ensure_ai_profile():
+    """Start ai-profile backend (port 5100) if not already running."""
+    import subprocess
+    import socket
+    try:
+        with socket.create_connection(('127.0.0.1', 5100), timeout=2):
+            logger.info('✅ ai-profile already running on port 5100')
+            return
+    except (ConnectionRefusedError, OSError):
+        pass
+    try:
+        subprocess.Popen(
+            ['python3', 'backend/app.py'],
+            cwd='/data/projects/ai-profile',
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True
+        )
+        logger.info('🚀 Started ai-profile backend on port 5100')
+    except Exception as e:
+        logger.warning(f'⚠️ Could not start ai-profile: {e}')
+
+
+def _ensure_study_dashboard():
+    """Start study-dashboard backend (port 5059) if not already running."""
+    import subprocess
+    import socket
+    try:
+        with socket.create_connection(('127.0.0.1', 5059), timeout=2):
+            logger.info('✅ study-dashboard already running on port 5059')
+            return
+    except (ConnectionRefusedError, OSError):
+        pass
+    try:
+        env = os.environ.copy()
+        env['PYTHONPATH'] = '/data/projects/study-dashboard'
+        subprocess.Popen(
+            ['python3', 'backend/app.py'],
+            cwd='/data/projects/study-dashboard',
+            env=env,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True
+        )
+        logger.info('🚀 Started study-dashboard backend on port 5059')
+    except Exception as e:
+        logger.warning(f'⚠️ Could not start study-dashboard: {e}')
+
+
+def _startup_health_scan():
+    """Run health scan in background thread at startup."""
+    import threading
+
+    def _scan():
+        try:
+            results = specs_service.scan_health()
+            logger.info(f'✅ Startup health scan: {results["scanned"]} projects scanned')
+        except Exception as e:
+            logger.warning(f'⚠️ Startup health scan failed: {e}')
+
+    t = threading.Thread(target=_scan, daemon=True)
+    t.start()
+
+
+def _start_favorites_sync_timer():
+    """Sync favorite WhatsApp chats every 10 minutes."""
+    import threading
+
+    INTERVAL = 600  # 10 minutes
+
+    def _sync_loop():
+        import time
+        # Initial sync at startup (after small delay)
+        time.sleep(10)
+        while True:
+            try:
+                result = whatsapp_chat_service.sync_favorites_messages(
+                    whatsapp_proxy_service)
+                logger.info(
+                    f'🔄 Favorites sync: {result["synced_chats"]} chats, '
+                    f'{result["total_messages"]} new msgs')
+            except Exception as e:
+                logger.warning(f'⚠️ Favorites sync failed: {e}')
+            time.sleep(INTERVAL)
+
+    t = threading.Thread(target=_sync_loop, daemon=True)
+    t.start()
+    logger.info('🔄 Started favorites sync timer (every 10 min)')
+
+
+if __name__ == '__main__':
+    logger.info('🚀 Starting HomeHub v2...')
+    logger.info('📊 Dashboard: http://localhost:5000')
+    logger.info('📝 Unified API with TODO and Docker Control')
+    logger.info(f'🐳 Docker available: {docker_service.available}')
+
+    _ensure_ai_profile()
+    _ensure_study_dashboard()
+    _startup_health_scan()
+    _start_favorites_sync_timer()
+
+    app.run(
+        host='0.0.0.0',
+        port=5000,
+        debug=os.getenv("FLASK_DEBUG", "0") == "1"
+    )

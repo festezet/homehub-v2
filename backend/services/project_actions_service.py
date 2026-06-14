@@ -75,8 +75,9 @@ class ProjectActionsService:
 
             cursor.execute("""
                 INSERT INTO project_actions
-                    (project_id, type, title, description, status, priority, due_date, session_doc)
-                VALUES (?, ?, ?, ?, 'todo', ?, ?, ?)
+                    (project_id, type, title, description, status, priority,
+                     due_date, session_doc, command, approval_level, step_order)
+                VALUES (?, ?, ?, ?, 'todo', ?, ?, ?, ?, ?, ?)
             """, (
                 int_id,
                 data.get('type', 'action'),
@@ -85,6 +86,9 @@ class ProjectActionsService:
                 data.get('priority', 'medium'),
                 data.get('due_date'),
                 data.get('session_doc'),
+                data.get('command'),
+                data.get('approval_level', 'confirm'),
+                data.get('step_order'),
             ))
             conn.commit()
             action_id = cursor.lastrowid
@@ -100,7 +104,8 @@ class ProjectActionsService:
             action_id: integer
             data: dict with any of: status, priority, title, description, due_date, type
         """
-        allowed = {'status', 'priority', 'title', 'description', 'due_date', 'type'}
+        allowed = {'status', 'priority', 'title', 'description', 'due_date', 'type',
+                   'command', 'approval_level', 'step_order'}
         updates = {k: v for k, v in data.items() if k in allowed}
         if not updates:
             return False
@@ -115,9 +120,8 @@ class ProjectActionsService:
             values = list(updates.values()) + [action_id]
 
             cursor = conn.cursor()
-            cursor.execute(
-                f"UPDATE project_actions SET {set_clause} WHERE id = ?",
-                values)
+            sql = "UPDATE project_actions SET {} WHERE id = ?".format(set_clause)
+            cursor.execute(sql, values)
             conn.commit()
             return cursor.rowcount > 0
         finally:

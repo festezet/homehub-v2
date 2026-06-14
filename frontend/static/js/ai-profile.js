@@ -1,5 +1,5 @@
 /**
- * AI Profile Module - Draft generation + Notifications
+ * AI Profile Module - Notifications + Maps
  */
 
 import API from './api.js';
@@ -8,36 +8,12 @@ import Utils from './utils.js';
 
 const aiProfileModule = {
     loaded: false,
-    contacts: [],
-    channels: [],
-    mode: 'api',
 
     async load() {
         if (!this.loaded) {
-            await this.loadChannels();
-            this._updateChannelSelector();
             this.loaded = true;
         }
         this.loadNotificationStats();
-    },
-
-    switchMode(mode) {
-        this.mode = mode;
-        document.querySelectorAll('.ai-profile-mode-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.mode === mode);
-        });
-        const btn = document.getElementById('ai-profile-btn-generate');
-        const queueSection = document.getElementById('ai-profile-queue-section');
-        const resultSection = document.getElementById('ai-profile-draft-result');
-        if (mode === 'queue') {
-            btn.textContent = 'Ajouter a la file';
-            queueSection.style.display = 'block';
-            resultSection.style.display = 'none';
-            this.loadQueue();
-        } else {
-            btn.textContent = 'Generer le brouillon';
-            queueSection.style.display = 'none';
-        }
     },
 
     switchSubTab(tabName) {
@@ -61,291 +37,6 @@ const aiProfileModule = {
             if (iframe && iframe.src === 'about:blank') {
                 iframe.src = 'http://localhost:5100';
             }
-        }
-    },
-
-    // --- Draft Generation ---
-
-    async loadChannels() {
-        try {
-            const result = await API.aiProfile.getChannels();
-            this.channels = result.data || [];
-        } catch {
-            this.channels = [{ id: 'email', label: 'Email', status: 'active', corpus: true, send: true }];
-        }
-    },
-
-    async loadContacts(channel) {
-        const select = document.getElementById('ai-profile-contact');
-        select.disabled = true;
-        select.innerHTML = '<option value="">Chargement...</option>';
-        try {
-            const result = await API.aiProfile.getContacts(channel);
-            this.contacts = result.data || [];
-            select.innerHTML = '<option value="">-- Choisir un contact --</option>' +
-                this.contacts.map(c => {
-                    const label = c.display_name || c.contact_id;
-                    const stat = c.email_count
-                        ? `${c.email_count} emails`
-                        : c.message_count
-                            ? `${c.message_count} msgs`
-                            : '';
-                    const suffix = stat ? ` (${stat})` : '';
-                    return `<option value="${c.contact_id}">${this._escapeHtml(label)}${suffix}</option>`;
-                }).join('');
-            select.disabled = false;
-        } catch {
-            select.innerHTML = '<option value="">Service indisponible</option>';
-            select.disabled = true;
-        }
-    },
-
-    async _onContactChange() {
-        const contactId = document.getElementById('ai-profile-contact').value;
-        const infoDiv = document.getElementById('ai-profile-contact-info');
-        if (!contactId) {
-            infoDiv.style.display = 'none';
-            return;
-        }
-        try {
-            const result = await API.aiProfile.getContactContext(contactId);
-            const ctx = result.data;
-            const contact = this.contacts.find(c => c.contact_id === contactId);
-            document.getElementById('ai-profile-contact-lang').textContent =
-                ctx.language === 'en' ? 'EN' : 'FR';
-            document.getElementById('ai-profile-contact-account').textContent = ctx.account;
-            const count = contact?.email_count || contact?.message_count || '?';
-            const unit = contact?.email_count ? 'emails' : 'msgs';
-            document.getElementById('ai-profile-contact-count').textContent =
-                `${count} ${unit}`;
-            infoDiv.style.display = 'flex';
-        } catch {
-            infoDiv.style.display = 'none';
-        }
-    },
-
-    _updateChannelSelector() {
-        const select = document.getElementById('ai-profile-channel');
-        select.innerHTML = this.channels
-            .filter(ch => ch.status === 'active' || ch.status === 'limited')
-            .map(ch => {
-                const suffix = ch.status === 'limited' ? ' (limite)' : '';
-                return `<option value="${ch.id}">${ch.label}${suffix}</option>`;
-            }).join('');
-        this._onChannelChange();
-    },
-
-    _onChannelChange() {
-        const channelId = document.getElementById('ai-profile-channel').value;
-        const infoSpan = document.getElementById('ai-profile-channel-info');
-        const sendBtn = document.getElementById('ai-profile-btn-send');
-        const ch = this.channels.find(c => c.id === channelId);
-        if (!ch) {
-            infoSpan.style.display = 'none';
-            if (sendBtn) sendBtn.style.display = 'none';
-            return;
-        }
-        const parts = [];
-        if (ch.corpus) parts.push('corpus');
-        if (ch.send) parts.push('envoi');
-        if (ch.note) parts.push(ch.note);
-        if (parts.length) {
-            infoSpan.textContent = parts.join(' | ');
-            infoSpan.style.display = 'inline-block';
-        } else {
-            infoSpan.style.display = 'none';
-        }
-        if (sendBtn) sendBtn.style.display = ch.send ? 'inline-block' : 'none';
-        // Reload contacts for the selected channel
-        this.loadContacts(channelId);
-    },
-
-    submitDraft() {
-        if (this.mode === 'queue') {
-            this.addToQueue();
-        } else {
-            this.generateDraft();
-        }
-    },
-
-    async generateDraft() {
-        const contactId = document.getElementById('ai-profile-contact').value;
-        const subject = document.getElementById('ai-profile-subject').value.trim();
-        const context = document.getElementById('ai-profile-context').value.trim();
-
-        if (!contactId || !subject || !context) {
-            Utils.showToast('Remplir tous les champs', 'error');
-            return;
-        }
-
-        const btn = document.getElementById('ai-profile-btn-generate');
-        btn.disabled = true;
-        btn.textContent = 'Generation en cours...';
-
-        try {
-            const channel = document.getElementById('ai-profile-channel').value || 'email';
-            const result = await API.aiProfile.generateDraft({ contact_id: contactId, subject, context, channel });
-            const data = result.data;
-
-            document.getElementById('ai-profile-draft-text').textContent = data.draft;
-            document.getElementById('ai-profile-draft-lang').textContent =
-                data.language === 'en' ? 'EN' : 'FR';
-            document.getElementById('ai-profile-draft-examples').textContent =
-                `${data.examples_used} exemples`;
-            document.getElementById('ai-profile-draft-tokens').textContent =
-                `${data.usage.input_tokens}+${data.usage.output_tokens} tokens`;
-            document.getElementById('ai-profile-draft-result').style.display = 'block';
-
-            Utils.showToast('Brouillon genere', 'success');
-        } catch (err) {
-            Utils.showToast(`Erreur: ${err.message}`, 'error');
-        } finally {
-            btn.disabled = false;
-            btn.textContent = 'Generer le brouillon';
-        }
-    },
-
-    copyDraft() {
-        const text = document.getElementById('ai-profile-draft-text').textContent;
-        navigator.clipboard.writeText(text).then(() => {
-            Utils.showToast('Copie dans le presse-papier', 'success');
-        });
-    },
-
-    async sendDraft() {
-        const contactId = document.getElementById('ai-profile-contact').value;
-        const subject = document.getElementById('ai-profile-subject').value.trim();
-        const draftText = document.getElementById('ai-profile-draft-text').textContent;
-        const channel = document.getElementById('ai-profile-channel').value || 'email';
-
-        if (!contactId || !draftText) {
-            Utils.showToast('Pas de brouillon a envoyer', 'error');
-            return;
-        }
-
-        const chLabel = this.channels.find(c => c.id === channel)?.label || channel;
-        if (!confirm(`Envoyer ce message via ${chLabel} a ${contactId} ?`)) return;
-
-        const btn = document.getElementById('ai-profile-btn-send');
-        btn.disabled = true;
-        btn.textContent = 'Envoi...';
-
-        try {
-            const payload = { channel, to: contactId, body: draftText };
-            if (channel === 'email' && subject) payload.subject = subject;
-            await API.aiProfile.sendMessage(payload);
-            Utils.showToast(`Message envoye via ${chLabel}`, 'success');
-        } catch (err) {
-            Utils.showToast(`Erreur envoi: ${err.message}`, 'error');
-        } finally {
-            btn.disabled = false;
-            btn.textContent = 'Envoyer';
-        }
-    },
-
-    // --- Queue Mode ---
-
-    async addToQueue() {
-        const contactId = document.getElementById('ai-profile-contact').value;
-        const subject = document.getElementById('ai-profile-subject').value.trim();
-        const context = document.getElementById('ai-profile-context').value.trim();
-
-        if (!contactId || !subject || !context) {
-            Utils.showToast('Remplir tous les champs', 'error');
-            return;
-        }
-
-        const btn = document.getElementById('ai-profile-btn-generate');
-        btn.disabled = true;
-
-        try {
-            const channel = document.getElementById('ai-profile-channel').value || 'email';
-            await API.aiProfile.addToQueue({ contact_id: contactId, subject, context, channel });
-            Utils.showToast('Ajoute a la file d\'attente', 'success');
-            document.getElementById('ai-profile-subject').value = '';
-            document.getElementById('ai-profile-context').value = '';
-            this.loadQueue();
-        } catch (err) {
-            Utils.showToast(`Erreur: ${err.message}`, 'error');
-        } finally {
-            btn.disabled = false;
-        }
-    },
-
-    async loadQueue() {
-        const listEl = document.getElementById('ai-profile-queue-list');
-        try {
-            const result = await API.aiProfile.getQueue();
-            const items = result.data || [];
-            const pending = items.filter(i => i.status === 'pending');
-            const done = items.filter(i => i.status === 'done');
-
-            document.getElementById('ai-profile-queue-count').textContent =
-                `${pending.length} en attente`;
-
-            if (items.length === 0) {
-                listEl.innerHTML = '<div class="ai-profile-empty">Aucun brouillon en file</div>';
-                return;
-            }
-
-            listEl.innerHTML = items.map(item => this._renderQueueItem(item)).join('');
-        } catch {
-            listEl.innerHTML = '<div class="ai-profile-empty">Service indisponible</div>';
-        }
-    },
-
-    _renderQueueItem(item) {
-        const isPending = item.status === 'pending';
-        const date = item.created_at ? new Date(item.created_at).toLocaleString('fr-FR') : '';
-        const statusClass = isPending ? 'ai-profile-queue-pending' : 'ai-profile-queue-done';
-        const statusLabel = isPending ? 'En attente' : 'Genere';
-
-        let html = `
-            <div class="ai-profile-queue-item ${statusClass}">
-                <div class="ai-profile-queue-item-header">
-                    <strong>${this._escapeHtml(item.contact_id)}</strong>
-                    <span class="ai-profile-tag">${statusLabel}</span>
-                    ${item.channel ? `<span class="ai-profile-tag" style="background:var(--bg-tertiary)">${this._escapeHtml(item.channel)}</span>` : ''}
-                </div>
-                <div class="ai-profile-queue-item-subject">${this._escapeHtml(item.subject)}</div>
-                <div class="ai-profile-queue-item-context">${this._escapeHtml(item.context)}</div>
-                <div class="ai-profile-queue-item-footer">
-                    <span class="ai-profile-queue-item-date">${date}</span>
-                    <div class="ai-profile-queue-item-actions">`;
-
-        if (!isPending && item.draft_text) {
-            html += `<button class="ai-profile-btn-secondary" onclick="window.aiProfileModule.showQueueDraft(${item.id})">Voir</button>`;
-        }
-        html += `<button class="ai-profile-btn-secondary" onclick="window.aiProfileModule.deleteQueueItem(${item.id})">Supprimer</button>`;
-        html += `</div></div></div>`;
-        return html;
-    },
-
-    showQueueDraft(id) {
-        const listEl = document.getElementById('ai-profile-queue-list');
-        const item = listEl.querySelector(`[data-queue-id="${id}"]`);
-        // Fallback: reload queue and find the item via API
-        API.aiProfile.getQueue().then(result => {
-            const found = (result.data || []).find(i => i.id === id);
-            if (found && found.draft_text) {
-                document.getElementById('ai-profile-draft-text').textContent = found.draft_text;
-                document.getElementById('ai-profile-draft-lang').textContent =
-                    found.language === 'en' ? 'EN' : 'FR';
-                document.getElementById('ai-profile-draft-examples').textContent =
-                    `${found.examples_used || '?'} exemples`;
-                document.getElementById('ai-profile-draft-tokens').textContent = 'session';
-                document.getElementById('ai-profile-draft-result').style.display = 'block';
-            }
-        });
-    },
-
-    async deleteQueueItem(id) {
-        try {
-            await API.aiProfile.deleteFromQueue(id);
-            Utils.showToast('Supprime de la file', 'success');
-            this.loadQueue();
-        } catch (err) {
-            Utils.showToast(`Erreur: ${err.message}`, 'error');
         }
     },
 
@@ -782,7 +473,10 @@ const aiProfileModule = {
         } else {
             mapData = this._getDbMapData();
         }
-        const { nodes, links } = mapData;
+        const nodes = mapData.nodes;
+        // Filter out links referencing missing node IDs (prevents D3 crash)
+        const nodeIds = new Set(nodes.map(n => n.id));
+        const links = mapData.links.filter(l => nodeIds.has(l.source) && nodeIds.has(l.target));
 
         const colorMap = {
             database: '#f59e0b',

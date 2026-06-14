@@ -55,12 +55,42 @@ class LifeTasksModule {
             const status = document.getElementById('lt-filter-status')?.value || 'active';
             const res = await API.lifeTasks.list({ status, category });
             this.tasks = res.tasks || [];
+            this._sortTasks();
             this._renderTasks();
         } catch (e) {
             console.error('Life tasks load error:', e);
             const container = document.getElementById('lt-tasks-container');
             if (container) container.innerHTML = '<p style="color:#f38ba8; text-align:center; padding:40px;">Erreur chargement</p>';
         }
+    }
+
+    _sortTasks() {
+        const sort = document.getElementById('lt-filter-sort')?.value || 'updated';
+        const priorityOrder = { 'P1-Urgent': 0, 'P2-High': 1, 'P2-Important': 1, 'P3-Normal': 2, 'P4-Low': 3 };
+
+        this.tasks.sort((a, b) => {
+            switch (sort) {
+                case 'updated':
+                    return (b.updated_at || b.created_at || '').localeCompare(a.updated_at || a.created_at || '');
+                case 'number-desc': {
+                    const na = parseInt(a.unique_id.split('-')[1]) || 0;
+                    const nb = parseInt(b.unique_id.split('-')[1]) || 0;
+                    return nb - na;
+                }
+                case 'number-asc': {
+                    const na = parseInt(a.unique_id.split('-')[1]) || 0;
+                    const nb = parseInt(b.unique_id.split('-')[1]) || 0;
+                    return na - nb;
+                }
+                case 'priority':
+                    return (priorityOrder[a.priority] ?? 4) - (priorityOrder[b.priority] ?? 4)
+                        || (b.created_at || '').localeCompare(a.created_at || '');
+                case 'created':
+                    return (b.created_at || '').localeCompare(a.created_at || '');
+                default:
+                    return 0;
+            }
+        });
     }
 
     async _loadStats() {
@@ -93,7 +123,7 @@ class LifeTasksModule {
     _renderCard(t) {
         const cat = CATEGORY_ICONS[t.category] || { icon: '\u{1F4CB}', label: t.category };
         const pColor = PRIORITY_COLORS[t.priority] || '#89b4fa';
-        const steps = t.steps || [];
+        const steps = Array.isArray(t.steps) ? t.steps : [];
         const doneCount = steps.filter(s => s.done).length;
         const progress = steps.length ? Math.round((doneCount / steps.length) * 100) : 0;
 
@@ -113,10 +143,10 @@ class LifeTasksModule {
         }
 
         const stepsHtml = steps.map((s, i) => `
-            <li class="lt-step ${s.done ? 'done' : ''}" data-task="${t.unique_id}" data-step="${i}">
+            <div class="lt-step ${s.done ? 'done' : ''}" data-task="${t.unique_id}" data-step="${i}">
                 <span class="lt-step-check">${s.done ? '\u2713' : ''}</span>
-                <span>${this._esc(s.text)}</span>
-            </li>
+                <span class="lt-step-text">${this._esc(s.text || s.label || '')}</span>
+            </div>
         `).join('');
 
         const contextHtml = this._renderContext(t);
@@ -124,17 +154,17 @@ class LifeTasksModule {
         return `
         <div class="lt-task-card" data-id="${t.unique_id}">
             <div class="lt-task-header">
+                <div class="lt-task-id">${t.unique_id}</div>
                 <div class="lt-task-icon">${cat.icon}</div>
                 <div class="lt-task-title">${this._esc(t.title)}</div>
                 <span class="lt-badge lt-badge-priority" style="color:${pColor}">${t.priority}</span>
                 ${deadlineBadge}
-                <span class="lt-task-id">${t.unique_id}</span>
             </div>
             ${t.description ? `<div style="font-size:0.8rem; opacity:0.7; margin-bottom:8px;">${this._esc(t.description)}</div>` : ''}
             ${steps.length ? `
                 <div class="lt-progress-bar"><div class="lt-progress-fill" style="width:${progress}%"></div></div>
                 <div style="font-size:0.75rem; opacity:0.6; margin-bottom:4px;">${doneCount}/${steps.length} etapes (${progress}%)</div>
-                <ul class="lt-steps">${stepsHtml}</ul>
+                <div class="lt-steps-grid">${stepsHtml}</div>
             ` : ''}
             <div class="lt-expanded">
                 ${contextHtml}
@@ -166,8 +196,15 @@ class LifeTasksModule {
     // ---- Events ----
 
     _bindEvents() {
+        if (this._eventsBound) return;
+        this._eventsBound = true;
+
         document.getElementById('lt-filter-category')?.addEventListener('change', () => this._loadTasks());
         document.getElementById('lt-filter-status')?.addEventListener('change', () => this._loadTasks());
+        document.getElementById('lt-filter-sort')?.addEventListener('change', () => {
+            this._sortTasks();
+            this._renderTasks();
+        });
 
         document.getElementById('lt-tasks-container')?.addEventListener('click', (e) => {
             // Toggle expand

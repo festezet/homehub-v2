@@ -6,26 +6,33 @@ import API from './api.js';
 import tabsManager from './tabs.js';
 import Utils from './utils.js';
 import todoModule from './todo.js';
-import dockerModule from './docker.js';
-import localModule from './local.js';
 import internetModule from './internet.js';
-import infrastructureModule from './infrastructure.js';
 import mediaStackModule from './mediastack.js';
 import marketsModule from './markets.js';
+import cryptoModule from './crypto.js';
 import localAppsModule from './local-apps.js';
 import systemMonitorModule from './system-monitor.js';
 import { calendarModule } from './calendar.js';
 import formationModule from './formation.js';
 import servicesPortsModule from './services-ports.js';
-import threadDigestModule from './thread-digest.js';
+import threadDigestModule from './thread-digest.js?v=17';
 import projectStatusModule from './project-status.js';
 import mediaRecommenderModule from './media-recommender.js';
 import aiProfileModule from './ai-profile.js';
-import claudeSkillsModule from './claude-skills.js';
+import claudeConfigModule from './claude-config.js';
 import linkedinPostsModule from './linkedin-posts.js';
+import linkedinProspectionModule from './linkedin-prospection.js';
 import lifeTasksModule from './life-tasks.js';
-import claudeInstructionsModule from './claude-instructions.js';
 import hhDesignModule from './hh-design.js';
+import gmailKnowledgeModule from './gmail-knowledge.js';
+import invitesModule from './invites.js';
+import veilleIAModule from './veille-ia.js';
+import sessionBookmarksModule from './session-bookmarks.js';
+import autismModule from './autism.js';
+import patrimoineModule from './patrimoine.js';
+import patrimoineAnalyseModule from './patrimoine-analyse.js';
+import claudeAnalyticsModule from './claude-analytics.js';
+import emailDraftModule from './email-draft.js';
 
 // Make modules available globally for now (will be refactored)
 window.API = API;
@@ -127,11 +134,10 @@ class HomeHubApp {
         return {
             'project-status': () => projectStatusModule.load(),
             'internet': () => internetModule.load(),
-            'local': () => localModule.load(),
             'dashboard': () => todoModule.init(),
             'mediastack': () => mediaStackModule.load(),
             'markets': () => marketsModule.load(),
-            'infrastructure': () => infrastructureModule.load(),
+            'crypto': () => cryptoModule.load(),
             'local-apps': () => localAppsModule.load(),
             'system-monitor': () => systemMonitorModule.load(),
             'thread-digest': () => threadDigestModule.load(),
@@ -140,11 +146,20 @@ class HomeHubApp {
             'services-ports': () => servicesPortsModule.load(),
             'media-reco': () => mediaRecommenderModule.load(),
             'ai-profile': () => aiProfileModule.load(),
-            'claude-skills': () => claudeSkillsModule.load(),
+            'claude-config': () => claudeConfigModule.load(),
             'linkedin-posts': () => linkedinPostsModule.load(),
+            'linkedin-prospection': () => linkedinProspectionModule.load(),
             'life-tasks': () => lifeTasksModule.load(),
-            'claude-instructions': () => claudeInstructionsModule.load(),
             'hh-design': () => hhDesignModule.load(),
+            'gmail-knowledge': () => gmailKnowledgeModule.load(),
+            'invites': () => invitesModule.load(),
+            'veille-ia': () => veilleIAModule.load(),
+            'session-bookmarks': () => sessionBookmarksModule.load(),
+            'autism': () => autismModule.load(),
+            'patrimoine': () => patrimoineModule.load(),
+            'patrimoine-analyse': () => patrimoineAnalyseModule.load(),
+            'claude-analytics': () => claudeAnalyticsModule.load(),
+            'email-draft': () => emailDraftModule.load(),
         };
     }
 
@@ -154,6 +169,13 @@ class HomeHubApp {
      */
     async loadTabData(tabName) {
         console.log('loadTabData called for:', tabName);
+        // Dynamic pages are handled by dynamic-pages.js via switchPage
+        if (tabName && tabName.startsWith('dp-')) {
+            if (window.dynamicPages) {
+                await window.dynamicPages.loadPage(tabName);
+            }
+            return;
+        }
         const loaders = this._getTabLoaders();
         const loader = loaders[tabName];
         if (loader) {

@@ -13,6 +13,7 @@ class MediaRecommenderModule {
         this.interactions = [];
         this.loaded = false;
         this.allGenres = [];
+        this.interactionStates = {};  // title (lowercased) -> Set of {'liked','seen','disliked'}
     }
 
     async load() {
@@ -34,6 +35,30 @@ class MediaRecommenderModule {
         }
         if (tabName === 'taste' && !this.taste) {
             this.loadTaste();
+        }
+        if (tabName === 'recommendations') {
+            this.loadRecommendations();
+        }
+    }
+
+    async loadRecommendations() {
+        const grid = document.getElementById('media-reco-suggestions');
+        if (!grid) return;
+        if (!this.recommendations.length) {
+            grid.innerHTML = '<div class="media-reco-loading">Chargement...</div>';
+        }
+        try {
+            const data = await API.mediaReco.listRecommendations('pending', 20);
+            if (data.ok && data.recommendations?.length) {
+                this.recommendations = data.recommendations;
+                grid.innerHTML = data.recommendations
+                    .map(r => this._renderCard(r, 'recommendation')).join('');
+            } else {
+                this.recommendations = [];
+                grid.innerHTML = '<div class="media-reco-empty"><p>Aucune recommandation en attente. Clique sur "Generer des recommandations".</p></div>';
+            }
+        } catch (err) {
+            grid.innerHTML = '<div class="media-reco-empty"><p>Erreur de chargement</p></div>';
         }
     }
 
@@ -59,15 +84,59 @@ class MediaRecommenderModule {
         const grid = document.getElementById('media-reco-library-grid');
         if (grid) grid.innerHTML = '<div class="media-reco-loading">Chargement...</div>';
         try {
-            const data = await API.mediaReco.getLibrary();
-            if (data.ok) {
-                this.library = data.library;
+            const [libData, interData] = await Promise.all([
+                API.mediaReco.getLibrary(),
+                API.mediaReco.getInteractions()
+            ]);
+            if (libData.ok) {
+                this.library = libData.library;
                 this._buildGenreFilter();
-                this.renderLibrary();
             }
+            if (interData.ok) {
+                this.interactions = interData.interactions || [];
+                this._rebuildInteractionStates();
+            }
+            this.renderLibrary();
         } catch (err) {
             if (grid) grid.innerHTML = '<div class="media-reco-empty"><p>Erreur de chargement</p></div>';
         }
+    }
+
+    _rebuildInteractionStates() {
+        // Accumulate ALL states per title (non-exclusive).
+        const states = {};
+        for (const i of this.interactions) {
+            const key = (i.title || '').toLowerCase();
+            if (!key) continue;
+            if (!states[key]) states[key] = new Set();
+            const s = this._stateFromInteraction(i);
+            if (s) states[key].add(s);
+        }
+        this.interactionStates = states;
+    }
+
+    _stateFromInteraction(i) {
+        if (i.action === 'rated' && i.rating != null) {
+            if (i.rating >= 8) return 'liked';
+            if (i.rating <= 4) return 'disliked';
+            return 'seen';
+        }
+        if (i.action === 'watched') return 'seen';
+        if (i.action === 'rejected' || i.action === 'abandoned') return 'disliked';
+        return null;
+    }
+
+    _addLocalState(title, state) {
+        const key = (title || '').toLowerCase();
+        if (!key) return;
+        if (!this.interactionStates[key]) this.interactionStates[key] = new Set();
+        this.interactionStates[key].add(state);
+        this.renderLibrary();
+    }
+
+    _hasState(title, state) {
+        const set = this.interactionStates[(title || '').toLowerCase()];
+        return set ? set.has(state) : false;
     }
 
     _buildGenreFilter() {
@@ -90,11 +159,17 @@ class MediaRecommenderModule {
         const type = document.getElementById('media-reco-filter-type')?.value || 'all';
         const genre = document.getElementById('media-reco-filter-genre')?.value || 'all';
         const status = document.getElementById('media-reco-filter-status')?.value || 'all';
+        const feedback = document.getElementById('media-reco-filter-feedback')?.value || 'hide-disliked';
         return this.library.filter(item => {
             if (type !== 'all' && this._mediaType(item) !== type) return false;
             if (genre !== 'all' && !this._parseGenres(item.genres).includes(genre)) return false;
             if (status === 'available' && !item.has_file) return false;
             if (status === 'monitored' && item.has_file) return false;
+            const liked = this._hasState(item.title, 'liked');
+            const disliked = this._hasState(item.title, 'disliked');
+            if (feedback === 'hide-disliked' && disliked) return false;
+            if (feedback === 'liked' && !liked) return false;
+            if (feedback === 'disliked' && !disliked) return false;
             return true;
         });
     }
@@ -137,9 +212,12 @@ class MediaRecommenderModule {
             ? `<div class="media-reco-card-overview">${item.overview}</div>` : '';
         const reason = item.reason
             ? `<div class="media-reco-card-reason">${item.reason}</div>` : '';
+        const escTitle = this._esc(item.title);
         let actions = `<a href="${trailerUrl}" target="_blank" class="media-reco-btn media-reco-btn-trailer">Trailer</a>`;
-        actions += `<button class="media-reco-btn media-reco-btn-add" onclick="window.mediaRecommenderModule.acceptRecommendation(${item.id}, '${this._esc(item.title)}', ${item.year || 0}, '${mediaType}')">Ajouter</button>`;
+        actions += `<button class="media-reco-btn media-reco-btn-add" onclick="window.mediaRecommenderModule.acceptRecommendation(${item.id}, '${escTitle}', ${item.year || 0}, '${mediaType}')">Ajouter</button>`;
         actions += `<button class="media-reco-btn media-reco-btn-reject" onclick="window.mediaRecommenderModule.rejectRecommendation(${item.id})">Pas interesse</button>`;
+        actions += `<button class="media-reco-btn media-reco-btn-seen-liked" onclick="window.mediaRecommenderModule.markSeenLikedExternal(${item.id}, '${escTitle}', '${mediaType}')" title="Deja vu et aime">Deja vu, j'aime</button>`;
+        actions += `<button class="media-reco-btn media-reco-btn-seen-disliked" onclick="window.mediaRecommenderModule.markSeenDislikedExternal(${item.id}, '${escTitle}', '${mediaType}')" title="Deja vu et pas aime">Deja vu, pas aime</button>`;
         return `<div class="media-reco-card">
             <div class="media-reco-card-poster-wrap">
                 ${posterHtml}
@@ -162,8 +240,12 @@ class MediaRecommenderModule {
         const ratingHtml = rating ? `<div class="media-reco-card-rating">IMDB ${rating}</div>` : '';
         const statusClass = hasFile ? 'available' : 'monitored';
         const statusText = hasFile ? 'Disponible' : 'En attente';
+        const escTitle = this._esc(item.title);
+        const cls = (s) => this._hasState(item.title, s) ? ' active' : '';
         let actions = `<a href="${trailerUrl}" target="_blank" class="media-reco-btn media-reco-btn-trailer">Trailer</a>`;
-        actions += `<button class="media-reco-btn media-reco-btn-seen" onclick="window.mediaRecommenderModule.markSeen('${this._esc(item.title)}', '${mediaType}')">Vu</button>`;
+        actions += `<button class="media-reco-btn media-reco-btn-like${cls('liked')}" onclick="window.mediaRecommenderModule.markLiked('${escTitle}', '${mediaType}')" title="J'aime">J'aime</button>`;
+        actions += `<button class="media-reco-btn media-reco-btn-seen${cls('seen')}" onclick="window.mediaRecommenderModule.markSeen('${escTitle}', '${mediaType}')" title="Vu">Vu</button>`;
+        actions += `<button class="media-reco-btn media-reco-btn-dislike${cls('disliked')}" onclick="window.mediaRecommenderModule.markDisliked('${escTitle}', '${mediaType}')" title="J'aime pas">J'aime pas</button>`;
 
         return `<div class="media-reco-card">
             <div class="media-reco-card-poster-wrap">
@@ -185,39 +267,112 @@ class MediaRecommenderModule {
 
     async generateRecommendations() {
         const btn = document.getElementById('media-reco-btn-gen');
-        const grid = document.getElementById('media-reco-suggestions');
         const type = document.getElementById('media-reco-gen-type')?.value || 'both';
-        if (btn) { btn.disabled = true; btn.textContent = 'Generation en cours...'; }
-        if (grid) grid.innerHTML = '<div class="media-reco-loading">Claude reflechit...</div>';
+        if (btn) { btn.disabled = true; btn.textContent = 'Construction du prompt...'; }
         try {
             const data = await API.mediaReco.generateRecommendations(type, 5);
-            if (data.ok && data.recommendations?.length) {
-                this.recommendations = data.recommendations;
-                grid.innerHTML = data.recommendations
-                    .map(r => this._renderCard(r, 'recommendation')).join('');
+            if (data.ok && data.prompt) {
+                this._openClaudeCodeModal(data.prompt, data.batch_id);
             } else {
-                grid.innerHTML = '<div class="media-reco-empty"><p>Aucune recommandation</p></div>';
+                window.Utils?.showToast?.('Echec de generation du prompt', 'error');
             }
         } catch (err) {
-            if (grid) grid.innerHTML = '<div class="media-reco-empty"><p>Erreur de generation</p></div>';
+            window.Utils?.showToast?.('Erreur reseau', 'error');
         }
         if (btn) { btn.disabled = false; btn.textContent = 'Generer des recommandations'; }
     }
 
+    _openClaudeCodeModal(prompt, batchId) {
+        let modal = document.getElementById('media-reco-cc-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'media-reco-cc-modal';
+            modal.className = 'media-reco-modal';
+            modal.innerHTML = `
+                <div class="media-reco-modal-content">
+                    <div class="media-reco-modal-header">
+                        <h3>Generer via Claude Code</h3>
+                        <button class="media-reco-modal-close" onclick="window.mediaRecommenderModule._closeClaudeCodeModal()">x</button>
+                    </div>
+                    <div class="media-reco-modal-body">
+                        <p class="media-reco-modal-step"><strong>1.</strong> Copie ce prompt et colle-le dans une session Claude Code :</p>
+                        <textarea id="media-reco-cc-prompt" readonly></textarea>
+                        <button class="media-reco-btn media-reco-btn-add" onclick="window.mediaRecommenderModule._copyPrompt()">Copier le prompt</button>
+                        <p class="media-reco-modal-step"><strong>2.</strong> Colle ici la reponse JSON de Claude Code :</p>
+                        <textarea id="media-reco-cc-response" placeholder='[{"title":"...","year":2024,"type":"movie",...}]'></textarea>
+                        <button class="media-reco-btn media-reco-btn-add" onclick="window.mediaRecommenderModule._submitClaudeCodeResponse()">Soumettre</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+        }
+        document.getElementById('media-reco-cc-prompt').value = prompt;
+        document.getElementById('media-reco-cc-response').value = '';
+        modal.dataset.batchId = batchId || '';
+        modal.classList.add('open');
+    }
+
+    _closeClaudeCodeModal() {
+        const modal = document.getElementById('media-reco-cc-modal');
+        if (modal) modal.classList.remove('open');
+    }
+
+    async _copyPrompt() {
+        const ta = document.getElementById('media-reco-cc-prompt');
+        if (!ta) return;
+        try {
+            await navigator.clipboard.writeText(ta.value);
+            window.Utils?.showToast?.('Prompt copie', 'success');
+        } catch (e) {
+            ta.select();
+            document.execCommand('copy');
+        }
+    }
+
+    async _submitClaudeCodeResponse() {
+        const modal = document.getElementById('media-reco-cc-modal');
+        const ta = document.getElementById('media-reco-cc-response');
+        const grid = document.getElementById('media-reco-suggestions');
+        const text = (ta?.value || '').trim();
+        if (!text) {
+            window.Utils?.showToast?.('Colle la reponse JSON', 'error');
+            return;
+        }
+        try {
+            const data = await API.mediaReco.submitRecommendations(text, modal?.dataset.batchId);
+            if (data.ok && data.recommendations?.length) {
+                this.recommendations = data.recommendations;
+                if (grid) grid.innerHTML = data.recommendations
+                    .map(r => this._renderCard(r, 'recommendation')).join('');
+                this._closeClaudeCodeModal();
+                window.Utils?.showToast?.(`${data.recommendations.length} recos sauvegardees`, 'success');
+            } else {
+                window.Utils?.showToast?.(data.message || 'Echec parsing', 'error');
+            }
+        } catch (err) {
+            window.Utils?.showToast?.('Erreur reseau', 'error');
+        }
+    }
+
     async acceptRecommendation(id, title, year, type) {
         try {
-            const [addResult] = await Promise.all([
-                API.mediaReco.addTitle({ title, year, type }),
-                API.mediaReco.resolveRecommendation(id, 'added')
-            ]);
+            const addResult = await API.mediaReco.addTitle({ title, year, type });
+            const target = type === 'series' ? 'Sonarr' : 'Radarr';
             if (addResult.ok) {
-                window.Utils?.showToast?.(`${title} ajoute dans ${type === 'series' ? 'Sonarr' : 'Radarr'}`, 'success');
+                window.Utils?.showToast?.(`${title} ajoute dans ${target}`, 'success');
+                await API.mediaReco.resolveRecommendation(id, 'added');
+                this._removeRecommendationCard(id);
+                // Refresh library so the new title appears
+                this.loadLibrary();
+            } else if (addResult._status === 409) {
+                // Already in Radarr/Sonarr — treat as "added" (idempotent)
+                window.Utils?.showToast?.(`${title} deja present dans ${target}`, 'info');
+                await API.mediaReco.resolveRecommendation(id, 'added');
+                this._removeRecommendationCard(id);
             } else {
-                window.Utils?.showToast?.(addResult.error?.message || 'Erreur', 'error');
+                window.Utils?.showToast?.(addResult.error?.message || 'Erreur lors de l\'ajout', 'error');
             }
-            this._removeRecommendationCard(id);
         } catch (err) {
-            window.Utils?.showToast?.('Erreur lors de l\'ajout', 'error');
+            window.Utils?.showToast?.('Erreur reseau lors de l\'ajout', 'error');
         }
     }
 
@@ -256,11 +411,61 @@ class MediaRecommenderModule {
     }
 
     async markSeen(title, type) {
+        if (this._hasState(title, 'seen')) return;
+        this._addLocalState(title, 'seen');
         try {
             await API.mediaReco.createInteraction({ title, media_type: type, action: 'watched' });
             window.Utils?.showToast?.(`${title} marque comme vu`, 'success');
         } catch (err) {
             // silent
+        }
+    }
+
+    async markLiked(title, type) {
+        if (this._hasState(title, 'liked')) return;
+        this._addLocalState(title, 'liked');
+        try {
+            await API.mediaReco.createInteraction({ title, media_type: type, action: 'rated', rating: 9 });
+            window.Utils?.showToast?.(`${title} : aime`, 'success');
+        } catch (err) {
+            // silent
+        }
+    }
+
+    async markDisliked(title, type) {
+        if (this._hasState(title, 'disliked')) return;
+        this._addLocalState(title, 'disliked');
+        try {
+            await API.mediaReco.createInteraction({ title, media_type: type, action: 'rated', rating: 3 });
+            window.Utils?.showToast?.(`${title} : pas aime`, 'info');
+        } catch (err) {
+            // silent
+        }
+    }
+
+    async markSeenLikedExternal(id, title, type) {
+        try {
+            await Promise.all([
+                API.mediaReco.createInteraction({ title, media_type: type, action: 'rated', rating: 9 }),
+                API.mediaReco.resolveRecommendation(id, 'ignored')
+            ]);
+            window.Utils?.showToast?.(`${title} : deja vu, aime`, 'success');
+            this._removeRecommendationCard(id);
+        } catch (err) {
+            window.Utils?.showToast?.('Erreur', 'error');
+        }
+    }
+
+    async markSeenDislikedExternal(id, title, type) {
+        try {
+            await Promise.all([
+                API.mediaReco.createInteraction({ title, media_type: type, action: 'rated', rating: 3 }),
+                API.mediaReco.resolveRecommendation(id, 'ignored')
+            ]);
+            window.Utils?.showToast?.(`${title} : deja vu, pas aime`, 'info');
+            this._removeRecommendationCard(id);
+        } catch (err) {
+            window.Utils?.showToast?.('Erreur', 'error');
         }
     }
 
@@ -300,6 +505,25 @@ class MediaRecommenderModule {
         container.innerHTML = html;
     }
 
+    _sortDimension(key, entries) {
+        if (key === 'decade') {
+            // Chronologique descendant (plus recent en haut). value: "2010s", "2000s"...
+            return [...entries].sort((a, b) => parseInt(b.value) - parseInt(a.value));
+        }
+        if (key === 'runtime_range') {
+            // Du plus long au plus court (physique).
+            const order = {
+                'very_long (150min+)': 0,
+                'long (120-150min)': 1,
+                'medium (90-120min)': 2,
+                'short (<90min)': 3,
+            };
+            return [...entries].sort((a, b) => (order[a.value] ?? 99) - (order[b.value] ?? 99));
+        }
+        // Defaut : par score decroissant
+        return [...entries].sort((a, b) => b.score - a.score);
+    }
+
     _renderTasteStats() {
         const s = this.stats;
         return `<div class="media-reco-stats-grid">
@@ -321,7 +545,7 @@ class MediaRecommenderModule {
         for (const dim of dimensions) {
             const entries = this.taste[dim.key];
             if (!entries || !entries.length) continue;
-            const sorted = [...entries].sort((a, b) => b.score - a.score);
+            const sorted = this._sortDimension(dim.key, entries);
             const maxAbs = Math.max(...sorted.map(e => Math.abs(e.score)), 1);
             html += `<div class="media-reco-taste-section"><h4>${dim.label}</h4><div class="media-reco-taste-bars">`;
             for (const e of sorted) {

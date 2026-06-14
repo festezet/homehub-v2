@@ -1,0 +1,976 @@
+/* LinkedIn Prospection — Dark Theme CRM (port HomeHub)
+ * Tout est namespace sous #linkedin-prospection-page pour isoler du reste de HomeHub.
+ */
+
+#linkedin-prospection-page {
+    --lp-bg: #0f1117;
+    --lp-surface: #1a1d27;
+    --lp-surface-hover: #222632;
+    --lp-border: #2a2e3a;
+    --lp-text: #e4e6ed;
+    --lp-text-muted: #8b8fa3;
+    --lp-accent: #4f8ff7;
+    --lp-accent-hover: #3d7de5;
+    --lp-hot: #ef4444;
+    --lp-warm: #f59e0b;
+    --lp-cold: #6b7280;
+    --lp-green: #22c55e;
+    --lp-red: #ef4444;
+    --lp-radius: 8px;
+
+    background: var(--lp-bg);
+    color: var(--lp-text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    min-height: calc(100vh - 60px);
+    padding: 0;
+    margin: 0;
+}
+
+#linkedin-prospection-page .lp-app {
+    width: 100%;
+}
+
+/* Topbar (mini-nav + filtre compte) */
+#linkedin-prospection-page .lp-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--lp-surface);
+    border-bottom: 1px solid var(--lp-border);
+    padding: 8px 24px;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+#linkedin-prospection-page .lp-nav-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+#linkedin-prospection-page .lp-nav-links a {
+    display: block;
+    padding: 8px 14px;
+    color: var(--lp-text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    transition: all 0.15s;
+}
+
+#linkedin-prospection-page .lp-nav-links a:hover {
+    color: var(--lp-text);
+    background: var(--lp-surface-hover);
+}
+
+#linkedin-prospection-page .lp-nav-links a.active {
+    color: var(--lp-accent);
+    background: rgba(79, 143, 247, 0.10);
+    border-color: rgba(79, 143, 247, 0.3);
+}
+
+#linkedin-prospection-page .lp-account-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#linkedin-prospection-page .lp-account-filter label {
+    font-size: 11px;
+    color: var(--lp-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#linkedin-prospection-page .lp-account-filter select {
+    padding: 6px 8px;
+    background: var(--lp-bg);
+    color: var(--lp-text);
+    border: 1px solid var(--lp-border);
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+/* Main content */
+#linkedin-prospection-page .lp-content {
+    padding: 24px 32px;
+    max-width: 1200px;
+}
+
+#linkedin-prospection-page .lp-page { display: none; }
+#linkedin-prospection-page .lp-page.active { display: block; }
+
+#linkedin-prospection-page h1 {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0 0 20px 0;
+    letter-spacing: -0.3px;
+    color: var(--lp-text);
+}
+
+#linkedin-prospection-page h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0 0 12px 0;
+    color: var(--lp-text);
+}
+
+#linkedin-prospection-page h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--lp-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 12px 0;
+}
+
+#linkedin-prospection-page h4 {
+    margin: 0 0 8px 0;
+}
+
+#linkedin-prospection-page p {
+    margin: 0 0 12px 0;
+}
+
+/* Cards */
+#linkedin-prospection-page .lp-card {
+    background: var(--lp-surface);
+    border: 1px solid var(--lp-border);
+    border-radius: var(--lp-radius);
+    padding: 16px 20px;
+    margin-bottom: 16px;
+}
+
+/* Metrics row */
+#linkedin-prospection-page .lp-metrics-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+#linkedin-prospection-page .lp-metric-card {
+    background: var(--lp-surface);
+    border: 1px solid var(--lp-border);
+    border-radius: var(--lp-radius);
+    padding: 16px;
+    text-align: center;
+}
+
+#linkedin-prospection-page .lp-metric-card .lp-value {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+#linkedin-prospection-page .lp-metric-card .lp-label {
+    font-size: 12px;
+    color: var(--lp-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#linkedin-prospection-page .lp-metric-card.lp-hot .lp-value { color: var(--lp-hot); }
+#linkedin-prospection-page .lp-metric-card.lp-warm .lp-value { color: var(--lp-warm); }
+#linkedin-prospection-page .lp-metric-card.lp-cold .lp-value { color: var(--lp-cold); }
+#linkedin-prospection-page .lp-metric-card.lp-total .lp-value { color: var(--lp-accent); }
+
+/* Grid layouts */
+#linkedin-prospection-page .lp-grid-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+/* Stat list */
+#linkedin-prospection-page .lp-stat-list .lp-stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--lp-border);
+    font-size: 14px;
+}
+#linkedin-prospection-page .lp-stat-list .lp-stat-row:last-child { border-bottom: none; }
+#linkedin-prospection-page .lp-stat-list .lp-stat-label { color: var(--lp-text-muted); }
+#linkedin-prospection-page .lp-stat-list .lp-stat-value { font-weight: 600; }
+
+/* Tables */
+#linkedin-prospection-page .lp-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    color: var(--lp-text);
+}
+
+#linkedin-prospection-page .lp-data-table th {
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--lp-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--lp-border);
+    background: transparent;
+}
+
+#linkedin-prospection-page .lp-data-table th.lp-sortable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    padding-right: 20px;
+    transition: color 0.15s;
+}
+
+#linkedin-prospection-page .lp-data-table th.lp-sortable:hover { color: var(--lp-text); }
+
+#linkedin-prospection-page .lp-data-table th.lp-sortable::after {
+    content: '⇅';
+    position: absolute;
+    right: 4px;
+    opacity: 0.3;
+    font-size: 10px;
+}
+
+#linkedin-prospection-page .lp-data-table th.lp-sortable.asc::after { content: '↑'; opacity: 1; color: var(--lp-accent); }
+#linkedin-prospection-page .lp-data-table th.lp-sortable.desc::after { content: '↓'; opacity: 1; color: var(--lp-accent); }
+#linkedin-prospection-page .lp-data-table th.lp-sortable.asc,
+#linkedin-prospection-page .lp-data-table th.lp-sortable.desc { color: var(--lp-accent); }
+
+#linkedin-prospection-page .lp-data-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--lp-border);
+    vertical-align: middle;
+}
+
+#linkedin-prospection-page .lp-data-table tbody tr:hover {
+    background: var(--lp-surface-hover);
+}
+
+#linkedin-prospection-page .lp-data-table tbody tr.lp-clickable {
+    cursor: pointer;
+}
+
+/* Score badge */
+#linkedin-prospection-page .lp-score-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+#linkedin-prospection-page .lp-score-badge.lp-hot { background: rgba(239, 68, 68, 0.15); color: var(--lp-hot); }
+#linkedin-prospection-page .lp-score-badge.lp-warm { background: rgba(245, 158, 11, 0.15); color: var(--lp-warm); }
+#linkedin-prospection-page .lp-score-badge.lp-cold { background: rgba(107, 114, 128, 0.15); color: var(--lp-cold); }
+#linkedin-prospection-page .lp-score-badge.lp-none { background: rgba(107, 114, 128, 0.1); color: var(--lp-text-muted); }
+
+/* Dual scoring layout */
+#linkedin-prospection-page .lp-scores-dual {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+#linkedin-prospection-page .lp-scores-section .lp-scores-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--lp-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    padding-left: 4px;
+}
+
+/* Status badge */
+#linkedin-prospection-page .lp-status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+#linkedin-prospection-page .lp-status-badge.lp-none { background: rgba(107, 114, 128, 0.15); color: var(--lp-cold); }
+#linkedin-prospection-page .lp-status-badge.lp-pending { background: rgba(245, 158, 11, 0.15); color: var(--lp-warm); }
+#linkedin-prospection-page .lp-status-badge.lp-connected { background: rgba(34, 197, 94, 0.15); color: var(--lp-green); }
+#linkedin-prospection-page .lp-status-badge.lp-draft { background: rgba(107, 114, 128, 0.15); color: var(--lp-cold); }
+#linkedin-prospection-page .lp-status-badge.lp-approved { background: rgba(79, 143, 247, 0.15); color: var(--lp-accent); }
+#linkedin-prospection-page .lp-status-badge.lp-sent { background: rgba(34, 197, 94, 0.15); color: var(--lp-green); }
+#linkedin-prospection-page .lp-status-badge.lp-published { background: rgba(34, 197, 94, 0.15); color: var(--lp-green); }
+#linkedin-prospection-page .lp-status-badge.lp-scheduled { background: rgba(245, 158, 11, 0.15); color: var(--lp-warm); }
+#linkedin-prospection-page .lp-status-badge.lp-rejected { background: rgba(239, 68, 68, 0.15); color: var(--lp-red); }
+
+/* Buttons */
+#linkedin-prospection-page .lp-btn {
+    padding: 7px 14px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+    color: var(--lp-text);
+    background: var(--lp-surface);
+}
+
+#linkedin-prospection-page .lp-btn-primary { background: var(--lp-accent); color: #fff; }
+#linkedin-prospection-page .lp-btn-primary:hover { background: var(--lp-accent-hover); }
+
+#linkedin-prospection-page .lp-btn-secondary {
+    background: var(--lp-surface-hover);
+    color: var(--lp-text);
+    border: 1px solid var(--lp-border);
+}
+
+#linkedin-prospection-page .lp-btn-approve {
+    background: rgba(34, 197, 94, 0.15);
+    color: var(--lp-green);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+#linkedin-prospection-page .lp-btn-approve:hover { background: rgba(34, 197, 94, 0.25); }
+
+#linkedin-prospection-page .lp-btn-reject {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--lp-red);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+#linkedin-prospection-page .lp-btn-reject:hover { background: rgba(239, 68, 68, 0.25); }
+
+#linkedin-prospection-page .lp-btn-publish {
+    background: rgba(79, 143, 247, 0.15);
+    color: var(--lp-accent);
+    border: 1px solid rgba(79, 143, 247, 0.3);
+}
+#linkedin-prospection-page .lp-btn-publish:hover { background: rgba(79, 143, 247, 0.25); }
+
+#linkedin-prospection-page .lp-btn-back {
+    background: transparent;
+    color: var(--lp-text-muted);
+    border: 1px solid var(--lp-border);
+    margin-bottom: 16px;
+}
+#linkedin-prospection-page .lp-btn-back:hover { color: var(--lp-text); background: var(--lp-surface-hover); }
+
+#linkedin-prospection-page .lp-btn-sm { padding: 4px 10px; font-size: 12px; }
+#linkedin-prospection-page .lp-btn-xs { padding: 3px 8px; font-size: 11px; }
+
+#linkedin-prospection-page .lp-btn-danger {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--lp-red);
+    border: none;
+}
+#linkedin-prospection-page .lp-btn-danger:hover { background: rgba(239, 68, 68, 0.3); }
+
+/* Filters bar */
+#linkedin-prospection-page .lp-filters-bar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+#linkedin-prospection-page .lp-filters-bar input,
+#linkedin-prospection-page .lp-filters-bar select {
+    padding: 7px 12px;
+    background: var(--lp-surface);
+    color: var(--lp-text);
+    border: 1px solid var(--lp-border);
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+#linkedin-prospection-page .lp-filters-bar input {
+    flex: 1;
+    max-width: 300px;
+}
+
+#linkedin-prospection-page .lp-filters-bar input::placeholder { color: var(--lp-text-muted); }
+
+/* Result count */
+#linkedin-prospection-page .lp-result-count {
+    font-size: 13px;
+    color: var(--lp-text-muted);
+    margin-bottom: 12px;
+}
+
+/* Pagination */
+#linkedin-prospection-page .lp-pagination {
+    display: flex;
+    gap: 6px;
+    margin-top: 16px;
+    align-items: center;
+    justify-content: center;
+}
+
+#linkedin-prospection-page .lp-pagination button {
+    padding: 6px 12px;
+    background: var(--lp-surface);
+    color: var(--lp-text-muted);
+    border: 1px solid var(--lp-border);
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+#linkedin-prospection-page .lp-pagination button:hover { background: var(--lp-surface-hover); color: var(--lp-text); }
+#linkedin-prospection-page .lp-pagination button.active { background: var(--lp-accent); color: #fff; border-color: var(--lp-accent); }
+#linkedin-prospection-page .lp-pagination button:disabled { opacity: 0.4; cursor: default; }
+
+#linkedin-prospection-page .lp-pagination .lp-page-info {
+    font-size: 13px;
+    color: var(--lp-text-muted);
+    margin: 0 8px;
+}
+
+/* Lead detail header */
+#linkedin-prospection-page .lp-lead-header {
+    background: var(--lp-surface);
+    border: 1px solid var(--lp-border);
+    border-radius: var(--lp-radius);
+    padding: 20px 24px;
+    margin-bottom: 20px;
+}
+
+#linkedin-prospection-page .lp-lead-header .lp-lead-name {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+#linkedin-prospection-page .lp-lead-header .lp-lead-meta {
+    font-size: 14px;
+    color: var(--lp-text-muted);
+    margin-bottom: 12px;
+}
+
+#linkedin-prospection-page .lp-lead-header .lp-lead-details {
+    display: flex;
+    gap: 24px;
+    font-size: 13px;
+    flex-wrap: wrap;
+}
+
+#linkedin-prospection-page .lp-lead-header .lp-detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+#linkedin-prospection-page .lp-lead-header .lp-detail-label {
+    font-size: 11px;
+    color: var(--lp-text-muted);
+    text-transform: uppercase;
+}
+
+#linkedin-prospection-page .lp-link {
+    color: var(--lp-accent);
+    text-decoration: none;
+}
+#linkedin-prospection-page .lp-link:hover { text-decoration: underline; }
+
+/* Message queue items */
+#linkedin-prospection-page .lp-message-queue .lp-msg-item,
+#linkedin-prospection-page .lp-content-queue .lp-content-item {
+    background: var(--lp-surface);
+    border: 1px solid var(--lp-border);
+    border-radius: var(--lp-radius);
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+#linkedin-prospection-page .lp-msg-item .lp-msg-header,
+#linkedin-prospection-page .lp-content-item .lp-content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+#linkedin-prospection-page .lp-msg-item .lp-msg-to {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+#linkedin-prospection-page .lp-msg-item .lp-msg-type {
+    font-size: 12px;
+    color: var(--lp-text-muted);
+    margin-left: 8px;
+}
+
+#linkedin-prospection-page .lp-msg-item .lp-msg-body,
+#linkedin-prospection-page .lp-content-item .lp-content-body {
+    font-size: 13px;
+    color: var(--lp-text-muted);
+    line-height: 1.5;
+    white-space: pre-wrap;
+    margin-bottom: 10px;
+    max-height: 120px;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+#linkedin-prospection-page .lp-msg-item .lp-msg-body.expanded,
+#linkedin-prospection-page .lp-content-item .lp-content-body.expanded {
+    max-height: none;
+}
+
+#linkedin-prospection-page .lp-msg-item .lp-msg-actions,
+#linkedin-prospection-page .lp-content-item .lp-content-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+#linkedin-prospection-page .lp-msg-item .lp-msg-date,
+#linkedin-prospection-page .lp-content-item .lp-content-date {
+    font-size: 12px;
+    color: var(--lp-text-muted);
+    margin-left: auto;
+}
+
+/* Message list in lead detail */
+#linkedin-prospection-page .lp-message-list .lp-msg-entry {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--lp-border);
+}
+#linkedin-prospection-page .lp-message-list .lp-msg-entry:last-child { border-bottom: none; }
+
+#linkedin-prospection-page .lp-msg-entry .lp-msg-entry-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    font-size: 12px;
+}
+
+#linkedin-prospection-page .lp-msg-entry .lp-msg-entry-type { font-weight: 600; }
+#linkedin-prospection-page .lp-msg-entry .lp-msg-entry-date { color: var(--lp-text-muted); }
+
+#linkedin-prospection-page .lp-msg-entry .lp-msg-entry-content {
+    font-size: 13px;
+    color: var(--lp-text-muted);
+    line-height: 1.4;
+}
+
+/* Signal list in lead detail */
+#linkedin-prospection-page .lp-signal-list .lp-signal-entry {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--lp-border);
+    font-size: 13px;
+}
+#linkedin-prospection-page .lp-signal-list .lp-signal-entry:last-child { border-bottom: none; }
+#linkedin-prospection-page .lp-signal-entry .lp-signal-title { font-weight: 500; margin-bottom: 2px; }
+#linkedin-prospection-page .lp-signal-entry .lp-signal-meta {
+    font-size: 12px;
+    color: var(--lp-text-muted);
+}
+
+/* Funnel bar */
+#linkedin-prospection-page .lp-funnel-list .lp-funnel-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+}
+
+#linkedin-prospection-page .lp-funnel-row .lp-funnel-label {
+    width: 100px;
+    font-size: 13px;
+    color: var(--lp-text-muted);
+    text-transform: capitalize;
+}
+
+#linkedin-prospection-page .lp-funnel-row .lp-funnel-bar-wrap {
+    flex: 1;
+    height: 20px;
+    background: var(--lp-bg);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+#linkedin-prospection-page .lp-funnel-row .lp-funnel-bar {
+    height: 100%;
+    background: var(--lp-accent);
+    border-radius: 4px;
+    transition: width 0.3s;
+    min-width: 2px;
+}
+
+#linkedin-prospection-page .lp-funnel-row .lp-funnel-count {
+    width: 40px;
+    text-align: right;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Empty state */
+#linkedin-prospection-page .lp-empty-state {
+    text-align: center;
+    padding: 32px;
+    color: var(--lp-text-muted);
+    font-size: 14px;
+}
+
+/* Prospection */
+#linkedin-prospection-page .lp-card-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+#linkedin-prospection-page .lp-card-header-row h3 { margin: 0; }
+
+#linkedin-prospection-page .lp-source-form {
+    padding: 16px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+#linkedin-prospection-page .lp-source-form.lp-hidden { display: none; }
+#linkedin-prospection-page .lp-hidden { display: none; }
+
+#linkedin-prospection-page .lp-form-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+#linkedin-prospection-page .lp-form-row input,
+#linkedin-prospection-page .lp-form-row select {
+    padding: 8px 12px;
+    border: 1px solid var(--lp-border);
+    border-radius: 6px;
+    background: var(--lp-surface);
+    color: var(--lp-text);
+    font-size: 13px;
+}
+#linkedin-prospection-page .lp-form-row .lp-input-wide { flex: 1; }
+
+#linkedin-prospection-page .lp-type-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--lp-accent);
+}
+
+#linkedin-prospection-page .lp-url-cell {
+    font-size: 12px;
+    color: var(--lp-text-muted);
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#linkedin-prospection-page .lp-actions-cell {
+    display: flex;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+/* Icebreakers */
+#linkedin-prospection-page .lp-icebreaker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 1rem;
+}
+
+#linkedin-prospection-page .lp-icebreaker-card {
+    background: var(--lp-surface);
+    border: 1px solid var(--lp-border);
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+#linkedin-prospection-page .lp-ib-header .lp-ib-name {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+#linkedin-prospection-page .lp-ib-header .lp-ib-meta {
+    font-size: 0.8rem;
+    color: var(--lp-text-muted);
+    margin-top: 0.25rem;
+}
+
+#linkedin-prospection-page .lp-ib-name-link {
+    text-decoration: none;
+    color: var(--lp-text);
+}
+#linkedin-prospection-page .lp-ib-name-link:hover strong {
+    color: var(--lp-accent);
+    text-decoration: underline;
+}
+
+#linkedin-prospection-page .lp-ib-linkedin-url {
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+#linkedin-prospection-page .lp-ib-linkedin-url a {
+    color: var(--lp-text-muted);
+    text-decoration: none;
+}
+#linkedin-prospection-page .lp-ib-linkedin-url a:hover {
+    color: var(--lp-accent);
+    text-decoration: underline;
+}
+
+#linkedin-prospection-page .lp-ib-message {
+    background: var(--lp-bg);
+    border-radius: 6px;
+    padding: 0.75rem;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    border-left: 3px solid var(--lp-accent);
+    color: var(--lp-text);
+}
+
+#linkedin-prospection-page .lp-ib-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#linkedin-prospection-page .lp-char-count {
+    font-size: 0.75rem;
+    color: var(--lp-text-muted);
+}
+#linkedin-prospection-page .lp-char-count.lp-near-limit { color: var(--lp-warm); }
+#linkedin-prospection-page .lp-char-count.lp-over-limit { color: var(--lp-hot); font-weight: bold; }
+
+#linkedin-prospection-page .lp-ib-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+#linkedin-prospection-page .lp-btn-sm {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.75rem;
+    border-radius: 4px;
+    border: 1px solid var(--lp-border);
+    background: var(--lp-surface);
+    color: var(--lp-text);
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+}
+#linkedin-prospection-page .lp-btn-sm:hover {
+    background: var(--lp-accent);
+    color: #fff;
+    border-color: var(--lp-accent);
+}
+
+#linkedin-prospection-page .lp-btn-copy.lp-copied {
+    background: var(--lp-green);
+    border-color: var(--lp-green);
+    color: #fff;
+}
+
+#linkedin-prospection-page .lp-count-badge {
+    font-size: 0.8rem;
+    background: var(--lp-accent);
+    color: #fff;
+    padding: 0.15rem 0.5rem;
+    border-radius: 10px;
+    margin-left: 0.5rem;
+}
+
+#linkedin-prospection-page .lp-page-subtitle {
+    color: var(--lp-text-muted);
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+}
+
+/* Pipeline diagram (HTML) */
+#linkedin-prospection-page #lp-page-pipeline code {
+    background: var(--lp-bg);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+    color: var(--lp-accent);
+}
+
+#linkedin-prospection-page .lp-pipeline-diagram-wrap {
+    background: var(--lp-surface);
+    border: 1px solid var(--lp-border);
+    border-radius: var(--lp-radius);
+    padding: 16px;
+    overflow-x: auto;
+    margin-top: 16px;
+}
+
+#linkedin-prospection-page .lp-pipeline-diagram { width: 100%; min-width: 960px; }
+
+#linkedin-prospection-page .lp-pipe-svg { width: 100%; height: auto; display: block; }
+
+#linkedin-prospection-page .lp-pipe-col-hdr {
+    fill: var(--lp-text-muted);
+    font-size: 10px;
+    font-family: ui-monospace, monospace;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+#linkedin-prospection-page .lp-pipe-tool-box {
+    fill: var(--lp-bg);
+    stroke: var(--lp-border);
+    stroke-width: 1;
+}
+#linkedin-prospection-page .lp-pipe-tool-icon { font-size: 18px; }
+#linkedin-prospection-page .lp-pipe-tool-name {
+    fill: var(--lp-text);
+    font-size: 13px;
+    font-weight: 600;
+}
+#linkedin-prospection-page .lp-pipe-tool-sub {
+    fill: var(--lp-text-muted);
+    font-size: 10px;
+    font-family: ui-monospace, monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#linkedin-prospection-page .lp-pipe-num-svg {
+    fill: white;
+    font-size: 14px;
+    font-weight: 700;
+}
+#linkedin-prospection-page .lp-pipe-title-svg {
+    fill: var(--lp-text);
+    font-size: 14px;
+    font-weight: 600;
+}
+#linkedin-prospection-page .lp-pipe-sub {
+    fill: var(--lp-text-muted);
+    font-size: 12px;
+}
+
+#linkedin-prospection-page .lp-pipe-badge.hot  { fill: rgba(239, 68, 68, 0.18); stroke: var(--lp-hot); stroke-width: 0.5; }
+#linkedin-prospection-page .lp-pipe-badge.warm { fill: rgba(245, 158, 11, 0.18); stroke: var(--lp-warm); stroke-width: 0.5; }
+#linkedin-prospection-page .lp-pipe-badge.cold { fill: rgba(107, 114, 128, 0.18); stroke: var(--lp-cold); stroke-width: 0.5; }
+#linkedin-prospection-page .lp-pipe-badge-txt {
+    font-size: 9px;
+    font-weight: 600;
+    font-family: ui-monospace, monospace;
+    fill: var(--lp-text);
+}
+
+#linkedin-prospection-page .lp-pipe-db-name {
+    fill: #c4a8ff;
+    font-size: 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-weight: 600;
+}
+#linkedin-prospection-page .lp-pipe-db-cnt {
+    fill: var(--lp-text-muted);
+    font-size: 10px;
+    font-family: ui-monospace, monospace;
+}
+
+/* Icebreaker batch toolbar */
+#linkedin-prospection-page .lp-ib-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 12px 0 16px 0;
+    padding: 10px 14px;
+    background: var(--lp-surface);
+    border: 1px solid var(--lp-border);
+    border-radius: 8px;
+    flex-wrap: wrap;
+}
+#linkedin-prospection-page .lp-ib-toolbar label {
+    font-size: 13px;
+    color: var(--lp-text-muted);
+    font-weight: 500;
+}
+#linkedin-prospection-page .lp-ib-toolbar select {
+    background: var(--lp-bg);
+    color: var(--lp-text);
+    border: 1px solid var(--lp-border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 13px;
+    cursor: pointer;
+    min-width: 240px;
+}
+#linkedin-prospection-page .lp-ib-toolbar select:hover { border-color: #4a4a4a; }
+#linkedin-prospection-page .lp-ib-toolbar select:focus {
+    outline: none;
+    border-color: var(--lp-accent);
+    box-shadow: 0 0 0 2px rgba(79, 143, 247, 0.2);
+}
+#linkedin-prospection-page .lp-ib-batch-summary {
+    font-size: 12px;
+    color: var(--lp-text-muted);
+    font-style: italic;
+    margin-left: auto;
+}
+
+#linkedin-prospection-page .lp-ib-batch-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%);
+    color: #fff;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+#linkedin-prospection-page .lp-ib-batch-badge.lp-ib-batch-unknown {
+    background: #4a4a4a;
+    opacity: 0.7;
+}
+
+#linkedin-prospection-page .lp-ib-source-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    vertical-align: middle;
+}
+#linkedin-prospection-page .lp-ib-source-pierre {
+    background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+    color: #fff;
+}
+#linkedin-prospection-page .lp-ib-source-msg {
+    background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    color: #fff;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    #linkedin-prospection-page .lp-grid-2col { grid-template-columns: 1fr; }
+    #linkedin-prospection-page .lp-metrics-row { grid-template-columns: repeat(2, 1fr); }
+    #linkedin-prospection-page .lp-icebreaker-grid { grid-template-columns: 1fr; }
+    #linkedin-prospection-page .lp-scores-dual { grid-template-columns: 1fr; }
+}

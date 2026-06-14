@@ -1,0 +1,95 @@
+<div class="autism-container">
+    <!-- Sub-tab Navigation -->
+    <div class="autism-subtabs">
+        <button class="autism-subtab active" data-subtab="ressources"
+                onclick="window.autismModule.switchSubTab('ressources')">
+            Ressources
+        </button>
+        <button class="autism-subtab" data-subtab="specialistes"
+                onclick="window.autismModule.switchSubTab('specialistes')">
+            Specialistes
+        </button>
+        <button class="autism-subtab" data-subtab="livres"
+                onclick="window.autismModule.switchSubTab('livres')">
+            Livres
+        </button>
+        <button class="autism-subtab" data-subtab="publications"
+                onclick="window.autismModule.switchSubTab('publications')">
+            Publications
+        </button>
+        <button class="autism-subtab" data-subtab="web"
+                onclick="window.autismModule.switchSubTab('web')">
+            Web
+        </button>
+        <button class="autism-subtab" data-subtab="ennui"
+                onclick="window.autismModule.switchSubTab('ennui')">
+            Ennui
+        </button>
+        <button class="autism-subtab" data-subtab="techniques"
+                onclick="window.autismModule.switchSubTab('techniques')">
+            Techniques
+        </button>
+    </div>
+
+    <!-- Tab: Ressources (existing: formations, articles, documents, contacts) -->
+    <div class="autism-subtab-content active" id="autism-tab-ressources">
+        <div class="autism-section">
+            <h3 class="autism-section-title">Formations & Communautes</h3>
+            <div class="autism-links-grid" id="autism-formations"></div>
+        </div>
+
+        <div class="autism-section">
+            <h3 class="autism-section-title">Articles</h3>
+            <div class="autism-links-list" id="autism-articles"></div>
+        </div>
+
+        <div class="autism-section">
+            <h3 class="autism-section-title">References</h3>
+            <div class="autism-links-list" id="autism-references"></div>
+        </div>
+
+        <div class="autism-section">
+            <h3 class="autism-section-title">Documents partages</h3>
+            <div class="autism-links-list" id="autism-documents"></div>
+        </div>
+
+        <div class="autism-section">
+            <h3 class="autism-section-title">Contacts & Services</h3>
+            <div class="autism-contacts-list" id="autism-contacts"></div>
+        </div>
+    </div>
+
+    <!-- Tab: Specialistes -->
+    <div class="autism-subtab-content" id="autism-tab-specialistes">
+        <div id="autism-specialists"></div>
+    </div>
+
+    <!-- Tab: Livres -->
+    <div class="autism-subtab-content" id="autism-tab-livres">
+        <div id="autism-books"></div>
+    </div>
+
+    <!-- Tab: Publications -->
+    <div class="autism-subtab-content" id="autism-tab-publications">
+        <div id="autism-publications"></div>
+        <div class="autism-section">
+            <h3 class="autism-section-title">Journaux de reference</h3>
+            <div class="autism-journals-grid" id="autism-journals"></div>
+        </div>
+    </div>
+
+    <!-- Tab: Web -->
+    <div class="autism-subtab-content" id="autism-tab-web">
+        <div id="autism-web-resources"></div>
+    </div>
+
+    <!-- Tab: Ennui -->
+    <div class="autism-subtab-content" id="autism-tab-ennui">
+        <div id="autism-ennui"></div>
+    </div>
+
+    <!-- Tab: Techniques -->
+    <div class="autism-subtab-content" id="autism-tab-techniques">
+        <div id="autism-techniques"></div>
+    </div>
+</div>

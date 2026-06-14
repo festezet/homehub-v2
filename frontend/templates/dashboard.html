@@ -191,6 +191,13 @@
                 🔄 Réinitialiser
             </button>
 
+            <button id="view-mode-perso" onclick="window.TodoModule.setViewMode('perso')" class="view-mode-btn view-mode-active">
+                👤 Perso
+            </button>
+            <button id="view-mode-projet" onclick="window.TodoModule.setViewMode('projet')" class="view-mode-btn">
+                🤖 Projets
+            </button>
+
             <button onclick="window.showAddTodoModal()" class="btn btn-primary" style="margin-left: auto;">
                 ➕ Nouvelle Tâche
             </button>
@@ -242,6 +249,30 @@
 .filter-select:hover {
     border-color: var(--primary);
     background: var(--bg-card-hover);
+}
+
+/* View mode toggle button */
+.view-mode-btn {
+    padding: 8px 16px;
+    border: 2px solid #334155;
+    border-radius: 8px;
+    background: #334155 !important;
+    color: #f8fafc !important;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.view-mode-btn:hover {
+    border-color: var(--primary);
+}
+
+.view-mode-btn.view-mode-active {
+    background: var(--primary) !important;
+    border-color: var(--primary);
+    color: white !important;
 }
 
 .filter-select:focus {
@@ -524,5 +555,30 @@
     color: var(--text-secondary);
     font-size: 0.875rem;
     opacity: 0.7;
+}
+
+/* Page navigation buttons */
+.page-nav-btn {
+    padding: 4px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.page-nav-btn:hover:not([disabled]) {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+/* Card footer for pagination */
+.card-footer {
+    padding-top: 12px;
+    margin-top: 8px;
+    border-top: 1px solid var(--border-color);
 }
 </style>

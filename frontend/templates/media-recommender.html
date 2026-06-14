@@ -34,6 +34,12 @@
             <option value="available">Disponible</option>
             <option value="monitored">En attente</option>
         </select>
+        <select id="media-reco-filter-feedback" onchange="window.mediaRecommenderModule.applyFilters()">
+            <option value="hide-disliked" selected>Masquer "j'aime pas"</option>
+            <option value="liked">J'aime uniquement</option>
+            <option value="disliked">J'aime pas uniquement</option>
+            <option value="all">Tout afficher</option>
+        </select>
         <span id="media-reco-library-count" class="media-reco-count"></span>
         <button class="media-reco-btn-sync" id="media-reco-btn-sync"
                 onclick="window.mediaRecommenderModule.triggerSync()">

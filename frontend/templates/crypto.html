@@ -1,0 +1,83 @@
+<!-- Crypto Tracker Tab - Suivi des cryptomonnaies avec TradingView -->
+
+<!-- Ticker Tape -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header">
+        <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+            📊 Ticker Crypto en Temps Réel
+        </h3>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        <div id="tradingview-crypto-ticker"></div>
+    </div>
+</div>
+
+<!-- Crypto Charts Grid -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+            📈 Graphiques Crypto
+        </h3>
+        <div class="crypto-interval-btns" style="display: flex; gap: 6px;">
+            <button class="btn-interval" data-interval="1" title="1 minute">1m</button>
+            <button class="btn-interval" data-interval="5" title="5 minutes">5m</button>
+            <button class="btn-interval" data-interval="15" title="15 minutes">15m</button>
+            <button class="btn-interval" data-interval="60" title="1 heure">1H</button>
+            <button class="btn-interval" data-interval="240" title="4 heures">4H</button>
+            <button class="btn-interval active" data-interval="D" title="Journalier">1J</button>
+            <button class="btn-interval" data-interval="W" title="Hebdomadaire">1S</button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="crypto-charts-grid" id="crypto-charts-grid">
+            <!-- Charts injected by JS -->
+        </div>
+    </div>
+</div>
+
+<style>
+.crypto-charts-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+}
+
+.crypto-chart-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    min-height: 540px;
+}
+
+.crypto-chart-label {
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary, #e2e8f0);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.btn-interval {
+    background: var(--bg-card, #334155);
+    color: var(--text-secondary, #94a3b8);
+    border: 1px solid var(--border-color, #475569);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.btn-interval:hover {
+    background: var(--border-color, #475569);
+    color: var(--text-primary, #e2e8f0);
+}
+
+.btn-interval.active {
+    background: #3b82f6;
+    color: #fff;
+    border-color: #3b82f6;
+}
+</style>

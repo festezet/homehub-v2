@@ -25,14 +25,21 @@ class TodoModule {
 
         // Column widths (percentages)
         this.columnWidths = {
-            action: 26,
-            status: 12,
-            priority: 12,
-            category: 12,
-            objective: 18,
-            deadline: 10,
-            actions: 10
+            action: 52,
+            status: 8,
+            priority: 8,
+            category: 8,
+            objective: 10,
+            deadline: 7,
+            actions: 7
         };
+
+        // View mode: 'perso' (default, hides Todo projet) or 'projet' (only Todo projet)
+        this.viewMode = 'perso';
+
+        // Pagination
+        this.currentPage = 1;
+        this.pageSize = 20;
 
         // Resize state
         this.isResizing = false;
@@ -109,9 +116,16 @@ class TodoModule {
             return;
         }
 
-        container.innerHTML = this._renderTable(filteredTodos);
+        // Pagination
+        const totalFiltered = filteredTodos.length;
+        const totalPages = Math.ceil(totalFiltered / this.pageSize);
+        if (this.currentPage > totalPages) this.currentPage = totalPages;
+        const start = (this.currentPage - 1) * this.pageSize;
+        const pageTodos = filteredTodos.slice(start, start + this.pageSize);
+
+        container.innerHTML = this._renderTable(pageTodos);
         this.setupResizeHandlers();
-        this._renderFooter(filteredTodos.length);
+        this._renderFooter(totalFiltered, totalPages);
     }
 
     /**
@@ -122,17 +136,54 @@ class TodoModule {
         return this._applySorting(filtered);
     }
 
+    setPageSize(size) {
+        this.pageSize = parseInt(size, 10);
+        this.currentPage = 1;
+        this.render();
+    }
+
+    goToPage(page) {
+        this.currentPage = page;
+        this.render();
+        document.getElementById('todo-table-container')?.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    setViewMode(mode) {
+        this.viewMode = mode;
+        this._updateViewModeButtons();
+        this.render();
+    }
+
+    _updateViewModeButtons() {
+        const btnPerso = document.getElementById('view-mode-perso');
+        const btnProjet = document.getElementById('view-mode-projet');
+        if (!btnPerso || !btnProjet) return;
+        btnPerso.classList.toggle('view-mode-active', this.viewMode === 'perso');
+        btnProjet.classList.toggle('view-mode-active', this.viewMode === 'projet');
+    }
+
     _applyFilters(filtered) {
-        if (this.filters.status.length > 0) {
-            filtered = filtered.filter(t => this.filters.status.includes(t.status));
-        }
-        if (this.filters.priority.length > 0) {
-            filtered = filtered.filter(t => this.filters.priority.includes(t.priority) || this.filters.priority.includes('P2-High') && t.priority === 'P2-Important');
-        }
-        if (this.filters.category.length > 0) {
-            filtered = filtered.filter(t => this.filters.category.includes(t.category));
+        // View mode filter (overrides category filter)
+        if (this.viewMode === 'projet') {
+            filtered = filtered.filter(t => t.category === 'Todo projet');
+            // In projet mode, only apply search + objective filters (skip status/priority)
         } else {
-            filtered = filtered.filter(t => t.category !== 'Rapport Systeme');
+            // Perso mode: apply status + priority filters
+            if (this.filters.status.length > 0) {
+                filtered = filtered.filter(t => this.filters.status.includes(t.status));
+            }
+            if (this.filters.priority.length > 0) {
+                filtered = filtered.filter(t => this.filters.priority.includes(t.priority) || this.filters.priority.includes('P2-High') && t.priority === 'P2-Important');
+            }
+        }
+        if (this.viewMode === 'perso') {
+            // In perso mode, respect category filter or hide defaults
+            if (this.filters.category.length > 0) {
+                filtered = filtered.filter(t => this.filters.category.includes(t.category));
+            } else {
+                const hiddenByDefault = ['Rapport Systeme', 'Todo projet'];
+                filtered = filtered.filter(t => !hiddenByDefault.includes(t.category));
+            }
         }
         if (this.filters.objective.length > 0) {
             filtered = filtered.filter(t => this.filters.objective.includes(t.objective));
@@ -199,6 +250,7 @@ class TodoModule {
         } else {
             this.filters[filterType] = this.filters[filterType].filter(v => v !== value);
         }
+        this.currentPage = 1;
         this.renderFilterTags();
         this.render();
     }
@@ -222,6 +274,7 @@ class TodoModule {
      */
     setSearchFilter(value) {
         this.filters.search = value;
+        this.currentPage = 1;
         this.renderFilterTags();
         this.render();
     }

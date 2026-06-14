@@ -1,6 +1,47 @@
 # Lessons Learned - HomeHub v2
 
-**Dernière mise à jour** : 2026-02-23
+**Dernière mise à jour** : 2026-04-11
+
+## JS-001 : ES module crash casse TOUTE la navigation HH (CRITIQUE, RECURRENT)
+
+**Probleme** : HomeHub navigation entierement cassee — page vide, sidebar partielle, aucun onglet ne fonctionne.
+
+**Cause racine** : Un fichier JS charge en ES module (`type="module"`) qui crashe (erreur de syntaxe, import manquant, tag `<script>` non ferme) casse silencieusement TOUTE la chaine d'imports dans `app.js`. Comme `app.js` importe sequentiellement tous les modules, un crash a la ligne N empeche le chargement de toutes les lignes N+1 et suivantes.
+
+**Occurrences 2026-04-11** :
+1. Tag `<script>` non ferme dans `claude-analytics.html` → `dynamicContainer null`, navigation morte
+2. `whatsapp-historique.js` utilise `API.fetch()` sans `import API from './api.js'` → crash au load → `thread-digest.js` echoue → tout ce qui suit dans `app.js` echoue
+
+**Regle OBLIGATOIRE pour tout nouveau fichier JS** :
+1. Verifier que TOUS les objets utilises (`API`, `threadDigestModule`, etc.) sont importes explicitement
+2. Un `export default` n'est utile que si le fichier est importe ailleurs — verifier la chaine
+3. Apres creation d'un nouveau module JS : **toujours ouvrir la console navigateur (F12)** et verifier l'absence d'erreur d'import
+4. Tout fichier HTML avec `<script>` : verifier que les tags sont bien fermes
+
+**Detection rapide** : Si HH affiche une page vide avec sidebar partielle → 99% c'est un JS module crash. Ouvrir F12 → Console → chercher `SyntaxError`, `TypeError: ... is not defined`, ou `Failed to resolve module specifier`.
+
+**Date** : 2026-04-11
+
+---
+
+## CSS-001 : Texte invisible dans les tableaux (dark theme + fond blanc)
+
+**Probleme** : Les noms de skills dans le tableau Analysis D1-D4 sont invisibles — texte blanc sur fond blanc.
+
+**Cause racine** : Le dark theme definit `--text-primary: #f8fafc` (quasi-blanc) sur le `body`. Les cellules `<td>` du tableau (fond `background: white`) heritent cette couleur. Les scores restent visibles car ils ont une `color` inline explicite via JS (`scoreColor()`), mais le nom du skill et le type n'en ont pas.
+
+**Pourquoi le fix existant ne marchait pas** : Un correctif `.skills-list .data-table td { color: #666; }` existait deja pour l'onglet Skills, mais le tableau Analysis D1-D4 est dans `#analysis-subtab`, pas dans `.skills-list`.
+
+**Solution** :
+1. Ajouter `color: #333` sur `.data-table th, .data-table td` (fix global pour tous les tableaux)
+2. Ajouter les selecteurs `#analysis-subtab .data-table td` en complement du `.skills-list`
+
+**Regle generale** : Tout composant avec `background: white` dans HomeHub DOIT avoir une `color` explicite (#333 ou #666) sur ses elements texte. Ne JAMAIS compter sur l'heritage du `body` car le dark theme rend le texte blanc par defaut.
+
+**Fichier** : `frontend/static/css/claude-analytics.css`
+**Date** : 2026-04-10
+
+---
 
 ## 🐛 BUG-001 : Lancement Applications GUI (RÉSOLU)
 
@@ -196,6 +237,34 @@ cat /tmp/homehub_PRJ-036_stderr.log
 
 ---
 
+## CSS-002 : Pages dynamiques illisibles (inline styles light-theme)
+
+**Probleme** : Les pages dynamiques creees via le MCP tool `create_page` ont des titres et textes illisibles — couleurs sombres (#333, #2c3e50, #34495e) sur fond dark theme.
+
+**Cause racine** : Le MCP server `homehub_pages.py` (templates table/list/cards) utilise correctement des couleurs dark-theme. MAIS quand Claude appelle `create_page` avec du HTML libre (`html_content`), il genere ses propres styles inline avec des couleurs light-theme par defaut (#333, #2c3e50, background #f5f5f5, borders #ddd). Ces styles inline ont une specificite CSS plus haute que les classes.
+
+**Ce qui ne marche PAS** : Corriger les templates MCP — le probleme vient du HTML genere par le LLM, pas des templates.
+
+**Solution** : Overrides `!important` dans `dynamic-pages.css` sur `.dp-content` pour forcer les couleurs dark-theme sur tous les elements, meme ceux avec des styles inline :
+```css
+.dp-content, .dp-content div, .dp-content p, .dp-content span,
+.dp-content li, .dp-content td, .dp-content th {
+    color: var(--text-primary) !important;
+}
+.dp-content h1, .dp-content h2, .dp-content h3, .dp-content h4 {
+    color: #58a6ff !important;
+}
+.dp-content pre { background: #161b22 !important; }
+.dp-content table th { background: #21262d !important; }
+```
+
+**Regle generale** : Le contenu HTML libre injecte dans `.dp-content` peut avoir n'importe quelles couleurs inline. Le CSS de `dynamic-pages.css` doit TOUJOURS forcer le dark-theme avec `!important` sur les elements courants.
+
+**Fichier** : `frontend/static/css/dynamic-pages.css`
+**Date** : 2026-04-11
+
+---
+
 ## Lancer projets generateurs de fichiers (depuis infrastructure LESSONS_LEARNED)
 
 ### Ouvrir fichier genere depuis bouton "Lancer"
@@ -226,3 +295,21 @@ cat /tmp/homehub_PRJ-036_stderr.log
 4. Verifier que l'ID (APP-XXX, PRJ-XXX) n'est pas deja utilise ailleurs
 
 **Session** : 2026-01-25
+
+---
+
+## DB-002 : FK cascade manquante sur DELETE (recurrent)
+
+**Probleme** : `DELETE /api/threads/{id}` retourne 500 — "FOREIGN KEY constraint failed". Le JS fonctionne (le log console confirme le clic), mais le backend echoue.
+
+**Cause racine** : `delete_thread()` supprimait `thread_analysis_log`, `thread_digests`, et `thread_configs`, mais oubliait `whatsapp_messages` qui a aussi une FK sur `thread_configs(id)`.
+
+**Diagnostic** : Quand un DELETE retourne 500, toujours verifier les FK avec :
+```sql
+SELECT sql FROM sqlite_master WHERE type='table' AND sql LIKE '%REFERENCES%table_cible%';
+```
+
+**Regle generale** : Lors de l'ecriture d'une fonction `delete_*()`, lister TOUTES les tables avec FK vers la table cible et les supprimer dans l'ordre inverse des dependances. Ne pas se fier a la memoire — toujours verifier le schema.
+
+**Fichier** : `backend/services/thread_digest_service.py` — `delete_thread()`
+**Date** : 2026-04-11

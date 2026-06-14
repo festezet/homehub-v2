@@ -273,16 +273,39 @@ const TodoRenderers = {
         `;
     },
 
-    _renderFooter(filteredCount) {
+    _renderFooter(filteredCount, totalPages) {
         const footer = document.getElementById('todo-footer');
-        if (footer) {
-            footer.style.display = 'block';
-            footer.innerHTML = `
-                <div style="color: var(--text-secondary); font-size: 0.875rem;">
-                    <strong>${filteredCount}</strong> tâche(s) affichée(s) sur <strong>${this.todos.length}</strong> au total
-                </div>
+        if (!footer) return;
+        footer.style.display = 'block';
+
+        const start = (this.currentPage - 1) * this.pageSize + 1;
+        const end = Math.min(this.currentPage * this.pageSize, filteredCount);
+
+        let pageNav = '';
+        if (totalPages > 1) {
+            const prevDisabled = this.currentPage <= 1 ? 'disabled style="opacity:0.4;cursor:default;"' : '';
+            const nextDisabled = this.currentPage >= totalPages ? 'disabled style="opacity:0.4;cursor:default;"' : '';
+            pageNav = `
+                <span style="display:inline-flex;align-items:center;gap:6px;">
+                    <button class="page-nav-btn" ${prevDisabled} onclick="window.TodoModule.goToPage(${this.currentPage - 1})">&#9664;</button>
+                    <span>${this.currentPage} / ${totalPages}</span>
+                    <button class="page-nav-btn" ${nextDisabled} onclick="window.TodoModule.goToPage(${this.currentPage + 1})">&#9654;</button>
+                </span>
             `;
         }
+
+        footer.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:space-between;color:var(--text-secondary);font-size:0.875rem;">
+                <span><strong>${start}-${end}</strong> sur <strong>${filteredCount}</strong></span>
+                ${pageNav}
+                <span style="display:inline-flex;align-items:center;gap:8px;">
+                    Afficher
+                    <select class="inline-select" style="padding:4px 8px;font-size:0.8rem;" onchange="window.TodoModule.setPageSize(this.value)">
+                        ${[10, 20, 50, 100].map(n => `<option value="${n}" ${this.pageSize === n ? 'selected' : ''}>${n}</option>`).join('')}
+                    </select>
+                </span>
+            </div>
+        `;
     },
 
     startResize(event, column) {

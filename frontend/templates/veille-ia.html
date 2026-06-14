@@ -1,0 +1,227 @@
+<!-- Veille IA Page -->
+<div class="veille-ia-page">
+    <!-- Stats -->
+    <div class="grid grid-4" id="vi-stats">
+        <div class="card stat-card">
+            <div class="stat-value" id="vi-stat-total">-</div>
+            <div class="stat-label">Total items</div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-value" id="vi-stat-high" style="color: var(--success, #a6e3a1)">-</div>
+            <div class="stat-label">Score >= 7</div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-value" id="vi-stat-themes" style="color: var(--primary, #89b4fa)">-</div>
+            <div class="stat-label">Idees</div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-value" id="vi-stat-sources">-</div>
+            <div class="stat-label">Sources</div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card" style="margin-bottom: 16px;">
+        <div class="card-body" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <select id="vi-filter-relevance" class="form-select" style="width: auto;">
+                <option value="">Tous scores</option>
+                <option value="8">Score >= 8</option>
+                <option value="7" selected>Score >= 7</option>
+                <option value="6">Score >= 6</option>
+                <option value="5">Score >= 5</option>
+                <option value="1">Tout (>= 1)</option>
+            </select>
+            <select id="vi-filter-status" class="form-select" style="width: auto;">
+                <option value="">Tous statuts</option>
+                <option value="new">Nouveau</option>
+                <option value="reviewed">Relu</option>
+                <option value="idea_generated">Idee generee</option>
+                <option value="published">Publie</option>
+                <option value="archived">Archive</option>
+            </select>
+            <select id="vi-filter-source" class="form-select" style="width: auto;">
+                <option value="">Toutes sources</option>
+                <option value="article">Article</option>
+                <option value="rss">RSS</option>
+                <option value="youtube">YouTube</option>
+                <option value="podcast">Podcast</option>
+                <option value="linkedin_post">LinkedIn</option>
+                <option value="twitter_post">Twitter</option>
+                <option value="research_paper">Paper</option>
+            </select>
+            <input type="text" id="vi-search" class="form-control" placeholder="Rechercher..." style="width: 200px;">
+            <button class="btn btn-sm" id="vi-btn-search" style="padding: 6px 12px;">Chercher</button>
+        </div>
+    </div>
+
+    <!-- Items List -->
+    <div id="vi-items-container">
+        <p style="text-align: center; padding: 40px; color: #888;">Chargement...</p>
+    </div>
+
+    <!-- Pagination -->
+    <div id="vi-pagination" style="display: flex; justify-content: center; gap: 8px; margin-top: 16px;"></div>
+</div>
+
+<style>
+.veille-ia-page .grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+}
+.veille-ia-page .stat-card {
+    text-align: center;
+    padding: 16px;
+}
+.veille-ia-page .stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+.veille-ia-page .stat-label {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    margin-top: 4px;
+}
+
+/* Item cards */
+.vi-item-card {
+    background: var(--card-bg, #1e1e2e);
+    border: 1px solid var(--border, #313244);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+.vi-item-card:hover {
+    border-color: var(--primary, #89b4fa);
+}
+.vi-card-layout {
+    display: flex;
+    gap: 14px;
+}
+.vi-thumb {
+    width: 120px;
+    height: 68px;
+    border-radius: 6px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+.vi-thumb-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface, #181825);
+    font-size: 1.6rem;
+}
+.vi-card-content {
+    flex: 1;
+    min-width: 0;
+}
+.vi-item-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+.vi-item-title {
+    font-weight: 600;
+    font-size: 1rem;
+    flex: 1;
+    line-height: 1.3;
+}
+.vi-item-title a {
+    color: inherit;
+    text-decoration: none;
+}
+.vi-item-title a:hover {
+    text-decoration: underline;
+}
+.vi-score-badge {
+    font-size: 0.8rem;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: 700;
+    min-width: 32px;
+    text-align: center;
+    flex-shrink: 0;
+}
+.vi-score-high {
+    background: rgba(166, 227, 161, 0.2);
+    color: #a6e3a1;
+}
+.vi-score-mid {
+    background: rgba(249, 226, 175, 0.2);
+    color: #f9e2af;
+}
+.vi-score-low {
+    background: rgba(108, 112, 134, 0.2);
+    color: #6c7086;
+}
+.vi-source-badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--surface, #181825);
+    flex-shrink: 0;
+}
+.vi-meta {
+    font-size: 0.75rem;
+    opacity: 0.5;
+    margin-bottom: 6px;
+}
+.vi-has-summary {
+    display: inline-block;
+    background: rgba(166, 227, 161, 0.15);
+    color: #a6e3a1;
+    font-size: 0.65rem;
+    padding: 1px 6px;
+    border-radius: 8px;
+    margin-left: 6px;
+    opacity: 1;
+    font-weight: 600;
+    vertical-align: middle;
+}
+.vi-summary {
+    font-size: 0.85rem;
+    opacity: 0.8;
+    line-height: 1.5;
+    margin-bottom: 8px;
+}
+.vi-item-card.expanded .vi-summary {
+    display: block;
+}
+.vi-themes {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+.vi-theme-tag {
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 8px;
+    background: rgba(137, 180, 250, 0.1);
+    color: var(--primary, #89b4fa);
+}
+.vi-expanded-content {
+    display: none;
+    border-top: 1px solid var(--border, #313244);
+    margin-top: 10px;
+    padding-top: 10px;
+    font-size: 0.85rem;
+}
+.vi-item-card.expanded .vi-expanded-content {
+    display: block;
+}
+.vi-key-points {
+    margin: 8px 0;
+    padding-left: 16px;
+}
+.vi-key-points li {
+    margin-bottom: 4px;
+    opacity: 0.8;
+}
+</style>

@@ -56,11 +56,11 @@ class HHDesignModule {
     _renderArchStats(summary, el) {
         if (!summary) return;
         const cards = [
-            { label: 'Pages', value: summary.pages, color: '#6366f1' },
-            { label: 'API Routes', value: summary.api_routes, color: '#10b981' },
-            { label: 'Services', value: summary.services, color: '#f59e0b' },
-            { label: 'JS Modules', value: summary.js_modules, color: '#3b82f6' },
-            { label: 'Templates', value: summary.templates, color: '#8b5cf6' },
+            { label: 'Pages', value: summary.total_pages, color: '#6366f1' },
+            { label: 'API Routes', value: summary.total_api_routes, color: '#10b981' },
+            { label: 'Services', value: summary.total_services, color: '#f59e0b' },
+            { label: 'JS Modules', value: summary.total_js_modules, color: '#3b82f6' },
+            { label: 'Templates', value: summary.total_templates, color: '#8b5cf6' },
             { label: 'Total LOC', value: summary.total_loc?.toLocaleString() || '—', color: '#ef4444' },
         ];
 
@@ -78,34 +78,39 @@ class HHDesignModule {
 
         // Pages
         if (data.pages?.length) {
-            html += this._archSection('Pages', '#6366f1', data.pages.map(p => `<code>${p}</code>`));
+            html += this._archSection('Pages', '#6366f1', data.pages.map(p =>
+                `<code style="color:#6366f1;">${this._esc(p.name || p)}</code>${p.description ? ` <span style="color:#9ca3af;font-size:0.85em;font-style:italic;">— ${this._esc(p.description)}</span>` : ''}`
+            ));
         }
 
-        // API Routes
+        // API Routes (grouped by file, with file description)
         if (data.api_routes?.length) {
-            html += this._archSection('API Routes', '#10b981',
-                data.api_routes.map(r => `<code style="color:#10b981;">${r.method}</code> <code>${r.path}</code> <span style="color:#9ca3af;font-size:0.8em;">${this._esc(r.file)}</span>`)
-            );
+            html += this._archSection('API Routes', '#10b981', data.api_routes.map(r =>
+                `<strong style="color:#10b981;">${this._esc(r.file)}</strong> <span style="color:#9ca3af;font-size:0.88em;">${r.route_count} routes — ${r.loc} LOC</span>`
+                + (r.description ? ` <span style="color:#9ca3af;font-size:0.85em;font-style:italic;">— ${this._esc(r.description)}</span>` : '')
+            ));
         }
 
         // Services
         if (data.services?.length) {
-            html += this._archSection('Services', '#f59e0b',
-                data.services.map(s => `<strong>${this._esc(s.name)}</strong> <span style="color:#9ca3af;font-size:0.8em;">${s.loc} LOC — ${this._esc(s.file)}</span>`)
-            );
+            html += this._archSection('Services', '#f59e0b', data.services.map(s =>
+                `<strong style="color:#f59e0b;">${this._esc(s.classes?.join(', ') || s.file)}</strong> <span style="color:#9ca3af;font-size:0.88em;">${s.loc} LOC — ${this._esc(s.file)}</span>`
+                + (s.description ? ` <span style="color:#9ca3af;font-size:0.85em;font-style:italic;">— ${this._esc(s.description)}</span>` : '')
+            ));
         }
 
         // JS Modules
         if (data.js_modules?.length) {
-            html += this._archSection('JS Modules', '#3b82f6',
-                data.js_modules.map(m => `<strong>${this._esc(m.name)}</strong> <span style="color:#9ca3af;font-size:0.8em;">${m.loc} LOC</span>`)
-            );
+            html += this._archSection('JS Modules', '#3b82f6', data.js_modules.map(m =>
+                `<strong style="color:#3b82f6;">${this._esc(m.file)}</strong> <span style="color:#9ca3af;font-size:0.88em;">${m.loc} LOC</span>`
+                + (m.description ? ` <span style="color:#9ca3af;font-size:0.85em;font-style:italic;">— ${this._esc(m.description)}</span>` : '')
+            ));
         }
 
         // Templates
         if (data.templates?.length) {
             html += this._archSection('Templates', '#8b5cf6',
-                data.templates.map(t => `<code>${this._esc(t.name)}</code> <span style="color:#9ca3af;font-size:0.8em;">${t.loc} LOC</span>`)
+                data.templates.map(t => `<code style="color:#8b5cf6;">${this._esc(t.file)}</code> <span style="color:#9ca3af;font-size:0.88em;">${t.size ? Math.round(t.size/1024)+'KB' : (t.loc+' LOC')}</span>`)
             );
         }
 
@@ -116,12 +121,12 @@ class HHDesignModule {
         const id = 'hhd-arch-' + title.toLowerCase().replace(/\s+/g, '-');
         return `
             <div style="margin-bottom:16px;">
-                <div style="font-weight:600;font-size:0.9em;color:${color};cursor:pointer;padding:6px 0;border-bottom:1px solid var(--border-color,#e5e7eb);"
+                <div style="font-weight:600;font-size:1.05em;color:${color};cursor:pointer;padding:6px 0;border-bottom:1px solid var(--border-color,#e5e7eb);"
                      onclick="const el=document.getElementById('${id}');el.style.display=el.style.display==='none'?'block':'none'">
                     ${title} (${items.length})
                 </div>
                 <div id="${id}" style="padding:8px 0;">
-                    ${items.map(i => `<div style="font-size:0.82em;padding:3px 8px;">${i}</div>`).join('')}
+                    ${items.map(i => `<div style="font-size:0.92em;padding:3px 8px;">${i}</div>`).join('')}
                 </div>
             </div>`;
     }

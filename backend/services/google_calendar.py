@@ -82,16 +82,25 @@ class GoogleCalendarService:
 
         for event in events:
             start = event.get('start', {})
+            end = event.get('end', {})
             if 'dateTime' in start:
                 event_date = datetime.fromisoformat(start['dateTime'])
+                day_index = event_date.weekday()
+                if 0 <= day_index < 7:
+                    by_day[days[day_index]].append(event)
             elif 'date' in start:
-                event_date = datetime.strptime(start['date'], '%Y-%m-%d')
-            else:
-                continue
-
-            day_index = event_date.weekday()
-            if 0 <= day_index < 7:
-                by_day[days[day_index]].append(event)
+                # All-day event: may span multiple days
+                event['allDay'] = True
+                start_d = datetime.strptime(start['date'], '%Y-%m-%d')
+                end_d = datetime.strptime(end['date'], '%Y-%m-%d') if 'date' in end else start_d + timedelta(days=1)
+                # Google uses exclusive end date, so iterate [start_d, end_d)
+                current = start_d
+                while current < end_d:
+                    if week_start <= current < week_start + timedelta(days=7):
+                        day_index = current.weekday()
+                        if 0 <= day_index < 7:
+                            by_day[days[day_index]].append(event)
+                    current += timedelta(days=1)
 
         return by_day
 
@@ -128,8 +137,21 @@ class GoogleCalendarService:
         if location:
             body['location'] = location
 
+        # Google Meet link generation
+        if event_data.get('with_meet'):
+            from uuid import uuid4
+            body['conferenceData'] = {
+                'createRequest': {
+                    'requestId': str(uuid4()),
+                    'conferenceSolutionKey': {'type': 'hangoutsMeet'},
+                }
+            }
+
         try:
-            event = service.events().insert(calendarId='primary', body=body).execute()
+            insert_kwargs = {'calendarId': 'primary', 'body': body}
+            if event_data.get('with_meet'):
+                insert_kwargs['conferenceDataVersion'] = 1
+            event = service.events().insert(**insert_kwargs).execute()
             return self._simplify_event(event)
         except Exception as e:
             print(f"Error creating event: {e}")
@@ -182,7 +204,7 @@ class GoogleCalendarService:
     # ---- HELPERS ----
 
     def _simplify_event(self, event: Dict) -> Dict:
-        return {
+        result = {
             'id': event.get('id'),
             'summary': event.get('summary', 'Sans titre'),
             'start': event.get('start'),
@@ -191,7 +213,16 @@ class GoogleCalendarService:
             'description': event.get('description', ''),
             'status': event.get('status'),
             'htmlLink': event.get('htmlLink'),
+            'colorId': event.get('colorId'),
+            'eventType': event.get('eventType'),
         }
+        # Extract Meet link if present
+        conf = event.get('conferenceData', {})
+        for ep in conf.get('entryPoints', []):
+            if ep.get('entryPointType') == 'video':
+                result['meet_link'] = ep.get('uri', '')
+                break
+        return result
 
 
 google_calendar_service = GoogleCalendarService()

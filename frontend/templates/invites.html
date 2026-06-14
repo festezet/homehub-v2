@@ -1,0 +1,416 @@
+<!-- Invites Page -->
+<div class="invites-page">
+
+    <!-- Form Card -->
+    <div class="card inv-form-card">
+        <div class="inv-form-header">
+            <div class="inv-form-icon">&#x1F4E8;</div>
+            <div>
+                <h3>Invitation calendrier</h3>
+                <p>Envoyer une invitation .ics avec lien visio</p>
+            </div>
+        </div>
+
+        <div class="inv-form-body">
+            <!-- Section: Destinataire -->
+            <div class="inv-section">
+                <div class="inv-section-label">Destinataire</div>
+                <div class="inv-row-2-1">
+                    <div class="inv-field">
+                        <label for="inv-to-name">Nom <span class="inv-req">*</span></label>
+                        <div class="inv-input-with-icon">
+                            <input type="text" id="inv-to-name" class="form-control" placeholder="Jean Dupont">
+                            <button class="inv-inline-btn" id="inv-search-btn" title="Rechercher dans les contacts">&#x1F50D;</button>
+                        </div>
+                    </div>
+                    <div class="inv-field">
+                        <label for="inv-to-email">Email <span class="inv-req">*</span></label>
+                        <input type="email" id="inv-to-email" class="form-control" placeholder="jean@example.com">
+                    </div>
+                </div>
+                <div id="inv-contact-results" class="inv-contact-results" style="display: none;"></div>
+            </div>
+
+            <!-- Section: Evenement -->
+            <div class="inv-section">
+                <div class="inv-section-label">Evenement</div>
+                <div class="inv-field">
+                    <label for="inv-subject">Objet <span class="inv-req">*</span></label>
+                    <input type="text" id="inv-subject" class="form-control" placeholder="Reunion projet, Point hebdo, Presentation...">
+                </div>
+                <div class="inv-row-3">
+                    <div class="inv-field">
+                        <label for="inv-date">Date <span class="inv-req">*</span></label>
+                        <input type="date" id="inv-date" class="form-control">
+                    </div>
+                    <div class="inv-field">
+                        <label for="inv-time">Heure <span class="inv-req">*</span></label>
+                        <input type="time" id="inv-time" class="form-control" value="10:00">
+                    </div>
+                    <div class="inv-field">
+                        <label for="inv-duration">Duree</label>
+                        <select id="inv-duration" class="form-select">
+                            <option value="15">15 min</option>
+                            <option value="30">30 min</option>
+                            <option value="45">45 min</option>
+                            <option value="60" selected>1h</option>
+                            <option value="90">1h30</option>
+                            <option value="120">2h</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: Details -->
+            <div class="inv-section">
+                <div class="inv-section-label">Details</div>
+                <div class="inv-row-2">
+                    <div class="inv-field">
+                        <label for="inv-location">Lieu</label>
+                        <input type="text" id="inv-location" class="form-control" placeholder="Bureau, Salle 3B...">
+                    </div>
+                    <div class="inv-field">
+                        <label for="inv-description">Description</label>
+                        <textarea id="inv-description" class="form-control" rows="1" placeholder="Ordre du jour, notes..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: Options + Actions -->
+            <div class="inv-footer">
+                <div class="inv-options">
+                    <div class="inv-option-group">
+                        <label class="inv-toggle-label" for="inv-with-meet">
+                            <input type="checkbox" id="inv-with-meet" checked>
+                            <span class="inv-toggle-icon">&#x1F3A5;</span>
+                            Google Meet
+                        </label>
+                    </div>
+                    <div class="inv-option-group">
+                        <select id="inv-account" class="inv-account-select">
+                            <option value="hostinger">&#x1F4BC; Hostinger (pro)</option>
+                            <option value="gmail">&#x1F4E7; Gmail (perso)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="inv-actions">
+                    <button class="btn inv-btn-preview" id="inv-preview-btn">Previsualiser</button>
+                    <button class="btn btn-primary inv-btn-send" id="inv-send-btn">
+                        <span class="inv-btn-icon">&#x2709;</span> Envoyer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview / Result zone -->
+    <div id="inv-result-zone" class="card inv-result-card" style="display: none;">
+        <div class="card-body">
+            <div class="inv-result-header">
+                <h3 id="inv-result-title"></h3>
+                <button class="btn btn-sm btn-icon" id="inv-result-close">&times;</button>
+            </div>
+            <pre id="inv-result-content" class="inv-result-content"></pre>
+        </div>
+    </div>
+
+    <!-- History -->
+    <div class="card" id="inv-history-card" style="display: none;">
+        <div class="card-body">
+            <h3 style="margin: 0 0 12px 0; font-size: 1.2rem;">&#x1F4CB; Invitations envoyees (session)</h3>
+            <div id="inv-history-list"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* ─── Invites Page ─── */
+.invites-page {
+    max-width: 780px;
+}
+
+/* Form card */
+.inv-form-card {
+    border: 1px solid var(--border, #313244);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+
+/* Header */
+.inv-form-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border, #313244);
+    background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(59,130,246,0.02));
+}
+.inv-form-icon {
+    font-size: 1.9rem;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(59,130,246,0.12);
+    border-radius: 10px;
+    flex-shrink: 0;
+}
+.inv-form-header h3 {
+    margin: 0;
+    font-size: 1.44rem;
+    font-weight: 600;
+}
+.inv-form-header p {
+    margin: 2px 0 0;
+    font-size: 1.08rem;
+    opacity: 0.55;
+}
+
+/* Body */
+.inv-form-body {
+    padding: 20px 24px 24px;
+}
+
+/* Sections */
+.inv-section {
+    margin-bottom: 20px;
+}
+.inv-section-label {
+    font-size: 0.96rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.45;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+/* Fields */
+.inv-field {
+    display: flex;
+    flex-direction: column;
+}
+.inv-field label {
+    font-size: 1.08rem;
+    margin-bottom: 6px;
+    opacity: 0.75;
+    font-weight: 500;
+}
+.inv-req {
+    color: var(--primary, #3b82f6);
+    font-weight: 700;
+}
+.inv-field .form-control,
+.inv-field .form-select {
+    width: 100%;
+    padding: 12px 17px;
+    background: var(--surface, #181825);
+    border: 1px solid var(--border, #313244);
+    border-radius: 8px;
+    color: inherit;
+    font-size: 1.14rem;
+    transition: border-color 0.2s;
+}
+.inv-field .form-control:focus,
+.inv-field .form-select:focus {
+    border-color: var(--primary, #3b82f6);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(59,130,246,0.15);
+}
+.inv-field textarea.form-control {
+    resize: vertical;
+    min-height: 38px;
+}
+
+/* Grid layouts */
+.inv-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+.inv-row-2-1 {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 14px;
+    margin-bottom: 0;
+}
+.inv-row-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    margin-top: 12px;
+}
+
+/* Input with inline search button */
+.inv-input-with-icon {
+    position: relative;
+    display: flex;
+}
+.inv-input-with-icon .form-control {
+    padding-right: 42px;
+}
+.inv-inline-btn {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    opacity: 0.5;
+    transition: opacity 0.2s, background 0.2s;
+}
+.inv-inline-btn:hover {
+    opacity: 1;
+    background: rgba(59,130,246,0.12);
+}
+
+/* Contact results */
+.inv-contact-results {
+    margin-top: 8px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border, #313244);
+}
+
+/* Footer: options + actions */
+.inv-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border, #313244);
+    flex-wrap: wrap;
+}
+.inv-options {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+/* Toggle label (Meet checkbox) */
+.inv-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 1.14rem;
+    padding: 11px 19px;
+    background: var(--surface, #181825);
+    border: 1px solid var(--border, #313244);
+    border-radius: 8px;
+    transition: border-color 0.2s, background 0.2s;
+    user-select: none;
+}
+.inv-toggle-label:hover {
+    border-color: var(--primary, #3b82f6);
+}
+.inv-toggle-label input[type="checkbox"] {
+    display: none;
+}
+.inv-toggle-label input[type="checkbox"]:checked ~ .inv-toggle-icon {
+    filter: none;
+}
+.inv-toggle-label input[type="checkbox"]:not(:checked) ~ .inv-toggle-icon {
+    filter: grayscale(1);
+    opacity: 0.4;
+}
+.inv-toggle-icon {
+    font-size: 1.2rem;
+    transition: filter 0.2s, opacity 0.2s;
+}
+/* Checked state styling */
+.inv-toggle-label:has(input:checked) {
+    border-color: rgba(34,197,94,0.4);
+    background: rgba(34,197,94,0.06);
+}
+
+/* Account select */
+.inv-account-select {
+    padding: 11px 17px;
+    background: var(--surface, #181825);
+    border: 1px solid var(--border, #313244);
+    border-radius: 8px;
+    color: inherit;
+    font-size: 1.14rem;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+.inv-account-select:focus {
+    border-color: var(--primary, #3b82f6);
+    outline: none;
+}
+
+/* Action buttons */
+.inv-actions {
+    display: flex;
+    gap: 10px;
+}
+.inv-btn-preview {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 1.14rem;
+    font-weight: 500;
+}
+.inv-btn-send {
+    padding: 12px 29px;
+    border-radius: 8px;
+    font-size: 1.14rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.inv-btn-icon {
+    font-size: 1.2rem;
+}
+
+/* ─── Result card ─── */
+.inv-result-card {
+    margin-bottom: 16px;
+}
+.inv-result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.inv-result-header h3 {
+    margin: 0;
+    font-size: 1.32rem;
+}
+.inv-result-content {
+    background: var(--surface, #181825);
+    padding: 14px 16px;
+    border-radius: 8px;
+    font-size: 1.08rem;
+    white-space: pre-wrap;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border, #313244);
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 640px) {
+    .inv-row-2, .inv-row-2-1, .inv-row-3 {
+        grid-template-columns: 1fr;
+    }
+    .inv-footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .inv-actions {
+        justify-content: stretch;
+    }
+    .inv-actions .btn {
+        flex: 1;
+    }
+}
+</style>

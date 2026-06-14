@@ -31,8 +31,8 @@ class ProjectStatusModule {
             { id: 'activity-log', label: 'Activity Log' },
             { id: 'recent-sessions', label: 'Sessions Recentes' },
             { id: 'project-actions', label: 'Actions Projet' },
-            { id: 'session-closes', label: 'Session Closes' },
-            { id: 'modularity', label: 'Modularity' }
+            { id: 'modularity', label: 'Modularity' },
+            { id: 'posture', label: 'Posture History' }
         ];
 
         container.innerHTML = tabs.map(tab => `
@@ -71,12 +71,12 @@ class ProjectStatusModule {
             case 'project-actions':
                 await this.renderProjectActions(content);
                 break;
-            case 'session-closes':
-                await this.renderSessionCloses(content);
-                break;
             case 'modularity':
                 content.innerHTML = '<div id="modularity-container"></div>';
                 await modularityAuditModule.load();
+                break;
+            case 'posture':
+                await this.renderPosture(content);
                 break;
         }
     }
@@ -92,14 +92,6 @@ class ProjectStatusModule {
             console.log('Activity stats not available');
         }
 
-        let recentActivity = [];
-        try {
-            const response = await API.activity.getTimeline({ limit: 5 });
-            recentActivity = response.timeline || [];
-        } catch (e) {
-            console.log('Recent activity not available');
-        }
-
         let topProjects = [];
         try {
             const response = await API.activity.getTopProjects(10);
@@ -113,8 +105,7 @@ class ProjectStatusModule {
         content.innerHTML = this._renderOverviewStats(stats, thisWeek)
                           + this._renderOverviewTopProjects(topProjects)
                           + this._renderOverviewProjectsTable()
-                          + this._renderOverviewMethodology()
-                          + this._renderOverviewRecentActivity(recentActivity);
+                          + this._renderOverviewMethodology();
 
         await projectsListModule.load();
     }
@@ -260,28 +251,6 @@ class ProjectStatusModule {
                 <span style="color:#f59e0b;">Strategie (45%)</span> alignement objectifs, potentiel revenus, categorie business |
                 <span style="color:#10b981;">Sante (20%)</span> qualite technique (specs, tests, structure).
                 Uniquement pour les projets PRJ-*. Voir l'onglet <em>Ranking Strategique</em> pour le detail.
-            </div>`;
-    }
-
-    _renderOverviewRecentActivity(recentActivity) {
-        if (recentActivity.length === 0) return '';
-        const typeColors = {
-            'feature': '#3b82f6', 'fix': '#ef4444', 'optimization': '#10b981',
-            'creation': '#8b5cf6', 'refactoring': '#f59e0b', 'deployment': '#0ea5e9'
-        };
-
-        return `
-            <div class="ps-recent-activity">
-                <div class="ps-recent-title">Activite recente</div>
-                ${recentActivity.map(item => {
-                    const color = typeColors[item.type] || '#667eea';
-                    return `
-                    <div class="ps-recent-item" style="border-left-color: ${color};">
-                        <div class="ps-recent-item-title">${this.escapeHtml(item.title)}</div>
-                        ${item.project_name ? `<div class="ps-recent-item-project">${this.escapeHtml(item.project_name)}</div>` : ''}
-                        <div class="ps-recent-item-date">${item.date ? Utils.formatRelativeTime(item.date) : ''}</div>
-                    </div>`;
-                }).join('')}
             </div>`;
     }
 
@@ -536,62 +505,172 @@ class ProjectStatusModule {
         }
     }
 
-    // --- SESSION CLOSES SUB-TAB ---
+    // --- POSTURE HISTORY SUB-TAB ---
 
-    async renderSessionCloses(content) {
-        let closes = [];
+    async renderPosture(content) {
+        let runs = [];
+        let trends = null;
         try {
-            const response = await API.sessionClose.getRecent(30);
-            closes = response.closes || [];
+            const r = await fetch(`${API.BASE_URL}/posture-history/runs?limit=20`);
+            const data = await r.json();
+            runs = data.runs || [];
         } catch (e) {
-            console.error('Failed to load session closes:', e);
+            console.error('Failed to load posture runs:', e);
+        }
+        try {
+            const r = await fetch(`${API.BASE_URL}/posture-history/trends`);
+            const data = await r.json();
+            trends = data.trends || null;
+        } catch (e) {
+            console.error('Failed to load posture trends:', e);
         }
 
-        if (closes.length === 0) {
-            content.innerHTML = '<div class="ps-empty">Aucun session close enregistre.</div>';
+        if (runs.length === 0) {
+            content.innerHTML = `
+                <div class="ps-section">
+                    <h3>Posture History</h3>
+                    <p style="color:#888">Aucun audit enregistre. Lancer <code>python3 main.py posture-history --record</code> dans project-auditor.</p>
+                </div>
+            `;
             return;
         }
 
-        content.innerHTML = `
-            <div class="ps-closes-header">
-                <span class="ps-filter-count">${closes.length} session close${closes.length !== 1 ? 's' : ''} (30 derniers jours)</span>
-            </div>
-            <div class="ps-closes-list">
-                ${closes.map(c => this._renderCloseCard(c)).join('')}
-            </div>`;
+        content.innerHTML = this._renderPostureHeader(runs)
+                          + this._renderPostureSparkline(runs)
+                          + this._renderPostureRunsTable(runs)
+                          + this._renderPostureTrends(trends);
     }
 
-    _renderCloseCard(c) {
-        const catColors = { dev: '#3b82f6', evaluation: '#f59e0b', 'gestion-doc': '#8b5cf6', infra: '#10b981' };
-        const color = catColors[c.category] || '#6b7280';
-
-        const decisions = c.decisions || [];
-        const nextSteps = c.next_steps || [];
-        const blockers = c.blockers || [];
-        const hasDetails = decisions.length > 0 || nextSteps.length > 0 || blockers.length > 0;
-        const closeId = `close-${c.id}`;
-
+    _renderPostureHeader(runs) {
+        const last = runs[0];
         return `
-            <div class="ps-close-card" style="border-left-color: ${color};">
-                <div class="ps-close-header" ${hasDetails ? `onclick="document.getElementById('${closeId}').classList.toggle('expanded')" style="cursor:pointer;"` : ''}>
-                    <div class="ps-close-left">
-                        <span class="ps-close-project">${this.escapeHtml(c.project_name || c.project_id)}</span>
-                        ${c.category ? `<span class="ps-timeline-type" style="background: ${color}15; color: ${color};">${c.category}</span>` : ''}
-                        ${c.duration_minutes ? `<span class="ps-close-duration">${c.duration_minutes} min</span>` : ''}
+            <div class="ps-stats-grid">
+                <div class="ps-stat-card">
+                    <div class="ps-stat-number">${last.avg_score.toFixed(1)}</div>
+                    <div class="ps-stat-label">Score moyen (dernier run)</div>
+                </div>
+                <div class="ps-stat-card">
+                    <div class="ps-stat-number">${last.total_projects}</div>
+                    <div class="ps-stat-label">Projets audites</div>
+                </div>
+                <div class="ps-stat-card">
+                    <div class="ps-stat-number">${last.pass_count}</div>
+                    <div class="ps-stat-label">PASS (>=80)</div>
+                </div>
+                <div class="ps-stat-card">
+                    <div class="ps-stat-number">${last.warn_count}</div>
+                    <div class="ps-stat-label">WARN (60-79)</div>
+                </div>
+                <div class="ps-stat-card">
+                    <div class="ps-stat-number">${last.fail_count}</div>
+                    <div class="ps-stat-label">FAIL (<60)</div>
+                </div>
+            </div>
+        `;
+    }
+
+    _renderPostureSparkline(runs) {
+        const ordered = [...runs].reverse();
+        const w = 600, h = 120, pad = 20;
+        const scores = ordered.map(r => r.avg_score);
+        const maxS = Math.max(...scores, 100);
+        const minS = Math.min(...scores, 0);
+        const span = Math.max(maxS - minS, 1);
+        const stepX = ordered.length > 1 ? (w - pad * 2) / (ordered.length - 1) : 0;
+        const points = ordered.map((r, i) => {
+            const x = pad + i * stepX;
+            const y = h - pad - ((r.avg_score - minS) / span) * (h - pad * 2);
+            return `${x},${y}`;
+        }).join(' ');
+        const dots = ordered.map((r, i) => {
+            const x = pad + i * stepX;
+            const y = h - pad - ((r.avg_score - minS) / span) * (h - pad * 2);
+            return `<circle cx="${x}" cy="${y}" r="3" fill="#3b82f6"><title>${r.run_date}: ${r.avg_score.toFixed(1)}</title></circle>`;
+        }).join('');
+        return `
+            <div class="ps-section">
+                <h3>Evolution du score moyen (${ordered.length} runs)</h3>
+                <svg viewBox="0 0 ${w} ${h}" style="width:100%;max-width:${w}px;height:auto;background:#fafafa;border:1px solid #e5e7eb;border-radius:6px">
+                    <polyline points="${points}" fill="none" stroke="#3b82f6" stroke-width="2"/>
+                    ${dots}
+                    <text x="${pad}" y="14" font-size="10" fill="#888">${maxS.toFixed(0)}</text>
+                    <text x="${pad}" y="${h - 4}" font-size="10" fill="#888">${minS.toFixed(0)}</text>
+                </svg>
+            </div>
+        `;
+    }
+
+    _renderPostureRunsTable(runs) {
+        const rows = runs.map(r => `
+            <tr>
+                <td>${this.escapeHtml(r.run_date)}</td>
+                <td>${r.total_projects}</td>
+                <td><strong>${r.avg_score.toFixed(1)}</strong></td>
+                <td style="color:#16a34a">${r.pass_count}</td>
+                <td style="color:#ca8a04">${r.warn_count}</td>
+                <td style="color:#dc2626">${r.fail_count}</td>
+            </tr>
+        `).join('');
+        return `
+            <div class="ps-section">
+                <h3>Historique des runs</h3>
+                <table class="ps-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Projets</th>
+                            <th>Score moyen</th>
+                            <th>PASS</th>
+                            <th>WARN</th>
+                            <th>FAIL</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    _renderPostureTrends(trends) {
+        if (!trends || !trends.previous_run) {
+            return `<div class="ps-section"><h3>Trends</h3><p style="color:#888">Pas assez de runs pour comparer.</p></div>`;
+        }
+        const fmtDelta = d => {
+            const sign = d > 0 ? '+' : '';
+            const color = d > 0 ? '#16a34a' : (d < 0 ? '#dc2626' : '#888');
+            return `<span style="color:${color};font-weight:600">${sign}${d.toFixed(1)}</span>`;
+        };
+        const improved = (trends.improved || []).map(p => `
+            <tr>
+                <td>${this.escapeHtml(p.project_id)}</td>
+                <td>${this.escapeHtml(p.name)}</td>
+                <td>${p.previous.toFixed(1)} -> ${p.current.toFixed(1)}</td>
+                <td>${fmtDelta(p.delta)}</td>
+            </tr>
+        `).join('');
+        const degraded = (trends.degraded || []).map(p => `
+            <tr>
+                <td>${this.escapeHtml(p.project_id)}</td>
+                <td>${this.escapeHtml(p.name)}</td>
+                <td>${p.previous.toFixed(1)} -> ${p.current.toFixed(1)}</td>
+                <td>${fmtDelta(p.delta)}</td>
+            </tr>
+        `).join('');
+        return `
+            <div class="ps-section">
+                <h3>Trends (${trends.previous_run.run_date} -> ${trends.current_run.run_date})</h3>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                    <div>
+                        <h4 style="color:#16a34a">Ameliorations (${(trends.improved || []).length})</h4>
+                        ${improved ? `<table class="ps-table"><thead><tr><th>ID</th><th>Nom</th><th>Avant -> Apres</th><th>Delta</th></tr></thead><tbody>${improved}</tbody></table>` : '<p style="color:#888">Aucune.</p>'}
                     </div>
-                    <div class="ps-close-right">
-                        <span class="ps-close-date">${c.session_date}</span>
-                        ${hasDetails ? '<span class="ps-close-expand">&#9662;</span>' : ''}
+                    <div>
+                        <h4 style="color:#dc2626">Degradations (${(trends.degraded || []).length})</h4>
+                        ${degraded ? `<table class="ps-table"><thead><tr><th>ID</th><th>Nom</th><th>Avant -> Apres</th><th>Delta</th></tr></thead><tbody>${degraded}</tbody></table>` : '<p style="color:#888">Aucune.</p>'}
                     </div>
                 </div>
-                <div class="ps-close-summary">${this.escapeHtml(c.summary)}</div>
-                ${hasDetails ? `
-                <div id="${closeId}" class="ps-close-details">
-                    ${decisions.length > 0 ? `<div class="ps-close-section"><span class="ps-close-label">Decisions</span><ul>${decisions.map(d => `<li>${this.escapeHtml(d)}</li>`).join('')}</ul></div>` : ''}
-                    ${nextSteps.length > 0 ? `<div class="ps-close-section"><span class="ps-close-label">Prochaines etapes</span><ul>${nextSteps.map(s => `<li>${this.escapeHtml(s)}</li>`).join('')}</ul></div>` : ''}
-                    ${blockers.length > 0 ? `<div class="ps-close-section"><span class="ps-close-label">Blockers</span><ul>${blockers.map(b => `<li>${this.escapeHtml(b)}</li>`).join('')}</ul></div>` : ''}
-                </div>` : ''}
-            </div>`;
+            </div>
+        `;
     }
 
     // --- HELPERS ---

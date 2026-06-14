@@ -1,5 +1,29 @@
-<!-- System Monitor Tab - Disk usage and CPU/GPU/RAM monitoring -->
+<!-- System Overview Tab - Hardware specs, disk usage, backups, CPU/GPU/RAM monitoring -->
 <div class="system-monitor-container">
+    <!-- Hardware Banner -->
+    <div class="hardware-banner">
+        <div class="hw-item">
+            <span class="hw-icon">🐧</span>
+            <span class="hw-label">OS</span>
+            <span class="hw-value">Ubuntu 22.04 LTS</span>
+        </div>
+        <div class="hw-item">
+            <span class="hw-icon">⚡</span>
+            <span class="hw-label">CPU</span>
+            <span class="hw-value">Ryzen 5 4600G (6C/12T)</span>
+        </div>
+        <div class="hw-item">
+            <span class="hw-icon">🧠</span>
+            <span class="hw-label">RAM</span>
+            <span class="hw-value">16 GB DDR4</span>
+        </div>
+        <div class="hw-item">
+            <span class="hw-icon">🎮</span>
+            <span class="hw-label">GPU</span>
+            <span class="hw-value">GTX 1080 8 GB</span>
+        </div>
+    </div>
+
     <!-- Storage Section -->
     <div class="monitor-section">
         <h3>Stockage - Comparaison Systeme / Backup</h3>
@@ -541,5 +565,59 @@
 .deleted-file-item {
     padding: 3px 0;
     border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Hardware Banner */
+.hardware-banner {
+    display: flex;
+    gap: 0;
+    background: var(--bg-card, #ffffff);
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 12px;
+    padding: 0;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.hw-item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-right: 1px solid var(--border-color, #e0e0e0);
+}
+
+.hw-item:last-child {
+    border-right: none;
+}
+
+.hw-icon {
+    font-size: 1.1rem;
+}
+
+.hw-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-secondary, #888);
+    letter-spacing: 0.5px;
+}
+
+.hw-value {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-primary, #1a1a2e);
+}
+
+@media (max-width: 900px) {
+    .hardware-banner {
+        flex-wrap: wrap;
+    }
+    .hw-item {
+        flex: 1 1 45%;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color, #e0e0e0);
+    }
 }
 </style>

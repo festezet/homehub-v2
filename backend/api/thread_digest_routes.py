@@ -95,6 +95,62 @@ def delete_thread(thread_id):
 
 
 # ------------------------------------------------------------------
+# Mark for update
+# ------------------------------------------------------------------
+
+@thread_digest_bp.route('/api/threads/mark-for-update', methods=['PUT'])
+def mark_for_update():
+    """Batch set marked_for_update on threads"""
+    try:
+        data = request.get_json()
+        if not data:
+            return api_error(400, 'JSON body required')
+
+        thread_ids = data.get('thread_ids', [])
+        marked = data.get('marked', True)
+
+        if not isinstance(thread_ids, list):
+            return api_error(400, 'thread_ids must be a list')
+
+        count = _digest_service.mark_threads_for_update(thread_ids, marked)
+        return success(message=f'{count} thread(s) updated', count=count)
+    except Exception as e:
+        logger.error(f"Error marking threads: {e}")
+        return api_error(500, str(e))
+
+
+@thread_digest_bp.route('/api/threads/clear-marks', methods=['POST'])
+def clear_marks():
+    """Reset all marked_for_update flags"""
+    try:
+        _digest_service.clear_all_marks()
+        return success(message='All marks cleared')
+    except Exception as e:
+        logger.error(f"Error clearing marks: {e}")
+        return api_error(500, str(e))
+
+
+# ------------------------------------------------------------------
+# Favorite toggle
+# ------------------------------------------------------------------
+
+@thread_digest_bp.route('/api/threads/<int:thread_id>/favorite', methods=['PUT'])
+def toggle_favorite(thread_id):
+    """Toggle favorite flag on a thread"""
+    try:
+        new_val = _digest_service.toggle_favorite(thread_id)
+        if new_val is None:
+            return api_error(404, f'Thread {thread_id} not found')
+
+        return success(
+            thread_id=thread_id, favorite=bool(new_val),
+            message=f'Thread {"favorited" if new_val else "unfavorited"}')
+    except Exception as e:
+        logger.error(f"Error toggling favorite for thread {thread_id}: {e}")
+        return api_error(500, str(e))
+
+
+# ------------------------------------------------------------------
 # Reorder threads
 # ------------------------------------------------------------------
 
@@ -276,6 +332,113 @@ def get_status():
         )
     except Exception as e:
         logger.error(f"Error getting thread status: {e}")
+        return api_error(500, str(e))
+
+
+# ------------------------------------------------------------------
+# Message counts (single query for historique tab)
+# ------------------------------------------------------------------
+
+@thread_digest_bp.route('/api/threads/message-counts')
+def get_message_counts():
+    """Return message counts per thread in a single DB query"""
+    try:
+        import sqlite3, os
+        db = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+            'data', 'thread_digests.db')
+        conn = sqlite3.connect(db)
+        c = conn.cursor()
+        c.execute("""SELECT thread_id, COUNT(*) as cnt
+                     FROM whatsapp_messages GROUP BY thread_id""")
+        counts = {str(r[0]): r[1] for r in c.fetchall()}
+        conn.close()
+
+        return success(counts=counts)
+    except Exception as e:
+        logger.error(f"Error getting message counts: {e}")
+        return api_error(500, str(e))
+
+
+# ------------------------------------------------------------------
+# All chats discovery (Historique tab — all WhatsApp conversations)
+# ------------------------------------------------------------------
+
+@thread_digest_bp.route('/api/threads/all-chats')
+def all_chats():
+    """Discover ALL WhatsApp chats (groups + contacts) via message scan.
+
+    Returns every JID found in Evolution API with name, last_ts, msg_count.
+    Also marks which ones are already configured in thread_configs.
+    Cached server-side for 5 minutes.
+
+    Fallback: when Evolution API is down, returns configured threads
+    with message counts from local DB.
+    """
+    try:
+        proxy = _get_proxy('whatsapp')
+        chats = []
+        source = 'evolution'
+
+        if proxy:
+            chats = proxy.find_all_chats()
+
+        # Mark configured threads (full dict for enrichment)
+        configured = {}
+        try:
+            threads = _digest_service.list_threads()
+            for t in threads:
+                configured[t['jid']] = t
+        except Exception:
+            pass
+
+        if chats:
+            # Evolution API returned data — enrich with config info
+            for c in chats:
+                thr = configured.get(c['jid'])
+                c['thread_id'] = thr['id'] if thr else None
+                c['configured'] = thr is not None
+                c['marked_for_update'] = bool(
+                    thr.get('marked_for_update')) if thr else False
+                c['favorite'] = bool(
+                    thr.get('favorite')) if thr else False
+        else:
+            # Fallback: build chat list from DB (configured threads only)
+            source = 'database'
+            chats = _digest_service.get_all_chats_from_db()
+
+        return success(chats=chats, count=len(chats), source=source)
+    except Exception as e:
+        logger.error(f"Error discovering all chats: {e}")
+        return api_error(500, str(e))
+
+
+@thread_digest_bp.route('/api/threads/proxy-messages')
+def proxy_messages():
+    """Fetch messages directly from Evolution API for a given JID.
+
+    Used by Historique tab for non-configured chats (no thread_id in DB).
+    Query params:
+        jid: WhatsApp JID (required)
+        limit: max messages (default 100)
+        page: pagination (default 1)
+    """
+    try:
+        jid = request.args.get('jid')
+        if not jid:
+            return api_error(400, 'jid parameter required')
+
+        proxy = _get_proxy('whatsapp')
+        if not proxy:
+            return api_error(500, 'WhatsApp proxy not configured')
+
+        limit = request.args.get('limit', 100, type=int)
+        page = request.args.get('page', 1, type=int)
+
+        messages = proxy.find_messages(jid, limit=limit, page=page)
+        return success(jid=jid, messages=messages, count=len(messages))
+    except Exception as e:
+        logger.error(f"Error proxying messages for JID: {e}")
         return api_error(500, str(e))
 
 

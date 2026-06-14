@@ -1,0 +1,271 @@
+/* Gmail Knowledge Dashboard */
+
+.gmail-knowledge-container {
+    padding: 0;
+}
+
+/* Sub-tabs */
+.gmail-knowledge-subtabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--border-color, #e2e8f0);
+    padding-bottom: 0;
+    overflow-x: auto;
+}
+
+.gmail-knowledge-subtab {
+    padding: 10px 18px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-secondary, #64748b);
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.gmail-knowledge-subtab:hover {
+    color: var(--text-primary, #1e293b);
+    background: var(--bg-hover, #f1f5f9);
+}
+
+.gmail-knowledge-subtab.active {
+    color: var(--accent-color, #3b82f6);
+    border-bottom-color: var(--accent-color, #3b82f6);
+    font-weight: 600;
+}
+
+/* Content areas */
+.gmail-knowledge-subtab-content {
+    display: none;
+}
+
+.gmail-knowledge-subtab-content.active {
+    display: block;
+}
+
+/* Stats grid */
+.gmail-knowledge-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.gmail-knowledge-stat-card {
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+}
+
+.gmail-knowledge-stat-card .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent-color, #3b82f6);
+}
+
+.gmail-knowledge-stat-card .stat-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #64748b);
+    margin-top: 4px;
+}
+
+/* Charts row */
+.gmail-knowledge-charts-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 8px;
+}
+
+.gmail-knowledge-chart-card {
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.gmail-knowledge-chart-card h3 {
+    font-size: 0.95rem;
+    margin: 0 0 12px 0;
+    color: var(--text-primary, #1e293b);
+}
+
+.gmail-knowledge-bar {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    gap: 8px;
+}
+
+.gmail-knowledge-bar-label {
+    flex: 0 0 120px;
+    font-size: 0.82rem;
+    color: var(--text-secondary, #64748b);
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.gmail-knowledge-bar-track {
+    flex: 1;
+    height: 20px;
+    background: var(--bg-hover, #f1f5f9);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.gmail-knowledge-bar-fill {
+    height: 100%;
+    background: var(--accent-color, #3b82f6);
+    border-radius: 4px;
+    transition: width 0.4s ease;
+    min-width: 2px;
+}
+
+.gmail-knowledge-bar-count {
+    flex: 0 0 32px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-primary, #1e293b);
+}
+
+/* Toolbar */
+.gmail-knowledge-toolbar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    align-items: center;
+}
+
+.gmail-knowledge-toolbar select,
+.gmail-knowledge-toolbar input {
+    padding: 8px 14px;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    background: var(--card-bg, #fff);
+    color: var(--text-primary, #1e293b);
+    min-width: 200px;
+}
+
+.gmail-knowledge-toolbar input {
+    flex: 1;
+    max-width: 400px;
+}
+
+/* Table wrapper */
+.gmail-knowledge-table-wrap {
+    overflow-x: auto;
+}
+
+.gmail-knowledge-table-wrap table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+}
+
+.gmail-knowledge-table-wrap th {
+    text-align: left;
+    padding: 10px 12px;
+    background: var(--bg-hover, #f1f5f9);
+    color: var(--text-secondary, #64748b);
+    font-weight: 600;
+    white-space: nowrap;
+    border-bottom: 2px solid var(--border-color, #e2e8f0);
+}
+
+.gmail-knowledge-table-wrap td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+    color: var(--text-primary, #1e293b);
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.gmail-knowledge-table-wrap tr:hover td {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Badge */
+.gmail-knowledge-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: var(--accent-light, #dbeafe);
+    color: var(--accent-color, #3b82f6);
+}
+
+.gmail-knowledge-badge.active { background: #dcfce7; color: #16a34a; }
+.gmail-knowledge-badge.inactive { background: #fef3c7; color: #d97706; }
+.gmail-knowledge-badge.closed { background: #fee2e2; color: #dc2626; }
+
+/* Search results sections */
+.gmail-knowledge-search-section {
+    margin-bottom: 24px;
+}
+
+.gmail-knowledge-search-section h3 {
+    font-size: 0.95rem;
+    margin: 0 0 8px 0;
+    color: var(--text-secondary, #64748b);
+}
+
+/* Badge type variants */
+.gmail-knowledge-badge.compte {
+    background: rgba(99, 102, 241, 0.15);
+    color: #818cf8;
+}
+.gmail-knowledge-badge.contact {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+}
+
+/* Attachment links */
+.gmail-knowledge-attachment {
+    display: inline-block;
+    padding: 2px 8px;
+    margin: 2px;
+    border-radius: 6px;
+    background: rgba(59, 130, 246, 0.1);
+    color: #60a5fa;
+    text-decoration: none;
+    font-size: 0.8em;
+    white-space: nowrap;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.gmail-knowledge-attachment:hover {
+    background: rgba(59, 130, 246, 0.25);
+    text-decoration: none;
+}
+
+/* Gmail fallback link */
+.gmail-knowledge-gmail-link {
+    color: #6b7280;
+    text-decoration: none;
+    font-size: 0.85em;
+}
+.gmail-knowledge-gmail-link:hover {
+    text-decoration: underline;
+}
+
+/* States */
+.gmail-knowledge-loading,
+.gmail-knowledge-empty,
+.gmail-knowledge-hint {
+    text-align: center;
+    padding: 32px;
+    color: var(--text-secondary, #64748b);
+    font-size: 0.9rem;
+}

@@ -154,7 +154,7 @@
 
 .grid-header {
     display: grid;
-    grid-template-columns: 60px repeat(5, 1fr);
+    grid-template-columns: 60px repeat(7, 1fr);
     background: #2a2a2a;
     border-bottom: 1px solid #444;
 }
@@ -193,9 +193,43 @@
     color: #64b5f6;
 }
 
+/* ============== All-Day Row ============== */
+
+.all-day-row {
+    display: grid;
+    grid-template-columns: 60px repeat(7, 1fr);
+    background: #252525;
+    border-bottom: 1px solid #444;
+    padding: 3px 0;
+    gap: 2px 0;
+    align-items: center;
+}
+
+.all-day-label {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    padding: 4px 6px;
+    font-size: 0.7rem;
+    color: #888;
+    text-align: center;
+}
+
+.all-day-event {
+    color: #fff;
+    font-size: 0.72rem;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin: 0 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: default;
+    line-height: 1.4;
+}
+
 .grid-body {
     display: grid;
-    grid-template-columns: 60px repeat(5, 1fr);
+    grid-template-columns: 60px repeat(7, 1fr);
     position: relative;
 }
 
@@ -321,7 +355,6 @@
     position: absolute;
     left: 4px;
     right: 4px;
-    background: #4285f4;
     color: white;
     border-radius: 4px;
     padding: 0.25rem 0.4rem;

@@ -113,6 +113,9 @@ class LifeTasksService:
                     d[field] = json.loads(d[field])
                 except (json.JSONDecodeError, TypeError):
                     pass
+        # Ensure steps is always a list
+        if d.get('steps') and not isinstance(d['steps'], list):
+            d['steps'] = []
         return d
 
     def get_templates(self):
@@ -231,10 +234,12 @@ class LifeTasksService:
             cursor = conn.cursor()
             if isinstance(unique_id, int) or unique_id.isdigit():
                 values.append(int(unique_id))
-                cursor.execute(f"UPDATE life_tasks SET {set_clause} WHERE id = ?", values)
+                sql = "UPDATE life_tasks SET {} WHERE id = ?".format(set_clause)
+                cursor.execute(sql, values)
             else:
                 values.append(unique_id)
-                cursor.execute(f"UPDATE life_tasks SET {set_clause} WHERE unique_id = ?", values)
+                sql = "UPDATE life_tasks SET {} WHERE unique_id = ?".format(set_clause)
+                cursor.execute(sql, values)
             conn.commit()
             return cursor.rowcount > 0
         finally:

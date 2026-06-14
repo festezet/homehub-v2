@@ -50,6 +50,11 @@ def generate_recommendations():
     return _proxy("recommendations/generate", method="POST", data=request.get_json(silent=True))
 
 
+@media_reco_bp.route('/recommendations/submit', methods=['POST'])
+def submit_recommendations():
+    return _proxy("recommendations/submit", method="POST", data=request.get_json(silent=True))
+
+
 @media_reco_bp.route('/recommendations/<int:rec_id>/resolve', methods=['POST'])
 def resolve_recommendation(rec_id):
     return _proxy(f"recommendations/{rec_id}/resolve", method="POST", data=request.get_json(silent=True))

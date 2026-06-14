@@ -27,7 +27,7 @@
     margin-bottom: 40px;
 }
 
-.stat-card {
+.prompting-disciplines-container .stat-card {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     padding: 25px;
@@ -38,26 +38,26 @@
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
-.stat-icon {
+.prompting-disciplines-container .stat-icon {
     font-size: 3em;
 }
 
-.stat-content {
+.prompting-disciplines-container .stat-content {
     flex: 1;
 }
 
-.stat-value {
+.prompting-disciplines-container .stat-value {
     font-size: 2em;
     font-weight: bold;
     margin-bottom: 5px;
 }
 
-.stat-label {
+.prompting-disciplines-container .stat-label {
     font-size: 0.9em;
     opacity: 0.9;
 }
 
-.stat-change {
+.prompting-disciplines-container .stat-change {
     font-size: 0.85em;
     margin-top: 5px;
     padding: 4px 8px;
@@ -66,7 +66,7 @@
     display: inline-block;
 }
 
-.stat-change.success {
+.prompting-disciplines-container .stat-change.success {
     background: rgba(46, 204, 113, 0.3);
 }
 

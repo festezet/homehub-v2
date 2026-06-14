@@ -31,6 +31,7 @@ from services.local_apps_service import local_apps_service
 from services.specs_service import specs_service
 from services.thread_digest_service import thread_digest_service
 from services.whatsapp_proxy_service import whatsapp_proxy_service
+from services.whatsapp_chat_service import WhatsAppChatService
 from services.signal_proxy_service import signal_proxy_service
 from services.sms_proxy_service import sms_proxy_service
 from services.modularity_service import modularity_service
@@ -42,6 +43,12 @@ from services.claude_session_service import claude_session_service
 from services.life_tasks_service import life_tasks_service
 from services.claude_instructions_service import claude_instructions_service
 from services.hh_design_service import hh_design_service
+from services.session_bookmarks_service import session_bookmarks_service
+from services.patrimoine_service import patrimoine_service
+from services.claude_analytics_service import claude_analytics_service
+from services.sidebar_service import sidebar_service
+from services.dynamic_pages_service import dynamic_pages_service
+from services.posture_history_service import posture_history_service
 # media_recommender_service removed — proxied to standalone project (port 5056)
 
 # Import API routes
@@ -54,17 +61,27 @@ from api.local_apps_routes import local_apps_bp, init_local_apps_routes
 from api.specs_routes import specs_bp, init_specs_routes
 from api.activity_routes import activity_bp, init_activity_routes
 from api.thread_digest_routes import thread_digest_bp, init_thread_digest_routes
+from api.whatsapp_chat_routes import whatsapp_chat_bp, init_whatsapp_chat_routes
 from api.modularity_routes import modularity_bp, init_modularity_routes
 from api.claude_skills_routes import claude_skills_bp, init_claude_skills_routes
 from api.session_close_routes import session_close_bp, init_session_close_routes
 from api.project_actions_routes import project_actions_bp, init_project_actions_routes
 from api.media_recommender_routes import media_reco_bp
 from api.ai_profile_routes import ai_profile_bp
+from api.gmail_knowledge_routes import gmail_knowledge_bp
 from api.linkedin_routes import linkedin_bp, init_linkedin_routes
 from api.claude_session_routes import claude_session_bp, init_claude_session_routes
 from api.life_tasks_routes import life_tasks_bp, init_life_tasks_routes
 from api.claude_instructions_routes import claude_instructions_bp, init_claude_instructions_routes
 from api.hh_design_routes import hh_design_bp, init_hh_design_routes
+from api.invite_routes import invite_bp
+from api.session_bookmarks_routes import session_bookmarks_bp, init_session_bookmarks_routes
+from api.patrimoine_routes import patrimoine_bp, init_patrimoine_routes
+from api.claude_analytics_routes import claude_analytics_bp, init_claude_analytics_routes
+from api.sidebar_routes import sidebar_bp, init_sidebar_routes
+from api.dynamic_pages_routes import dynamic_pages_bp, init_dynamic_pages_routes
+from api.linkedin_prospection_routes import linkedin_prospection_bp
+from api.posture_history_routes import posture_history_bp, init_posture_history_routes
 
 # Configure logging
 logging.basicConfig(
@@ -95,6 +112,8 @@ platform_proxies = {
     'sms': sms_proxy_service,
 }
 init_thread_digest_routes(thread_digest_service, platform_proxies)
+whatsapp_chat_service = WhatsAppChatService()
+init_whatsapp_chat_routes(whatsapp_chat_service, whatsapp_proxy_service)
 init_modularity_routes(modularity_service)
 init_claude_skills_routes(ClaudeSkillsService())
 init_session_close_routes(session_close_service)
@@ -104,6 +123,12 @@ init_claude_session_routes(claude_session_service)
 init_life_tasks_routes(life_tasks_service)
 init_claude_instructions_routes(claude_instructions_service)
 init_hh_design_routes(hh_design_service)
+init_session_bookmarks_routes(session_bookmarks_service)
+init_patrimoine_routes(patrimoine_service)
+init_claude_analytics_routes(claude_analytics_service)
+init_sidebar_routes(sidebar_service)
+init_dynamic_pages_routes(dynamic_pages_service)
+init_posture_history_routes(posture_history_service)
 # media_reco routes are now a proxy — no init needed
 
 # Register blueprints
@@ -116,6 +141,7 @@ app.register_blueprint(local_apps_bp)
 app.register_blueprint(specs_bp)
 app.register_blueprint(activity_bp)
 app.register_blueprint(thread_digest_bp)
+app.register_blueprint(whatsapp_chat_bp)
 app.register_blueprint(modularity_bp)
 app.register_blueprint(claude_skills_bp)
 app.register_blueprint(session_close_bp)
@@ -127,6 +153,15 @@ app.register_blueprint(claude_session_bp)
 app.register_blueprint(life_tasks_bp)
 app.register_blueprint(claude_instructions_bp)
 app.register_blueprint(hh_design_bp)
+app.register_blueprint(gmail_knowledge_bp)
+app.register_blueprint(invite_bp)
+app.register_blueprint(session_bookmarks_bp)
+app.register_blueprint(patrimoine_bp)
+app.register_blueprint(claude_analytics_bp)
+app.register_blueprint(sidebar_bp)
+app.register_blueprint(dynamic_pages_bp)
+app.register_blueprint(linkedin_prospection_bp)
+app.register_blueprint(posture_history_bp)
 
 # ============================================
 # ROUTES - Pages
@@ -135,7 +170,7 @@ app.register_blueprint(hh_design_bp)
 @app.route('/')
 def index():
     """Main HomeHub page"""
-    return render_template('base.html')
+    return render_template('base.html', sidebar_layout=sidebar_service.get_layout())
 
 # ============================================
 # ROUTES - API
@@ -445,11 +480,106 @@ def internal_error(e):
 # MAIN
 # ============================================
 
+def _ensure_ai_profile():
+    """Start ai-profile backend (port 5100) if not already running."""
+    import subprocess
+    import socket
+    try:
+        with socket.create_connection(('127.0.0.1', 5100), timeout=2):
+            logger.info('✅ ai-profile already running on port 5100')
+            return
+    except (ConnectionRefusedError, OSError):
+        pass
+    try:
+        subprocess.Popen(
+            ['python3', 'backend/app.py'],
+            cwd='/data/projects/ai-profile',
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True
+        )
+        logger.info('🚀 Started ai-profile backend on port 5100')
+    except Exception as e:
+        logger.warning(f'⚠️ Could not start ai-profile: {e}')
+
+
+def _ensure_study_dashboard():
+    """Start study-dashboard backend (port 5059) if not already running."""
+    import subprocess
+    import socket
+    try:
+        with socket.create_connection(('127.0.0.1', 5059), timeout=2):
+            logger.info('✅ study-dashboard already running on port 5059')
+            return
+    except (ConnectionRefusedError, OSError):
+        pass
+    try:
+        env = os.environ.copy()
+        env['PYTHONPATH'] = '/data/projects/study-dashboard'
+        subprocess.Popen(
+            ['python3', 'backend/app.py'],
+            cwd='/data/projects/study-dashboard',
+            env=env,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True
+        )
+        logger.info('🚀 Started study-dashboard backend on port 5059')
+    except Exception as e:
+        logger.warning(f'⚠️ Could not start study-dashboard: {e}')
+
+
+def _startup_health_scan():
+    """Run health scan in background thread at startup."""
+    import threading
+
+    def _scan():
+        try:
+            results = specs_service.scan_health()
+            logger.info(f'✅ Startup health scan: {results["scanned"]} projects scanned')
+        except Exception as e:
+            logger.warning(f'⚠️ Startup health scan failed: {e}')
+
+    t = threading.Thread(target=_scan, daemon=True)
+    t.start()
+
+
+def _start_favorites_sync_timer():
+    """Sync favorite WhatsApp chats every 10 minutes."""
+    import threading
+
+    INTERVAL = 600  # 10 minutes
+
+    def _sync_loop():
+        import time
+        # Initial sync at startup (after small delay)
+        time.sleep(10)
+        while True:
+            try:
+                result = whatsapp_chat_service.sync_favorites_messages(
+                    whatsapp_proxy_service)
+                logger.info(
+                    f'🔄 Favorites sync: {result["synced_chats"]} chats, '
+                    f'{result["total_messages"]} new msgs')
+            except Exception as e:
+                logger.warning(f'⚠️ Favorites sync failed: {e}')
+            time.sleep(INTERVAL)
+
+    t = threading.Thread(target=_sync_loop, daemon=True)
+    t.start()
+    logger.info('🔄 Started favorites sync timer (every 10 min)')
+
+
 if __name__ == '__main__':
     logger.info('🚀 Starting HomeHub v2...')
     logger.info('📊 Dashboard: http://localhost:5000')
     logger.info('📝 Unified API with TODO and Docker Control')
     logger.info(f'🐳 Docker available: {docker_service.available}')
+
+    _ensure_ai_profile()
+    _ensure_study_dashboard()
+    _startup_health_scan()
+    _start_favorites_sync_timer()
 
     app.run(
         host='0.0.0.0',

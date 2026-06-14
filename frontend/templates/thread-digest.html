@@ -7,48 +7,104 @@
             <span class="td-status-text" id="td-status-text">Chargement...</span>
         </div>
         <div class="td-header-right">
-            <button class="btn btn-sm td-config-btn" id="td-config-btn" title="Gerer les fils">&#9881; Config</button>
             <button class="btn btn-sm td-refresh-btn" id="td-refresh-btn" title="Rafraichir">&#x1f504; Refresh</button>
         </div>
     </div>
 
-    <!-- Thread Cards -->
-    <div id="td-cards" class="td-cards">
-        <div class="loading-state">
-            <p>Chargement des digests...</p>
+    <!-- Sub-tabs -->
+    <div class="td-subtabs">
+        <button class="td-subtab active" data-subtab="historique">WhatsApp</button>
+        <button class="td-subtab" data-subtab="digests">Digests</button>
+    </div>
+
+    <!-- TAB: Digests (existing) -->
+    <div id="td-tab-digests" class="td-tab-content" style="display:none;">
+        <div class="td-digests-toolbar">
+            <div class="td-digests-toolbar-actions">
+                <label class="td-select-all-label" id="td-select-all-label">
+                    <input type="checkbox" id="td-select-all-cb" class="td-checkbox">
+                    <span>Tout</span>
+                </label>
+                <button class="btn btn-sm td-update-selected-btn" id="td-update-selected-btn" disabled title="Marquer les fils selectionnes pour mise a jour">
+                    &#10003; Marquer (<span id="td-selected-count">0</span>)
+                </button>
+                <button class="btn btn-sm td-hist-edit-btn" id="td-digests-edit-btn">&#9998; Editer</button>
+                <button class="btn btn-sm td-add-thread-btn" id="td-add-thread-btn" title="Ajouter un fil">&#43; Ajouter</button>
+                <button class="btn btn-sm td-config-btn" id="td-config-btn" title="Gerer les fils">&#9881; Config</button>
+            </div>
+        </div>
+        <!-- Thread Cards -->
+        <div id="td-cards" class="td-cards">
+            <div class="loading-state">
+                <p>Chargement des digests...</p>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="td-empty" class="td-empty" style="display:none;">
+            <p>Aucun fil configure.</p>
+            <p class="td-empty-hint">Ajoutez un fil (WhatsApp, Signal, SMS) a surveiller via le bouton Config.</p>
         </div>
     </div>
 
-    <!-- Empty State -->
-    <div id="td-empty" class="td-empty" style="display:none;">
-        <p>Aucun fil configure.</p>
-        <p class="td-empty-hint">Ajoutez un fil (WhatsApp, Signal, SMS) a surveiller via le bouton Config.</p>
+    <!-- TAB: Historique (split-panel WhatsApp-like) -->
+    <div id="td-tab-historique" class="td-tab-content">
+        <div class="td-split-panel">
+            <!-- Left: Chat list -->
+            <div class="td-chat-list">
+                <div class="td-chat-list-header">
+                    <input type="text" id="td-chat-search" class="td-input" placeholder="Rechercher...">
+                    <button class="btn btn-sm td-chat-sync-btn" id="td-chat-sync-btn" title="Synchroniser depuis WhatsApp">&#x1f504;</button>
+                </div>
+                <div id="td-chat-items" class="td-chat-items">
+                    <div class="td-chat-loading">Chargement...</div>
+                </div>
+            </div>
+            <!-- Right: Message view -->
+            <div class="td-message-view" id="td-message-view">
+                <div class="td-message-empty">
+                    <div class="td-message-empty-icon">&#x1f4ac;</div>
+                    <p>Selectionnez une conversation</p>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Config Modal -->
+    <!-- Config Modal (fils surveilles) -->
     <div id="td-config-modal" class="td-modal" style="display:none;">
-        <div class="td-modal-backdrop"></div>
+        <div class="td-modal-backdrop" data-modal="config"></div>
         <div class="td-modal-content">
             <div class="td-modal-header">
                 <h3>Fils surveilles</h3>
-                <button class="td-modal-close" id="td-config-close">&times;</button>
+                <button class="td-modal-close" data-modal="config">&times;</button>
             </div>
             <div class="td-modal-body">
                 <div id="td-config-list" class="td-config-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Thread Modal -->
+    <div id="td-add-modal" class="td-modal" style="display:none;">
+        <div class="td-modal-backdrop" data-modal="add"></div>
+        <div class="td-modal-content">
+            <div class="td-modal-header">
+                <h3>Ajouter un fil</h3>
+                <button class="td-modal-close" data-modal="add">&times;</button>
+            </div>
+            <div class="td-modal-body">
                 <div class="td-config-add">
-                    <h4>Ajouter un fil</h4>
                     <div class="td-form-row">
                         <select id="td-add-platform" class="td-input td-select">
                             <option value="whatsapp">WhatsApp</option>
                             <option value="signal">Signal</option>
                             <option value="sms">SMS</option>
                         </select>
-                        <input type="text" id="td-add-name" placeholder="Nom du fil" class="td-input">
-                        <input type="text" id="td-add-jid" placeholder="JID / Group ID / Numero" class="td-input">
+                        <input type="text" id="td-add-name" placeholder="Tapez un nom pour rechercher..." class="td-input td-input-search">
+                        <input type="text" id="td-add-jid" placeholder="Tel (06...) ou JID" class="td-input">
                         <button class="btn btn-sm td-add-btn" id="td-add-btn">Ajouter</button>
                     </div>
                     <div class="td-form-actions">
-                        <button class="btn btn-sm td-discover-btn" id="td-discover-btn">Decouvrir chats</button>
                         <button class="btn btn-sm td-import-sms-btn" id="td-import-sms-btn" style="display:none;">Importer SMS (XML)</button>
                     </div>
                     <div id="td-discover-list" class="td-discover-list" style="display:none;"></div>
@@ -61,6 +117,10 @@
 <style>
 /* Thread Digest Page Styles */
 .thread-digest-page {
+    max-width: none;
+}
+
+#td-tab-digests {
     max-width: 960px;
 }
 
@@ -286,6 +346,7 @@
 .td-action-item {
     display: flex;
     align-items: flex-start;
+    flex-wrap: wrap;
     gap: 8px;
     padding: 6px 0;
     font-size: 0.85rem;
@@ -308,6 +369,28 @@
 .td-action-urgency.high { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
 .td-action-urgency.medium { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
 .td-action-urgency.low { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+
+.td-action-links {
+    width: 100%;
+    padding-left: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.td-action-link {
+    font-size: 0.78rem;
+    color: var(--accent-color, #6366f1);
+    text-decoration: none;
+    background: rgba(99, 102, 241, 0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.td-action-link:hover {
+    text-decoration: underline;
+    background: rgba(99, 102, 241, 0.2);
+}
 
 /* Links */
 .td-links-list {
@@ -398,9 +481,9 @@
     background: var(--card-bg, #1a1a2e);
     border: 1px solid var(--border-color, #333);
     border-radius: 12px;
-    width: 90%;
-    max-width: 600px;
-    max-height: 80vh;
+    width: 94%;
+    max-width: 780px;
+    max-height: 85vh;
     overflow-y: auto;
 }
 
@@ -414,8 +497,14 @@
 
 .td-modal-header h3 {
     margin: 0;
-    font-size: 1.1rem;
+    font-size: 1.05rem;
+    font-weight: 600;
     color: var(--text-primary, #e0e0f0);
+}
+
+.td-add-thread-btn {
+    background: var(--accent-color, #6366f1) !important;
+    color: #fff !important;
 }
 
 .td-modal-close {
@@ -432,7 +521,7 @@
 }
 
 .td-modal-body {
-    padding: 20px;
+    padding: 20px 20px 32px;
 }
 
 /* Config List */
@@ -520,24 +609,23 @@
 
 /* Add Form */
 .td-config-add {
-    border-top: 1px solid var(--border-color, #333);
-    padding-top: 16px;
+    padding-top: 0;
 }
 
-.td-config-add h4 {
-    margin: 0 0 10px;
-    color: var(--text-primary, #e0e0f0);
-    font-size: 0.95rem;
+.td-input-search {
+    flex: 2;
 }
 
 .td-form-row {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 10px;
 }
 
 .td-input {
     flex: 1;
+    min-width: 140px;
     padding: 8px 12px;
     border: 1px solid var(--border-color, #333);
     border-radius: 8px;
@@ -566,7 +654,7 @@
     margin-bottom: 10px;
 }
 
-.td-discover-btn, .td-import-sms-btn {
+.td-import-sms-btn {
     border-radius: 8px;
     font-size: 0.85rem;
 }
@@ -582,11 +670,12 @@
 
 /* Discover List */
 .td-discover-list {
-    max-height: 200px;
+    max-height: 50vh;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 4px;
+    margin-top: 8px;
 }
 
 .td-discover-item {
@@ -614,4 +703,851 @@
     color: var(--text-secondary, #a0a0b0);
     font-family: monospace;
 }
+
+/* Sub-tabs */
+.td-subtabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--border-color, #333);
+}
+
+.td-subtab {
+    padding: 10px 24px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    color: var(--text-secondary, #a0a0b0);
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.td-subtab:hover {
+    color: var(--text-primary, #e0e0f0);
+}
+
+.td-subtab.active {
+    color: var(--accent-color, #6366f1);
+    border-bottom-color: var(--accent-color, #6366f1);
+}
+
+/* Split-panel Historique */
+.td-split-panel {
+    display: flex;
+    height: calc(100vh - 180px);
+    border: 1px solid var(--border-color, #333);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--card-bg, #1a1a2e);
+}
+
+.td-chat-list {
+    width: 480px;
+    min-width: 400px;
+    border-right: 1px solid var(--border-color, #333);
+    display: flex;
+    flex-direction: column;
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.td-chat-list-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    border-bottom: 1px solid var(--border-color, #333);
+}
+
+.td-chat-list-header .td-input {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+}
+
+.td-chat-sync-btn {
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.td-chat-sync-btn.syncing {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.td-chat-items {
+    flex: 1;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+
+.td-chat-loading {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-secondary, #a0a0b0);
+    font-size: 0.85rem;
+}
+
+/* Chat item in list */
+.td-chat-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 14px;
+    cursor: pointer;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    transition: background 0.15s;
+}
+
+.td-chat-item:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.td-chat-item.active {
+    background: rgba(99, 102, 241, 0.12);
+    border-left: 3px solid var(--accent-color, #6366f1);
+    padding-left: 11px;
+}
+
+.td-chat-item-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(99, 102, 241, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    color: var(--accent-color, #6366f1);
+    flex-shrink: 0;
+    font-weight: 600;
+}
+
+.td-chat-item-avatar.group {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+}
+
+.td-chat-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.td-chat-item-name {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--text-primary, #e0e0f0);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.td-chat-item-preview {
+    font-size: 0.78rem;
+    color: var(--text-secondary, #a0a0b0);
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.td-chat-item-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.td-chat-item-date {
+    font-size: 0.72rem;
+    color: var(--text-secondary, #a0a0b0);
+}
+
+.td-chat-item-count {
+    font-size: 0.72rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(99, 102, 241, 0.12);
+    color: var(--accent-color, #6366f1);
+}
+
+/* Star button */
+.td-chat-star-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    line-height: 1;
+    padding: 2px 4px;
+    color: var(--text-secondary, #a0a0b0);
+    transition: color 0.15s, transform 0.15s;
+    flex-shrink: 0;
+}
+
+.td-chat-star-btn:hover {
+    transform: scale(1.2);
+}
+
+.td-chat-star-btn.active {
+    color: #f59e0b;
+}
+
+/* Badge "Suivi" */
+.td-chat-badge-suivi {
+    font-size: 0.6rem;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+    font-weight: 500;
+}
+
+/* Favorites section header */
+.td-chat-fav-header {
+    font-size: 0.72rem;
+    color: #f59e0b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 10px 14px 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.td-chat-section-header {
+    font-size: 0.72rem;
+    color: var(--text-secondary, #a0a0b0);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 10px 14px 4px;
+}
+
+/* Message view (right panel) */
+.td-message-view {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    position: relative;
+}
+
+.td-message-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary, #a0a0b0);
+}
+
+.td-message-empty-icon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+    opacity: 0.4;
+}
+
+.td-message-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border-color, #333);
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.td-message-header-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text-primary, #e0e0f0);
+}
+
+.td-message-header-meta {
+    font-size: 0.78rem;
+    color: var(--text-secondary, #a0a0b0);
+}
+
+.td-message-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    scrollbar-width: thin;
+}
+
+/* Digests toolbar */
+.td-digests-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.td-digests-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Checkboxes */
+.td-checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent-color, #6366f1);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.td-select-all-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    color: var(--text-secondary, #a0a0b0);
+    cursor: pointer;
+    user-select: none;
+}
+
+.td-card-checkbox-wrap {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+/* Update button */
+.td-update-selected-btn {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    white-space: nowrap;
+    background: rgba(34, 197, 94, 0.12);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+}
+
+.td-update-selected-btn:hover:not(:disabled) {
+    background: rgba(34, 197, 94, 0.22);
+    border-color: #22c55e;
+}
+
+.td-update-selected-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Marked for update indicator */
+.td-card.marked-for-update {
+    border-left: 3px solid #22c55e;
+}
+
+/* Digests edit mode — delete button */
+.td-card-delete-btn {
+    display: none;
+    background: none;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    line-height: 1;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.td-card-delete-btn:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: #ef4444;
+}
+
+.td-cards.edit-mode .td-card-delete-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Chat message */
+.td-msg {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 8px;
+}
+
+.td-msg-header {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 2px;
+}
+
+.td-msg-author {
+    font-weight: 600;
+    font-size: 0.82rem;
+    color: #22c55e;
+}
+
+.td-msg.from-me .td-msg-author {
+    color: #a855f7;
+}
+
+.td-msg-time {
+    font-size: 0.72rem;
+    color: var(--text-secondary, #666);
+}
+
+.td-msg-body {
+    font-size: 0.88rem;
+    color: var(--text-primary, #e0e0f0);
+    line-height: 1.45;
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
+.td-msg.from-me .td-msg-body {
+    background: rgba(168, 85, 247, 0.08);
+}
+
+.td-msg-body a {
+    color: #60a5fa;
+    text-decoration: underline;
+    text-decoration-color: rgba(96, 165, 250, 0.4);
+    word-break: break-all;
+}
+.td-msg-body a:hover {
+    color: #93c5fd;
+    text-decoration-color: rgba(147, 197, 253, 0.7);
+}
+
+/* Reply button on messages */
+.td-msg-reply-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary, #888);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 2px 6px;
+    opacity: 0.35;
+    transition: opacity 0.15s, color 0.15s;
+    line-height: 1;
+}
+.td-msg:hover .td-msg-reply-btn {
+    opacity: 0.7;
+}
+.td-msg-reply-btn:hover {
+    opacity: 1 !important;
+    color: #a855f7;
+}
+
+/* Reply preview bar (above input) */
+.td-reply-preview {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: var(--bg-secondary, #1a1a2e);
+    border-top: 1px solid var(--border-color, #333);
+    border-left: 3px solid #a855f7;
+    margin: 0;
+}
+.td-reply-preview-content {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+.td-reply-preview-author {
+    font-weight: 600;
+    color: #a855f7;
+    font-size: 0.8rem;
+    margin-right: 6px;
+}
+.td-reply-preview-text {
+    color: var(--text-secondary, #a0a0b0);
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.td-reply-preview-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary, #666);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+}
+.td-reply-preview-close:hover {
+    color: #ef4444;
+}
+
+/* Date separator */
+.td-msg-date-sep {
+    text-align: center;
+    padding: 8px 0;
+    font-size: 0.75rem;
+    color: var(--text-secondary, #666);
+    position: relative;
+}
+
+.td-msg-date-sep::before,
+.td-msg-date-sep::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 30%;
+    height: 1px;
+    background: var(--border-color, #333);
+}
+
+.td-msg-date-sep::before { left: 0; }
+.td-msg-date-sep::after { right: 0; }
+
+/* No messages placeholder */
+.td-message-no-messages {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary, #a0a0b0);
+    font-size: 0.88rem;
+    font-style: italic;
+}
+
+.td-chat-loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary, #a0a0b0);
+    font-size: 0.85rem;
+}
+
+/* Message input bar */
+.td-message-input-bar {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 10px 12px;
+    border-top: 1px solid var(--border-color, #333);
+    background: var(--bg-secondary, #1a1a2e);
+}
+
+.td-message-input-bar textarea {
+    flex: 1;
+    resize: none;
+    border: 1px solid var(--border-color, #444);
+    border-radius: 18px;
+    padding: 8px 14px;
+    font-size: 0.88rem;
+    font-family: inherit;
+    background: var(--bg-primary, #0f0f1a);
+    color: var(--text-primary, #e0e0f0);
+    outline: none;
+    max-height: 120px;
+    line-height: 1.4;
+    transition: border-color 0.2s;
+}
+
+.td-message-input-bar textarea:focus {
+    border-color: #a855f7;
+}
+
+.td-message-input-bar textarea::placeholder {
+    color: var(--text-secondary, #666);
+}
+
+#td-msg-send-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: none;
+    background: #a855f7;
+    color: #fff;
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s, opacity 0.2s;
+}
+
+#td-msg-send-btn:hover {
+    background: #9333ea;
+}
+
+#td-msg-send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Media in messages (images, video, audio, documents) */
+.td-msg-media {
+    margin: 4px 0 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+}
+
+.td-msg-thumb {
+    max-width: 240px;
+    max-height: 200px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.15s;
+    object-fit: cover;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.td-msg-thumb:hover {
+    opacity: 0.85;
+    transform: scale(1.02);
+}
+
+.td-msg-thumb-loading {
+    animation: td-thumb-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes td-thumb-pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.6; }
+}
+
+.td-msg-media-badge {
+    display: inline-block;
+    font-size: 0.78rem;
+    padding: 3px 10px;
+    border-radius: 12px;
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--accent-color, #6366f1);
+    border: 1px solid rgba(99, 102, 241, 0.15);
+}
+
+.td-msg-img-placeholder {
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.td-msg-img-placeholder:hover {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.35);
+}
+
+/* Lightbox (full-size image overlay) */
+.td-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.td-lightbox-loading {
+    color: #e0e0f0;
+    font-size: 1rem;
+}
+
+.td-lightbox-img {
+    max-width: 90vw;
+    max-height: 90vh;
+    border-radius: 8px;
+    object-fit: contain;
+    cursor: default;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+}
+
+.td-lightbox-close {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-size: 1.5rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+}
+
+.td-lightbox-close:hover {
+    background: rgba(239, 68, 68, 0.5);
+}
+
+.td-lightbox-error {
+    color: #ef4444;
+    font-size: 0.9rem;
+    padding: 20px;
+    text-align: center;
+}
+
+/* Photo upload (input bar) */
+.td-msg-photo-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1px solid var(--border-color, #444);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary, #a0a0b0);
+    font-size: 1.05rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.td-msg-photo-btn:hover {
+    background: rgba(168, 85, 247, 0.15);
+    color: #a855f7;
+    border-color: rgba(168, 85, 247, 0.4);
+}
+
+.td-msg-photo-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Photo preview bar (above input) */
+.td-photo-preview {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: var(--bg-secondary, #1a1a2e);
+    border-top: 1px solid var(--border-color, #333);
+    border-left: 3px solid #22c55e;
+}
+
+.td-photo-preview-img {
+    max-height: 64px;
+    max-width: 96px;
+    border-radius: 6px;
+    object-fit: cover;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.td-photo-preview-info {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 0.8rem;
+    color: var(--text-secondary, #a0a0b0);
+}
+
+.td-photo-preview-name {
+    color: #22c55e;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.td-photo-preview-size {
+    margin-top: 2px;
+}
+
+.td-photo-preview-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary, #666);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+}
+.td-photo-preview-close:hover {
+    color: #ef4444;
+}
+
+/* Drag & drop overlay for images */
+.td-drop-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    background: rgba(168, 85, 247, 0.18);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    border: 3px dashed #a855f7;
+    border-radius: 8px;
+}
+
+.td-drop-overlay-inner {
+    background: rgba(26, 26, 46, 0.85);
+    border-radius: 14px;
+    padding: 24px 36px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.45);
+}
+
+.td-drop-overlay-icon {
+    font-size: 2.4rem;
+    line-height: 1;
+}
+
+.td-drop-overlay-text {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #e0e0f0;
+}
 </style>
+
+<!-- Delete handler — inline script (not ES module) to bypass browser module cache -->
+<script>
+(function() {
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.td-card-delete-btn');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+        // Get thread id from the card container
+        var card = btn.closest('.td-card');
+        var threadId = card && card.dataset.threadId;
+        if (!threadId) {
+            // Fallback: try data-id on the button itself
+            threadId = btn.dataset.id;
+        }
+        if (!threadId) return;
+        if (!confirm('Supprimer ce fil et ses digests ?')) return;
+        fetch('http://localhost:5000/api/threads/' + threadId, { method: 'DELETE' })
+            .then(function(r) { return r.json(); })
+            .then(function() {
+                // Remove card from DOM
+                if (card) card.remove();
+                // Check if no cards left
+                var container = document.getElementById('td-cards');
+                if (container && container.querySelectorAll('.td-card').length === 0) {
+                    var empty = document.getElementById('td-empty');
+                    if (empty) empty.style.display = 'block';
+                }
+            })
+            .catch(function(err) { console.error('Delete thread error:', err); });
+    });
+})();
+</script>

@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.0] - 2026-04-15
+
+### Added
+- **Claude Config** unified page with 4 sub-tabs: Skills, Analysis D1-D4, Browser, Logigramme
+- Merged former "Claude Skills" and "Claude Instructions" pages into single entry point
+
+### Removed
+- `claude-skills.html/js` and `claude-instructions.html/js` (replaced by `claude-config.html/js`)
+- Two sidebar tabs replaced by single "Claude Config" tab
+
+### Fixed
+- Analysis D1-D4 table: dark background applied to full row (was white on columns 2-8)
+- Browser sub-tab: infinite recursion on file click (window global shadowing prototype methods)
+
+## [2.2.1] - 2026-04-15
+
+### Added
+- Todo view mode toggle: "Perso" (personal todos) vs "Projets" (project-generated todos)
+- Todo pagination: page size selector (10/20/50/100 items) with navigation arrows
+- Action column width doubled (26% → 52%) to reduce text wrapping
+
+### Changed
+- In Projets mode: status and priority filters disabled to show all 31 project todos
+- Footer simplified: removed confusing "(142 total)" text, shows only filtered count
+
+### Fixed
+- `.card-footer` CSS styling added for proper visual separation
+
+## [2.2.0] - 2026-03-27
+
+### Added
+- Invitations page: send calendar invitations (.ics) via Hostinger or Gmail with Google Meet auto-generation
+- Contact search from tone profiles and email history
+- ICS preview before sending
+- Google Calendar integration for Meet link creation (conferenceData API)
+- Ergonomic UI with structured sections, inline search, toggle Meet checkbox
+
 ## [2.1.0] - 2026-03-20
 
 ### Added

@@ -21,6 +21,10 @@
     --text-secondary: #94a3b8;
     --text-muted: #64748b;
 
+    /* Code & hover (Claude Instructions) */
+    --code-bg: #334155;
+    --hover-bg: #334155;
+
     /* Bordures */
     --border-color: #334155;
 
@@ -1681,6 +1685,48 @@ tbody tr:hover {
     color: #9ca3af;
 }
 
+.cs-badge-external {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+}
+
+.cs-badge-community {
+    background: rgba(139, 92, 246, 0.15);
+    color: #8b5cf6;
+}
+
+.cs-source-repo {
+    font-size: 0.72rem;
+    color: #6b7280;
+    margin-top: 4px;
+}
+
+.cs-source-repo a {
+    color: #60a5fa;
+    text-decoration: none;
+}
+
+.cs-source-repo a:hover {
+    text-decoration: underline;
+}
+
+.cs-refs {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.72rem;
+    color: #f59e0b;
+    margin-top: 4px;
+}
+
+.cs-card.cs-imported {
+    border-left: 3px solid #3b82f6;
+}
+
+.cs-card.cs-community {
+    border-left: 3px solid #8b5cf6;
+}
+
 .cs-command {
     margin-top: 8px;
 }
@@ -1694,3 +1740,189 @@ tbody tr:hover {
     font-weight: 600;
     letter-spacing: 0.3px;
 }
+
+/* ============================================================
+   SIDEBAR EDIT MODE
+   ============================================================ */
+
+.sidebar-edit-btn {
+    width: 100%;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.sidebar-edit-btn:hover {
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
+}
+
+.sidebar-edit-mode .nav-section-title {
+    background: var(--bg-card-hover);
+    border-radius: 6px;
+    padding: 4px 8px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.move-btns {
+    display: inline-flex;
+    gap: 2px;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+.tab-move-btns {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.move-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all 0.15s;
+}
+
+.move-btn:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.sidebar-edit-mode .nav-item {
+    display: flex;
+    align-items: center;
+}
+
+.sidebar-edit-mode .section-name-text {
+    cursor: pointer;
+    border-bottom: 1px dashed var(--text-muted);
+    padding-bottom: 1px;
+    flex: 1;
+}
+
+.sidebar-edit-mode .section-name-text:hover {
+    color: var(--primary-light);
+    border-bottom-color: var(--primary-light);
+}
+
+.section-name-input {
+    background: var(--bg-dark);
+    border: 1px solid var(--primary);
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    width: 100%;
+    outline: none;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.delete-btn {
+    color: var(--danger) !important;
+    border-color: var(--danger) !important;
+}
+
+.delete-btn:hover {
+    background: var(--danger) !important;
+    color: white !important;
+}
+
+.add-section-btn {
+    width: calc(100% - 20px);
+    margin: 8px 10px;
+    padding: 8px;
+    background: transparent;
+    border: 1px dashed var(--border-color);
+    color: var(--text-muted);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+}
+
+.add-section-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary-light);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.add-tab-btn {
+    width: calc(100% - 16px);
+    margin: 4px 8px;
+    padding: 5px 8px;
+    background: transparent;
+    border: 1px dashed var(--border-color);
+    color: var(--text-muted);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: all 0.2s;
+}
+
+.add-tab-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary-light);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.tab-picker-dropdown {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    margin-top: 4px;
+}
+
+.tab-picker-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    transition: background 0.15s;
+}
+
+.tab-picker-item:hover {
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
+}
+
+.tab-picker-item .icon {
+    margin-right: 8px;
+}
+
+.sidebar-edit-mode .nav-section {
+    position: relative;
+}
+
+.tab-delete-btn {
+    font-size: 0.6rem !important;
+    width: 18px !important;
+    height: 18px !important;
+}
+

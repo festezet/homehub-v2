@@ -1,5 +1,13 @@
 <!-- HH Design - Architecture & Feature Wishlist -->
 <div class="category">
+    <!-- Page intro -->
+    <div style="margin-bottom: 16px; padding: 12px 16px; background: linear-gradient(135deg, #6366f115, #8b5cf615); border-radius: 10px; border-left: 3px solid #6366f1;">
+        <div style="font-weight: 600; font-size: 0.92em; margin-bottom: 4px;">Tableau de bord technique HomeHub</div>
+        <div style="font-size: 0.82em; color: #6b7280; line-height: 1.5;">
+            Vue d'ensemble du projet : introspection automatique du code source et gestion de la roadmap produit.
+        </div>
+    </div>
+
     <!-- Tab buttons -->
     <div id="hhd-tabs" style="display: flex; gap: 8px; margin-bottom: 20px;">
         <button class="btn btn-sm active" onclick="window.HHDesignModule.setTab('architecture')" id="hhd-tab-arch">Architecture</button>
@@ -8,6 +16,14 @@
 
     <!-- Architecture Tab -->
     <div id="hhd-architecture" style="display: block;">
+        <div style="margin-bottom: 16px; padding: 10px 14px; background: var(--card-bg, #fff); border-radius: 8px; border: 1px solid var(--border-color, #e5e7eb);">
+            <div style="font-size: 0.82em; color: #6b7280; line-height: 1.6;">
+                <strong style="color: #6366f1;">Scan en temps reel</strong> du codebase HomeHub.
+                Les compteurs montrent la taille du projet (pages, routes API, services backend, modules JS, templates).
+                Cliquez sur chaque section pour voir le detail : endpoints avec methode HTTP, classes de service avec LOC, et fichiers templates.
+                Utile pour evaluer la complexite du projet et identifier les zones a refactorer.
+            </div>
+        </div>
         <div id="hhd-arch-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px;">
             <p style="color: #666; text-align: center; padding: 20px; grid-column: 1/-1;">Chargement...</p>
         </div>
@@ -16,6 +32,14 @@
 
     <!-- Features Tab -->
     <div id="hhd-features" style="display: none;">
+        <div style="margin-bottom: 16px; padding: 10px 14px; background: var(--card-bg, #fff); border-radius: 8px; border: 1px solid var(--border-color, #e5e7eb);">
+            <div style="font-size: 0.82em; color: #6b7280; line-height: 1.6;">
+                <strong style="color: #10b981;">Backlog produit</strong> de HomeHub.
+                Centralisez ici les idees d'amelioration, bugs a corriger et fonctionnalites souhaitees.
+                Chaque feature a un statut (<em>Idea → Planned → In Progress → Done</em>), une priorite (P1 a P4), une categorie (UI, Backend, Integration, UX) et un champ "Pain Point" pour decrire le probleme utilisateur.
+                Filtrez par statut ou categorie pour prioriser le travail.
+            </div>
+        </div>
         <!-- Filters + Add button -->
         <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;">
             <select id="hhd-filter-status" onchange="window.HHDesignModule.loadFeatures()" style="padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color, #ddd); background: var(--card-bg, #fff); font-size: 0.85em;">
